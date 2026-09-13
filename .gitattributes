@@ -1,0 +1,7 @@
+# Finais de linha consistentes para todo o time (Windows, macOS e Linux)
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.ttf binary
+*.otf binary
