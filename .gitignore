@@ -1,0 +1,59 @@
+# Dependências
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+app-example/
+
+# Pastas nativas geradas pelo prebuild
+/ios
+/android
+.kotlin/
+*.orig.*
+
+# Credenciais de assinatura (nunca versionar)
+*.jks
+*.p8
+*.p12
+*.key
+*.pem
+*.mobileprovision
+
+# Metro
+.metro-health-check*
+
+# Logs
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+*.log
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+
+# Variáveis de ambiente (segredos nunca entram no repositório)
+.env
+.env.*
+!.env.example
+
+# TypeScript
+*.tsbuildinfo
+
+# Testes
+coverage/
+
+# Supabase CLI (arquivos locais)
+supabase/.temp/
+supabase/.branches/
+
+# Documentos acadêmicos ficam fora do repositório
+docs/
+
+# Editores
+.vscode/*
+!.vscode/extensions.json
+.idea/
