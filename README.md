@@ -18,7 +18,21 @@ src/features/    regras de domínio com testes (ranks, Arena, tipos de treino)
 src/lib/         utilitários (semana da Arena no horário de Brasília, numerais romanos)
 src/theme/       tokens de cor, tipografia e espaçamento
 src/data/        dados de exemplo usados enquanto o backend não está ligado
+supabase/        migrações SQL (tabelas, RLS e funções) e testes do banco
 ```
+
+## Banco de dados
+
+O banco é criado só por migrações versionadas em `supabase/migrations`. As regras de negócio (pontuação, convites, Arena) ficam em funções do Postgres; o app lê pelo RLS e grava apenas chamando essas funções.
+
+```bash
+npm run test:db          # aplica as migrações num Postgres em memória e roda os testes
+npx supabase login       # uma vez por máquina
+npx supabase db push     # aplica as migrações no projeto Supabase ligado
+npm run test:db:linked   # roda os mesmos testes no projeto ligado, desfazendo tudo no fim
+```
+
+Nenhum dos comandos precisa de Docker.
 
 ## Como rodar
 
