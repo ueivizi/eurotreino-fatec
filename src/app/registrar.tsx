@@ -96,7 +96,9 @@ function WorkoutResult({ result, intensity, onClose }: { result: LoggedWorkout; 
       <AppText tone="secondary" style={styles.tabular}>
         {`Glória da semana: ${result.weekGlory} · Acumulada: ${result.totalGlory}`}
       </AppText>
-      <Button label="Fechar" onPress={onClose} />
+      <View style={styles.fullWidth}>
+        <Button label="Fechar" onPress={onClose} />
+      </View>
     </View>
   );
 }
@@ -347,6 +349,9 @@ const styles = StyleSheet.create({
   resultLine: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+  },
+  fullWidth: {
+    alignSelf: 'stretch',
   },
   tabular: {
     fontVariant: ['tabular-nums'],

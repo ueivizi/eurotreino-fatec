@@ -146,7 +146,7 @@ export default function ArenaScreen() {
 
           <AppText variant="label" tone="muted">
             {weekOffset === 0
-              ? `${legion.name} · ${legion.memberCount} membros · Semana ${toRoman(week.number)}`
+              ? `${legion.name} · ${legion.memberCount} ${legion.memberCount === 1 ? 'membro' : 'membros'} · Semana ${toRoman(week.number)}`
               : `${legion.name} · semana de ${ranking.data?.weekStart ? weekStartFormat.format(new Date(`${ranking.data.weekStart}T00:00:00Z`)) : '…'}`}
           </AppText>
 
