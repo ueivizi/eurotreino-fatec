@@ -10,6 +10,7 @@ import { TextField } from '@/components/ui/text-field';
 import { AUTH_MESSAGES, authErrorMessage } from '@/features/auth/auth-errors';
 import {
   EMAIL_MAX_LENGTH,
+  OTP_LENGTH,
   RESEND_COOLDOWN_SECONDS,
   isValidEmail,
   isValidOtp,
@@ -154,7 +155,7 @@ export default function SignInScreen() {
           <View style={styles.form}>
             <View style={styles.intro}>
               <AppText variant="heading">Digite o código</AppText>
-              <AppText tone="secondary">{`Enviamos um código para ${step.email}.`}</AppText>
+              <AppText tone="secondary">{`Enviamos um código de ${OTP_LENGTH} dígitos para ${step.email}.`}</AppText>
             </View>
             <TextField
               label="Código"
@@ -163,7 +164,7 @@ export default function SignInScreen() {
                 setCode(text);
                 setFieldError(null);
               }}
-              placeholder="000000"
+              placeholder={'0'.repeat(OTP_LENGTH)}
               keyboardType="number-pad"
               inputMode="numeric"
               autoComplete="one-time-code"

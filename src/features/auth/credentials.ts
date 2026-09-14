@@ -15,7 +15,10 @@ export function normalizeOtp(input: string): string {
   return input.replace(/[\s-]/g, '');
 }
 
-/** O tamanho do código é configurado no Supabase (6 por padrão); aceitamos de 6 a 10 dígitos. */
+/** Tamanho do código no projeto (`otp_length` em supabase/config.toml). Usado só como dica na tela. */
+export const OTP_LENGTH = 8;
+
+/** A validação aceita de 6 a 10 dígitos, para não quebrar se o tamanho mudar no Supabase. */
 export function isValidOtp(code: string): boolean {
   return /^\d{6,10}$/.test(code);
 }
