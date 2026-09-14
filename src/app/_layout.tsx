@@ -7,6 +7,10 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 
+import { LoadingScreen, StatusScreen } from '@/components/status-screen';
+import { SessionProvider, useSession } from '@/features/auth/session';
+import type { SupabaseConfigProblem } from '@/lib/supabase-config';
+import { supabaseConfig } from '@/lib/supabase';
 import { AppThemeProvider } from '@/theme/theme';
 import { palettes } from '@/theme/tokens';
 
@@ -28,6 +32,72 @@ const navigationTheme = {
   },
 };
 
+const CONFIG_PROBLEMS: Record<SupabaseConfigProblem, string> = {
+  missing: 'Crie o arquivo .env a partir do .env.example, com a URL e a chave publicável do projeto Supabase.',
+  invalid_url: 'A URL do projeto no arquivo .env não está no formato esperado.',
+  invalid_key: 'A chave publicável no arquivo .env não está no formato esperado.',
+  secret_key: 'O arquivo .env tem uma chave secreta. Troque pela chave publicável: a secreta nunca pode ir para o app.',
+};
+
+function useHideSplash(ready: boolean) {
+  useEffect(() => {
+    if (!ready) return;
+    SplashScreen.hideAsync().catch(() => {
+      // Esconder a splash é só visual; uma falha aqui não bloqueia o uso do app.
+    });
+  }, [ready]);
+}
+
+function RootNavigator() {
+  const { state, retry, signOut } = useSession();
+  useHideSplash(state.status !== 'loading');
+
+  if (state.status === 'loading') return <LoadingScreen />;
+
+  if (state.status === 'unavailable') {
+    return (
+      <StatusScreen
+        icon="info"
+        title="Sem conexão com o servidor"
+        description="Não conseguimos carregar seu perfil. Verifique a internet e tente de novo."
+        actions={[
+          { label: 'Tentar de novo', onPress: retry },
+          { label: 'Sair', onPress: () => void signOut(), variant: 'ghost' },
+        ]}
+      />
+    );
+  }
+
+  return (
+    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }}>
+      <Stack.Protected guard={state.status === 'signed-out'}>
+        <Stack.Screen name="entrar" />
+      </Stack.Protected>
+      <Stack.Protected guard={state.status === 'needs-profile'}>
+        <Stack.Screen name="perfil-inicial" />
+      </Stack.Protected>
+      <Stack.Protected guard={state.status === 'ready'}>
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen
+          name="registrar"
+          options={{
+            presentation: 'formSheet',
+            sheetAllowedDetents: [0.9],
+            sheetGrabberVisible: true,
+            sheetCornerRadius: 12,
+            contentStyle: { backgroundColor: colors.surfaceRaised },
+          }}
+        />
+      </Stack.Protected>
+    </Stack>
+  );
+}
+
+function ConfigurationProblem({ problem }: { problem: SupabaseConfigProblem }) {
+  useHideSplash(true);
+  return <StatusScreen icon="info" title="Configuração incompleta" description={CONFIG_PROBLEMS[problem]} />;
+}
+
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
     Cinzel_600SemiBold,
@@ -38,14 +108,6 @@ export default function RootLayout() {
     Inter_600SemiBold,
   });
 
-  useEffect(() => {
-    if (fontsLoaded || fontError) {
-      SplashScreen.hideAsync().catch(() => {
-        // Esconder a splash é só visual; uma falha aqui não bloqueia o uso do app.
-      });
-    }
-  }, [fontsLoaded, fontError]);
-
   // Sem as fontes, o texto cai nas fontes do sistema: o app continua utilizável.
   if (!fontsLoaded && !fontError) return null;
 
@@ -53,19 +115,13 @@ export default function RootLayout() {
     <AppThemeProvider name="onix">
       <ThemeProvider value={navigationTheme}>
         <StatusBar style="light" />
-        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }}>
-          <Stack.Screen name="(tabs)" />
-          <Stack.Screen
-            name="registrar"
-            options={{
-              presentation: 'formSheet',
-              sheetAllowedDetents: [0.9],
-              sheetGrabberVisible: true,
-              sheetCornerRadius: 12,
-              contentStyle: { backgroundColor: colors.surfaceRaised },
-            }}
-          />
-        </Stack>
+        {supabaseConfig.ok ? (
+          <SessionProvider>
+            <RootNavigator />
+          </SessionProvider>
+        ) : (
+          <ConfigurationProblem problem={supabaseConfig.problem} />
+        )}
       </ThemeProvider>
     </AppThemeProvider>
   );

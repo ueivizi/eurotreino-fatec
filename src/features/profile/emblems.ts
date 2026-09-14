@@ -7,6 +7,17 @@ export const EMBLEMS = ['aguia', 'loba', 'leao', 'coruja', 'pegaso', 'tridente',
 
 export type EmblemName = (typeof EMBLEMS)[number];
 
+export const EMBLEM_LABELS: Record<EmblemName, string> = {
+  aguia: 'Águia',
+  loba: 'Loba',
+  leao: 'Leão',
+  coruja: 'Coruja',
+  pegaso: 'Pégaso',
+  tridente: 'Tridente',
+  raio: 'Raio',
+  elmo: 'Elmo',
+};
+
 export function isEmblemName(value: string): value is EmblemName {
   return (EMBLEMS as readonly string[]).includes(value);
 }

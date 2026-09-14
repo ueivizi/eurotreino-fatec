@@ -11,6 +11,7 @@ import { ProgressBar } from '@/components/ui/progress-bar';
 import { AppText } from '@/components/ui/text';
 import { sampleLegion, sampleMe } from '@/data/sample';
 import { computeStandings } from '@/features/arena/standings';
+import { useProfile } from '@/features/auth/session';
 import { rankFromGlory } from '@/features/ranks/tiers';
 import { intensityLabel, workoutTypeLabel } from '@/features/workouts/workout-types';
 import { formatRemaining, toRoman, weekInfo } from '@/lib/week';
@@ -21,7 +22,9 @@ export default function HomeScreen() {
   const { colors } = useTheme();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const profile = useProfile();
 
+  // Nome e emblema já vêm do perfil real; Glória e Arena seguem de exemplo até a integração das Legiões.
   const rank = rankFromGlory(sampleMe.glory);
   const week = weekInfo(new Date());
   const standings = computeStandings(sampleLegion);
@@ -29,6 +32,8 @@ export default function HomeScreen() {
   const leader = standings[0];
   const last = sampleMe.lastWorkout;
   const lastLabel = `${workoutTypeLabel(last.type)} · ${last.minutes} min · ${intensityLabel(last.intensity)}`;
+
+  if (!profile) return null;
 
   return (
     <ScrollView
@@ -39,9 +44,9 @@ export default function HomeScreen() {
           <AppText variant="overline" tone="muted">
             {`Semana ${toRoman(week.number)} · termina em ${formatRemaining(week.remainingMs)}`}
           </AppText>
-          <AppText variant="title">{`Ave, ${sampleMe.name}`}</AppText>
+          <AppText variant="title">{`Ave, ${profile.displayName}`}</AppText>
         </View>
-        <EmblemAvatar emblem={sampleMe.emblem} size={46} />
+        <EmblemAvatar emblem={profile.emblem} size={46} />
       </View>
 
       <View style={styles.rank}>

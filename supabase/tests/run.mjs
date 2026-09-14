@@ -107,6 +107,16 @@ async function checkSyncWithApp(db) {
     { accepted: [...EMBLEMS].sort(), accepts_unknown: false },
   );
 
+  const { isValidDisplayName } = await importApp('src/features/profile/display-name.ts');
+  const decomposed = `Te${String.fromCharCode(0x301)}o`;
+  const names = ['Lu', 'Digão', "D'Ávila", 'Ana-Clara', 'Jr.', 'Rafa 2', 'A', 'a'.repeat(32), 'a'.repeat(33), ' Ana', 'Ana ',
+    'Ana  Clara', '<b>Ana</b>', 'Ana 💪', '-Ana', "Ana'", 'Ana\nClara', 'Zoë', 'Ñandú', 'Øyvind', 'Ana×Bia', decomposed];
+  const displayNames = await db.query(
+    'select array_agg(private.is_valid_display_name(n) order by ord) as accepted from unnest($1::text[]) with ordinality as t (n, ord)',
+    [names],
+  );
+  check('nome de exibição: mesma regra no app e no banco', displayNames.rows[0].accepted, names.map(isValidDisplayName));
+
   const duration = await db.query(
     "select pg_get_constraintdef(oid) as definition from pg_constraint where conname = 'workouts_duration_range'",
   );

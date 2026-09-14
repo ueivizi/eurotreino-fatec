@@ -2,7 +2,7 @@
 
 Aplicativo de treino gamificado com ranking privado entre amigos. Cada treino registrado vira **Glória**, você sobe de rank do Recruta ao Olimpiano, e a disputa semanal acontece só dentro da sua **Legião** — nunca com desconhecidos.
 
-> Em desenvolvimento. As telas usam dados de exemplo até a integração com o Supabase.
+> Em desenvolvimento. A entrada por código no e-mail e o perfil já usam o Supabase; Glória, Arena e Legiões ainda mostram dados de exemplo.
 
 ## Stack
 
@@ -40,6 +40,7 @@ Pré-requisitos: Node.js 20 ou superior e o app **Expo Go** no celular (Android 
 
 ```bash
 npm install
+cp .env.example .env   # preencha com a URL e a chave publicável do projeto Supabase
 npm start
 ```
 
