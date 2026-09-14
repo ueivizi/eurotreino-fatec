@@ -2,7 +2,7 @@
 
 Aplicativo de treino gamificado com ranking privado entre amigos. Cada treino registrado vira **Glória**, você sobe de rank do Recruta ao Olimpiano, e a disputa semanal acontece só dentro da sua **Legião** — nunca com desconhecidos.
 
-> Em desenvolvimento. A entrada por código no e-mail e o perfil já usam o Supabase; Glória, Arena e Legiões ainda mostram dados de exemplo.
+> Em desenvolvimento (Onda 1). Entrada por código no e-mail, perfil, Início, registro de treino, Legiões e Arena já usam o Supabase.
 
 ## Stack
 
@@ -14,10 +14,9 @@ Aplicativo de treino gamificado com ranking privado entre amigos. Cada treino re
 ```
 src/app/         rotas (Expo Router): abas Início, Arena, Legião e Perfil + registro de treino
 src/components/  componentes de interface (tema Ônix & Ouro, medalhões de rank, barra de abas)
-src/features/    regras de domínio com testes (ranks, Arena, tipos de treino)
-src/lib/         utilitários (semana da Arena no horário de Brasília, numerais romanos)
+src/features/    regras de domínio, chamadas ao banco e validação das respostas, com testes
+src/lib/         cliente Supabase, sessão segura, cache de consultas e utilitários
 src/theme/       tokens de cor, tipografia e espaçamento
-src/data/        dados de exemplo usados enquanto o backend não está ligado
 supabase/        migrações SQL (tabelas, RLS e funções) e testes do banco
 ```
 
