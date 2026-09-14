@@ -1,7 +1,8 @@
 import { View } from 'react-native';
 import Svg, { Ellipse } from 'react-native-svg';
 
-import { Icon, type EmblemName } from '@/components/ui/icon';
+import { Icon } from '@/components/ui/icon';
+import type { EmblemName } from '@/features/profile/emblems';
 import { useTheme } from '@/theme/theme';
 
 export type Laurel = 'gold' | 'silver' | 'bronze';

@@ -2,7 +2,7 @@
  * Dados de exemplo usados pela interface enquanto o app não está ligado ao
  * Supabase. Serão substituídos pelas consultas reais na integração da Onda 1.
  */
-import type { EmblemName } from '@/components/ui/icon';
+import type { EmblemName } from '@/features/profile/emblems';
 import type { IntensityId, WorkoutTypeId } from '@/features/workouts/workout-types';
 
 export type SampleMember = {

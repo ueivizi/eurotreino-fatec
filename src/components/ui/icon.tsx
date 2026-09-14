@@ -43,9 +43,6 @@ const PATHS = {
 
 export type IconName = keyof typeof PATHS;
 
-export const EMBLEMS = ['aguia', 'loba', 'leao', 'coruja', 'pegaso', 'tridente', 'raio', 'elmo'] as const satisfies readonly IconName[];
-export type EmblemName = (typeof EMBLEMS)[number];
-
 type Props = {
   name: IconName;
   color: string;
