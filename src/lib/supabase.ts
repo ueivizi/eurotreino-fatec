@@ -4,6 +4,7 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { AppState, Platform } from 'react-native';
 
 import { authStorage } from './auth-storage';
+import type { Database } from './database.types';
 import { parseSupabaseConfig } from './supabase-config';
 
 /** Lida uma vez; o Expo embute as variáveis EXPO_PUBLIC_* no app durante o build. */
@@ -12,15 +13,15 @@ export const supabaseConfig = parseSupabaseConfig(
   process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
 );
 
-let client: SupabaseClient | null = null;
+let client: SupabaseClient<Database> | null = null;
 
-export function getSupabase(): SupabaseClient {
+export function getSupabase(): SupabaseClient<Database> {
   if (!supabaseConfig.ok) {
     throw new Error('Supabase não configurado: confira o arquivo .env.');
   }
   if (client) return client;
 
-  const created = createClient(supabaseConfig.url, supabaseConfig.publishableKey, {
+  const created = createClient<Database>(supabaseConfig.url, supabaseConfig.publishableKey, {
     auth: {
       storage: authStorage,
       autoRefreshToken: true,

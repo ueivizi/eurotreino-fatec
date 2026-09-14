@@ -1,6 +1,7 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
 import { fetchOwnProfile, type Profile, type ProfileLookup } from '@/features/profile/profile-api';
+import { queryClient } from '@/lib/query-client';
 import { getSupabase } from '@/lib/supabase';
 
 export type SessionState =
@@ -32,6 +33,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [identity, setIdentity] = useState<AuthIdentity>({ known: false });
   const [attempt, setAttempt] = useState(0);
   const [result, setResult] = useState<ProfileResult | null>(null);
+  const lastUserId = useRef<string | null | undefined>(undefined);
 
   useEffect(() => {
     const { data } = getSupabase().auth.onAuthStateChange((_event, session) => {
@@ -39,6 +41,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       // por isso o perfil é buscado no efeito abaixo. Renovação de token não muda a pessoa.
       const userId = session?.user.id ?? null;
       const email = session?.user.email ?? null;
+      if (lastUserId.current !== undefined && lastUserId.current !== userId) {
+        // Troca de conta no mesmo aparelho: nada do usuário anterior pode continuar em cache.
+        queryClient.clear();
+      }
+      lastUserId.current = userId;
       setIdentity((current) =>
         current.known && current.userId === userId ? current : { known: true, userId, email },
       );

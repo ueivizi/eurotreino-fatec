@@ -31,6 +31,14 @@ export function stepDuration(current: number, direction: 1 | -1): number {
   return Math.min(DURATION.max, Math.max(DURATION.min, next));
 }
 
+export function isWorkoutTypeId(value: unknown): value is WorkoutTypeId {
+  return WORKOUT_TYPES.some((type) => type.id === value);
+}
+
+export function isIntensityId(value: unknown): value is IntensityId {
+  return INTENSITIES.some((intensity) => intensity.id === value);
+}
+
 export function workoutTypeLabel(id: WorkoutTypeId): string {
   const found = WORKOUT_TYPES.find((type) => type.id === id);
   if (!found) throw new RangeError(`Tipo de treino desconhecido: ${id}`);

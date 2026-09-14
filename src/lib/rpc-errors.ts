@@ -48,3 +48,28 @@ export function rpcErrorCode(error: unknown): string | null {
   const { message } = error as { message?: unknown };
   return typeof message === 'string' && Object.hasOwn(MESSAGES, message) ? message : null;
 }
+
+/** Erro já pronto para a tela: `message` é texto para a pessoa; `code`, o código estável (ou null). */
+export class ApiError extends Error {
+  readonly code: string | null;
+
+  constructor(message: string, code: string | null = null) {
+    super(message);
+    this.name = 'ApiError';
+    this.code = code;
+  }
+}
+
+export function toApiError(error: unknown): ApiError {
+  return new ApiError(rpcErrorMessage(error), rpcErrorCode(error));
+}
+
+/** Resposta fora do formato combinado com o banco: tratada como falha, nunca como dado válido. */
+export function unexpectedResponse(): ApiError {
+  return new ApiError(RPC_MESSAGES.generic);
+}
+
+/** Texto de erro para qualquer falha vinda de uma consulta ou ação. */
+export function errorMessage(error: unknown): string {
+  return error instanceof ApiError ? error.message : RPC_MESSAGES.generic;
+}

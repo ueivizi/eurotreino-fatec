@@ -2,8 +2,8 @@
  * Semana da Arena: de segunda 00:00 a domingo 23:59 no horário de Brasília.
  *
  * O Brasil não tem horário de verão desde 2019, então Brasília é UTC−3 fixo.
- * Isto serve só para exibição; quando o app estiver ligado ao Supabase, o
- * início e o fim da semana passam a vir do servidor.
+ * Serve só para exibição (número da semana e contagem regressiva): a semana em
+ * que cada treino conta é calculada no servidor.
  */
 
 const BRASILIA_OFFSET_MS = -3 * 60 * 60 * 1000;

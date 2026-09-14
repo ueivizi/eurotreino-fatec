@@ -1,6 +1,7 @@
 import { Cinzel_600SemiBold, Cinzel_700Bold } from '@expo-google-fonts/cinzel';
 import { CormorantGaramond_500Medium_Italic } from '@expo-google-fonts/cormorant-garamond';
 import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold } from '@expo-google-fonts/inter';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { useFonts } from 'expo-font';
 import { DarkTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -9,6 +10,7 @@ import { useEffect } from 'react';
 
 import { LoadingScreen, StatusScreen } from '@/components/status-screen';
 import { SessionProvider, useSession } from '@/features/auth/session';
+import { queryClient } from '@/lib/query-client';
 import type { SupabaseConfigProblem } from '@/lib/supabase-config';
 import { supabaseConfig } from '@/lib/supabase';
 import { AppThemeProvider } from '@/theme/theme';
@@ -76,6 +78,7 @@ function RootNavigator() {
       <Stack.Protected guard={state.status === 'needs-profile'}>
         <Stack.Screen name="perfil-inicial" />
       </Stack.Protected>
+      {/* Toda rota precisa estar declarada aqui: rota não declarada fica acessível sem guarda. */}
       <Stack.Protected guard={state.status === 'ready'}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen
@@ -88,7 +91,12 @@ function RootNavigator() {
             contentStyle: { backgroundColor: colors.surfaceRaised },
           }}
         />
+        <Stack.Screen name="legioes/nova" />
+        <Stack.Screen name="legioes/entrar" />
+        <Stack.Screen name="legioes/[id]" />
       </Stack.Protected>
+      {/* Link de convite: abre em qualquer estado e guarda o código até a pessoa entrar. */}
+      <Stack.Screen name="convite/[codigo]" />
     </Stack>
   );
 }
@@ -116,9 +124,11 @@ export default function RootLayout() {
       <ThemeProvider value={navigationTheme}>
         <StatusBar style="light" />
         {supabaseConfig.ok ? (
-          <SessionProvider>
-            <RootNavigator />
-          </SessionProvider>
+          <QueryClientProvider client={queryClient}>
+            <SessionProvider>
+              <RootNavigator />
+            </SessionProvider>
+          </QueryClientProvider>
         ) : (
           <ConfigurationProblem problem={supabaseConfig.problem} />
         )}

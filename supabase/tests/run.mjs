@@ -117,6 +117,15 @@ async function checkSyncWithApp(db) {
   );
   check('nome de exibição: mesma regra no app e no banco', displayNames.rows[0].accepted, names.map(isValidDisplayName));
 
+  const { isValidGroupName } = await importApp('src/features/legions/group-name.ts');
+  const groupNames = ['Legião Fênix', 'Turma 6', 'Fé & Força', 'Bora!', "D'Artagnan", 'AB', 'L'.repeat(40), 'L'.repeat(41),
+    ' Fênix', 'Legião  Fênix', '<script>', '!Legião', 'Legião 💪', 'Legião\nFênix', 'Legião.', 'Legião-', decomposed + ' Legião'];
+  const groupResults = await db.query(
+    'select array_agg(private.is_valid_group_name(n) order by ord) as accepted from unnest($1::text[]) with ordinality as t (n, ord)',
+    [groupNames],
+  );
+  check('nome da Legião: mesma regra no app e no banco', groupResults.rows[0].accepted, groupNames.map(isValidGroupName));
+
   const duration = await db.query(
     "select pg_get_constraintdef(oid) as definition from pg_constraint where conname = 'workouts_duration_range'",
   );

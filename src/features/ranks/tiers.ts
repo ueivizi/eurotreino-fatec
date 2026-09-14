@@ -1,7 +1,7 @@
 /**
  * Cursus Gloriae — "Da Legião ao Olimpo".
- * Espelha a tabela `rank_tiers` do banco. Quando o app estiver ligado ao
- * Supabase, a tabela do servidor passa a ser a fonte de verdade.
+ * Espelha a tabela `rank_tiers` do banco; o teste de sincronia (`npm run test:db`)
+ * falha se os limites divergirem. Mudou um limite? Mude nos dois lugares.
  */
 
 export type TierId = 1 | 2 | 3 | 4 | 5 | 6 | 7;
