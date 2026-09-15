@@ -294,6 +294,20 @@ select tests.assert_equal(
   ),
   'total 15, semana 15, acumulada 15, reenvio f'
 );
+-- O treino gravado pela função só fica visível no comando seguinte (snapshot do comando).
+select tests.remember(
+  'retroativo',
+  (select r.workout_id::text from public.log_workout(gen_random_uuid(), 'bike', 40, 'leve', now() - interval '26 hours') as r)
+);
+select tests.assert_equal(
+  'treino de 26 horas atrás conta no dia em que aconteceu',
+  (
+    select format('%s|%s', w.is_scored, w.local_date = ((now() - interval '26 hours') at time zone 'America/Sao_Paulo')::date)
+    from public.workouts as w
+    where w.id = tests.recall('retroativo')::uuid
+  ),
+  't|t'
+);
 select tests.clear_authentication();
 select tests.authenticate_as('sem_perfil');
 select tests.assert_raises(

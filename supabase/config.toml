@@ -381,6 +381,12 @@ authorization_url_path = "/oauth/consent"
 # Allow dynamic client registration
 allow_dynamic_registration = false
 
+# Edge Function de exclusão de conta (RF011). A plataforma valida o JWT antes da função, que
+# valida de novo e exige confirmação recente por código no e-mail.
+[functions.delete-account]
+enabled = true
+verify_jwt = true
+
 [edge_runtime]
 enabled = true
 # Supported request policies: `oneshot`, `per_worker`.

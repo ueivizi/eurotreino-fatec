@@ -126,6 +126,20 @@ async function checkSyncWithApp(db) {
   );
   check('nome da Legião: mesma regra no app e no banco', groupResults.rows[0].accepted, groupNames.map(isValidGroupName));
 
+  const { workoutPoints } = await importApp('src/features/ranks/scoring.ts');
+  const samples = INTENSITIES.flatMap(({ id }) => [1, 9, 10, 45, 59, 60, 61, 300].map((minutes) => ({ minutes, intensity: id })));
+  const points = await db.query(
+    `select array_agg(json_build_object('presence', wp.presence, 'duration', wp.duration, 'intensity', wp.intensity) order by t.ord) as points
+     from unnest($1::integer[], $2::text[]) with ordinality as t (minutes, intensity, ord)
+     cross join lateral private.workout_points_v1(t.minutes, t.intensity) as wp`,
+    [samples.map((sample) => sample.minutes), samples.map((sample) => sample.intensity)],
+  );
+  check(
+    'pontuação explicada no app igual à do banco',
+    points.rows[0].points,
+    samples.map((sample) => workoutPoints(sample.minutes, sample.intensity)),
+  );
+
   const duration = await db.query(
     "select pg_get_constraintdef(oid) as definition from pg_constraint where conname = 'workouts_duration_range'",
   );

@@ -4,6 +4,7 @@ select tests.create_user('ana');
 select tests.create_member('carla', 'Carla', 'coruja');
 select tests.create_member('diego', 'Diego', 'raio');
 select tests.create_member('eva', 'Eva', 'leao');
+select tests.create_member('fabio', 'Fábio', 'raio');
 select tests.create_legion('fenix', 'Legião Fênix', array['carla', 'diego']);
 
 -- caso: anon é barrado antes de chegar à função
@@ -133,4 +134,48 @@ select tests.clear_authentication();
 -- caso: anon não lê perfis
 select tests.authenticate_as_anon();
 select tests.assert_raises('select como anon', $$select * from public.profiles$$, 'permission denied for table profiles');
+select tests.clear_authentication();
+
+-- caso: salvar o perfil sem mudanças não grava nem conta como edição
+select tests.authenticate_as('fabio');
+select public.complete_profile('Fábio', 'raio');
+select tests.clear_authentication();
+select tests.assert_equal(
+  'edições registradas',
+  (select count(*)::integer from private.audit_log where actor_id = tests.user_id('fabio') and action = 'profile.updated'),
+  0
+);
+
+-- caso: no máximo 10 edições de perfil em 24 horas
+select tests.authenticate_as('fabio');
+do $$
+begin
+  for i in 1..10 loop
+    perform public.complete_profile('Fábio ' || i, 'raio');
+  end loop;
+end;
+$$;
+select tests.assert_raises('11ª edição', $$select public.complete_profile('Fábio 11', 'raio')$$, 'rate_limited');
+select tests.assert_equal(
+  'salvar igual continua funcionando no limite',
+  (public.complete_profile('Fábio 10', 'raio')).display_name,
+  'Fábio 10'
+);
+select tests.clear_authentication();
+select tests.assert_equal(
+  'perfil ficou com a 10ª edição',
+  (select display_name || ' · ' || emblem from public.profiles where id = tests.user_id('fabio')),
+  'Fábio 10 · raio'
+);
+
+-- caso: edições com mais de 24 horas deixam de contar
+update private.audit_log
+set occurred_at = now() - interval '25 hours'
+where actor_id = tests.user_id('fabio') and action = 'profile.updated';
+select tests.authenticate_as('fabio');
+select tests.assert_equal(
+  'edição depois da janela',
+  (public.complete_profile('Fábio', 'aguia')).emblem,
+  'aguia'
+);
 select tests.clear_authentication();

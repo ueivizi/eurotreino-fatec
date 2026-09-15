@@ -315,6 +315,7 @@ export type Database = {
           last_intensity: string
           last_workout_type: string
           total_glory: number
+          total_workouts: number
           week_glory: number
           week_scored_workouts: number
           week_start: string

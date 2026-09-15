@@ -113,12 +113,13 @@ select tests.assert_equal(
   'progresso da Carla',
   (
     select format(
-      'acumulada %s, semana %s, pontuados %s, último %s %s min %s',
-      p.total_glory, p.week_glory, p.week_scored_workouts, p.last_workout_type, p.last_duration_min, p.last_intensity
+      'acumulada %s, semana %s, pontuados %s, treinos %s, último %s %s min %s',
+      p.total_glory, p.week_glory, p.week_scored_workouts, p.total_workouts, p.last_workout_type, p.last_duration_min,
+      p.last_intensity
     )
     from public.my_progress() as p
   ),
-  'acumulada 34, semana 34, pontuados 2, último caminhada 40 min leve'
+  'acumulada 34, semana 34, pontuados 2, treinos 2, último caminhada 40 min leve'
 );
 select tests.clear_authentication();
 select tests.authenticate_as('eva');
@@ -126,12 +127,12 @@ select tests.assert_equal(
   'progresso de quem ainda não treinou',
   (
     select format(
-      'acumulada %s, semana %s, pontuados %s, último %s',
-      p.total_glory, p.week_glory, p.week_scored_workouts, coalesce(p.last_workout_type, 'nenhum')
+      'acumulada %s, semana %s, pontuados %s, treinos %s, último %s',
+      p.total_glory, p.week_glory, p.week_scored_workouts, p.total_workouts, coalesce(p.last_workout_type, 'nenhum')
     )
     from public.my_progress() as p
   ),
-  'acumulada 0, semana 0, pontuados 0, último nenhum'
+  'acumulada 0, semana 0, pontuados 0, treinos 0, último nenhum'
 );
 select tests.clear_authentication();
 

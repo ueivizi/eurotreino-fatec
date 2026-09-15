@@ -5,6 +5,7 @@ const expoConfig = require('eslint-config-expo/flat');
 module.exports = defineConfig([
   expoConfig,
   {
-    ignores: ['dist/*', 'docs/*', '.expo/*'],
+    // supabase/functions roda no Deno (Edge Functions), com outro ambiente de tipos.
+    ignores: ['dist/*', 'docs/*', '.expo/*', 'supabase/functions/**'],
   },
 ]);

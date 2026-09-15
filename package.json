@@ -55,10 +55,15 @@
     "test": "jest",
     "test:db": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON supabase/tests/run.mjs",
     "test:db:linked": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON supabase/tests/run.mjs --linked",
+    "test:functions": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --disable-warning=ExperimentalWarning --test \"supabase/functions/**/*.test.ts\"",
     "gen:types": "supabase gen types typescript --linked --schema public > src/lib/database.types.ts"
   },
   "private": true,
   "jest": {
-    "preset": "jest-expo"
+    "preset": "jest-expo",
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "<rootDir>/supabase/"
+    ]
   }
 }
