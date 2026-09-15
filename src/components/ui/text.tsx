@@ -46,6 +46,11 @@ export function AppText({ variant = 'body', tone = 'primary', style, maxFontSize
   );
 }
 
+/** Estilo tipográfico de uma variante, para componentes que medem o texto (ex.: números que rolam). */
+export function textVariantStyle(variant: TextVariant): TextStyle {
+  return styles[variant];
+}
+
 const styles: Record<TextVariant, TextStyle> = StyleSheet.create({
   display: { fontFamily: fonts.display, fontSize: 44, lineHeight: 52, letterSpacing: 1 },
   title: { fontFamily: fonts.display, fontSize: 28, lineHeight: 36 },
