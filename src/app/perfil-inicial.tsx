@@ -8,6 +8,7 @@ import { Notice } from '@/components/ui/notice';
 import { AppText } from '@/components/ui/text';
 import { TextField } from '@/components/ui/text-field';
 import { useSession } from '@/features/auth/session';
+import { startFirstSteps } from '@/features/onboarding/first-steps';
 import { DISPLAY_NAME_MAX_LENGTH, isValidDisplayName, normalizeDisplayName } from '@/features/profile/display-name';
 import type { EmblemName } from '@/features/profile/emblems';
 import { saveProfile } from '@/features/profile/profile-api';
@@ -39,7 +40,11 @@ export default function InitialProfileScreen() {
     setError(null);
     try {
       const result = await saveProfile(displayName, emblem);
-      if (result.ok) profileSaved(result.profile);
+      if (result.ok) {
+        // Depois do perfil, o Início abre "Como conquistar Glória" e a escolha da Legião.
+        startFirstSteps();
+        profileSaved(result.profile);
+      }
       else if (result.code === 'not_authenticated') await signOut();
       else setError(result.message);
     } catch {
@@ -60,8 +65,8 @@ export default function InitialProfileScreen() {
           { paddingTop: insets.top + space.xxl, paddingBottom: insets.bottom + space.xxxl },
         ]}>
         <View style={styles.header}>
-          <AppText variant="overline" tone="muted">Primeiro acesso</AppText>
-          <AppText variant="title">Seu perfil</AppText>
+          <AppText variant="overline" tone="muted">1 de 3</AppText>
+          <AppText variant="title">Como sua Legião vai te chamar?</AppText>
           <AppText variant="motto" tone="gold">É assim que sua Legião vai te ver.</AppText>
         </View>
 
@@ -84,7 +89,7 @@ export default function InitialProfileScreen() {
 
         <EmblemPicker label="Emblema (no lugar da foto)" value={emblem} onChange={setEmblem} />
 
-        <Notice message="Não pedimos foto. Seu nome e seu emblema aparecem só para quem está nas suas Legiões, e os detalhes dos seus treinos ficam visíveis só para você." />
+        <Notice message="Sem foto: seu emblema representa você na Arena. Seu nome e seu emblema aparecem só para quem está nas suas Legiões, e os detalhes dos seus treinos ficam só com você." />
 
         <View style={styles.actions}>
           <Button label={busy ? 'Salvando…' : 'Continuar'} onPress={() => void submit()} disabled={busy} />

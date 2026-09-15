@@ -108,6 +108,7 @@ describe('progresso e registro de treino', () => {
     week_glory: 15,
     week_start: '2026-09-14',
     week_scored_workouts: 1,
+    total_workouts: 7,
     last_workout_type: 'corrida',
     last_duration_min: 30,
     last_intensity: 'moderado',
@@ -124,6 +125,8 @@ describe('progresso e registro de treino', () => {
     expect(parseMyProgress([{ ...progress, last_workout_type: 'pilates' }])?.lastWorkout).toBeNull();
     expect(parseMyProgress([{ ...progress, last_duration_min: 0 }])).toBeNull();
     expect(parseMyProgress([{ ...progress, total_glory: 1.5 }])).toBeNull();
+    expect(parseMyProgress([{ ...progress, total_workouts: undefined }])).toBeNull();
+    expect(parseMyProgress([progress])?.totalWorkouts).toBe(7);
   });
 
   const logged = {

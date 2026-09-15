@@ -1,6 +1,6 @@
 import { AUTH_MESSAGES, authErrorMessage } from '@/features/auth/auth-errors';
 
-import { RPC_MESSAGES, rpcErrorCode, rpcErrorMessage } from './rpc-errors';
+import { RPC_MESSAGES, rpcErrorCode, rpcErrorMessage, toApiError } from './rpc-errors';
 
 describe('authErrorMessage', () => {
   it('reconhece falha de rede', () => {
@@ -30,6 +30,8 @@ describe('rpcErrorMessage', () => {
 
   it('reconhece falha de rede do supabase-js', () => {
     expect(rpcErrorMessage({ code: '', message: 'TypeError: Failed to fetch' })).toBe(RPC_MESSAGES.network);
+    expect(toApiError({ code: '', message: 'TypeError: Network request failed' }).network).toBe(true);
+    expect(toApiError({ code: 'PT429', message: 'rate_limited' }).network).toBe(false);
   });
 
   it('não expõe erros desconhecidos nem propriedades herdadas', () => {

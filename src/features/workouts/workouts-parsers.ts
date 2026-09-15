@@ -9,6 +9,8 @@ export type MyProgress = {
   weekGlory: number;
   weekStart: string;
   weekScoredWorkouts: number;
+  /** Treinos registrados desde o início, pontuados ou não. */
+  totalWorkouts: number;
   /** `null` para quem ainda não registrou treino. */
   lastWorkout: LastWorkout | null;
 };
@@ -30,9 +32,9 @@ export function parseMyProgress(value: unknown): MyProgress | null {
   const row = singleRow(value);
   if (!row) return null;
   const { total_glory: totalGlory, week_glory: weekGlory, week_start: weekStart } = row;
-  const { week_scored_workouts: weekScoredWorkouts } = row;
+  const { week_scored_workouts: weekScoredWorkouts, total_workouts: totalWorkouts } = row;
   if (!isNonNegativeInteger(totalGlory) || !isNonNegativeInteger(weekGlory) || !isIsoDate(weekStart)) return null;
-  if (!isNonNegativeInteger(weekScoredWorkouts)) return null;
+  if (!isNonNegativeInteger(weekScoredWorkouts) || !isNonNegativeInteger(totalWorkouts)) return null;
 
   const { last_workout_type: type, last_duration_min: durationMin, last_intensity: intensity } = row;
   let lastWorkout: LastWorkout | null = null;
@@ -46,7 +48,7 @@ export function parseMyProgress(value: unknown): MyProgress | null {
     }
   }
 
-  return { totalGlory, weekGlory, weekStart, weekScoredWorkouts, lastWorkout };
+  return { totalGlory, weekGlory, weekStart, weekScoredWorkouts, totalWorkouts, lastWorkout };
 }
 
 export function parseLoggedWorkout(value: unknown): LoggedWorkout | null {

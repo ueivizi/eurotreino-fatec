@@ -29,6 +29,15 @@ export function inviteCodeFromLink(param: unknown): string | null {
   return isValidInviteCode(code) ? code : null;
 }
 
-export function inviteShareMessage(legionName: string, code: string): string {
-  return `Entre na minha Legião "${legionName}" no EuroTreino. No app, toque em Legião › Entrar com código e use: ${formatInviteCode(code)}`;
+/** Link que abre a entrada na Legião; `null` enquanto a versão Web não tiver endereço público. */
+export function inviteLink(appUrl: string | null, code: string): string | null {
+  return appUrl && isValidInviteCode(code) ? `${appUrl}/convite/${formatInviteCode(code)}` : null;
+}
+
+export function inviteShareMessage(legionName: string, code: string, appUrl: string | null = null): string {
+  const formatted = formatInviteCode(code);
+  const link = inviteLink(appUrl, code);
+  return link
+    ? `Entre na minha Legião "${legionName}" no EuroTreino: ${link}\nSe preferir, toque em Legião › Entrar com código e use: ${formatted}`
+    : `Entre na minha Legião "${legionName}" no EuroTreino. No app, toque em Legião › Entrar com código e use: ${formatted}`;
 }

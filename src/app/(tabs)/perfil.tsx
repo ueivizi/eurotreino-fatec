@@ -1,42 +1,169 @@
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { useQuery } from '@tanstack/react-query';
+import { useRouter } from 'expo-router';
+import { useState } from 'react';
+import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { EmblemAvatar } from '@/components/rank/emblem-avatar';
+import { RankMedallion } from '@/components/rank/rank-medallion';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Icon } from '@/components/ui/icon';
+import { LinkRow } from '@/components/ui/link-row';
 import { Notice } from '@/components/ui/notice';
+import { ProgressBar } from '@/components/ui/progress-bar';
 import { AppText } from '@/components/ui/text';
 import { useSession } from '@/features/auth/session';
+import { fetchMyLegions } from '@/features/legions/legions-api';
+import { rankFromGlory } from '@/features/ranks/tiers';
+import { useOfflineQueue } from '@/features/workouts/offline-queue-provider';
+import { fetchMyProgress } from '@/features/workouts/workouts-api';
+import { queryKeys } from '@/lib/query-client';
+import { errorMessage } from '@/lib/rpc-errors';
 import { useTheme } from '@/theme/theme';
 import { space } from '@/theme/tokens';
 
+function workoutCount(total: number): string {
+  if (total === 0) return 'Nenhum treino registrado ainda';
+  return `${total} ${total === 1 ? 'treino registrado' : 'treinos registrados'}`;
+}
+
+/** Meu perfil: rank, Legiões, privacidade e conta (sair e excluir). */
 export default function ProfileScreen() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const { state, signOut } = useSession();
+  const queue = useOfflineQueue();
+  const [confirmSignOut, setConfirmSignOut] = useState(false);
+
+  const progress = useQuery({ queryKey: queryKeys.progress, queryFn: fetchMyProgress });
+  const legions = useQuery({ queryKey: queryKeys.legions, queryFn: fetchMyLegions });
 
   if (state.status !== 'ready') return null;
   const { profile, email } = state;
+  const rank = progress.data ? rankFromGlory(progress.data.totalGlory) : null;
+
+  async function leave() {
+    if (queue.pending.length > 0 && !confirmSignOut) {
+      setConfirmSignOut(true);
+      return;
+    }
+    await queue.discardMine();
+    await signOut();
+  }
 
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: colors.background }}
-      contentContainerStyle={[styles.content, { paddingTop: insets.top + space.lg }]}>
+      contentContainerStyle={[styles.content, { paddingTop: insets.top + space.lg }]}
+      refreshControl={
+        <RefreshControl
+          refreshing={progress.isRefetching || legions.isRefetching}
+          onRefresh={() => {
+            void progress.refetch();
+            void legions.refetch();
+          }}
+          tintColor={colors.gold}
+        />
+      }>
       <AppText variant="title">Perfil</AppText>
 
-      <Card style={styles.identity}>
-        <EmblemAvatar emblem={profile.emblem} size={56} />
+      <View style={styles.identity}>
+        <EmblemAvatar emblem={profile.emblem} size={64} />
         <View style={styles.identityText}>
           <AppText variant="heading" numberOfLines={1}>{profile.displayName}</AppText>
-          {email ? (
-            <AppText variant="caption" tone="muted" numberOfLines={1}>{email}</AppText>
-          ) : null}
+          <AppText variant="label" tone="secondary">
+            {progress.data ? workoutCount(progress.data.totalWorkouts) : ' '}
+          </AppText>
+          {email ? <AppText variant="caption" tone="muted" numberOfLines={1}>{email}</AppText> : null}
+        </View>
+      </View>
+      <Button label="Editar nome e emblema" icon="editar" variant="secondary" onPress={() => router.push('/editar-perfil')} />
+
+      <Card style={styles.rankCard}>
+        {progress.isError ? (
+          <View style={styles.block}>
+            <Notice tone="danger" message={errorMessage(progress.error)} />
+            <Button label="Tentar de novo" variant="secondary" onPress={() => void progress.refetch()} />
+          </View>
+        ) : !rank ? (
+          <ActivityIndicator color={colors.gold} />
+        ) : (
+          <>
+            <View style={styles.rankRow}>
+              <RankMedallion tier={rank.tierId} size={88} accessibilityLabel={`Seu rank: ${rank.label}`} />
+              <View style={styles.rankText}>
+                <AppText variant="subheading">{rank.label}</AppText>
+                <AppText variant="stat" tone="goldHighlight">{String(rank.glory)}</AppText>
+                <AppText variant="caption" tone="muted">de Glória acumulada</AppText>
+              </View>
+            </View>
+            <ProgressBar
+              value={rank.progress}
+              accessibilityLabel={rank.next ? `Progresso até ${rank.next.label}` : 'Rank máximo alcançado'}
+            />
+            <AppText variant="caption" tone="secondary" style={styles.tabular}>
+              {rank.next ? `Faltam ${rank.next.remaining} para ${rank.next.label}` : 'Você chegou ao Olimpo'}
+            </AppText>
+          </>
+        )}
+        <View style={styles.rankLinks}>
+          <Button label="Ver todos os ranks" variant="ghost" onPress={() => router.push('/ranks')} />
+          <Button label="Como conquistar Glória" variant="ghost" onPress={() => router.push('/gloria')} />
         </View>
       </Card>
 
-      <Notice message="Rank e progresso, suas Legiões, as opções de privacidade e a exclusão da conta chegam nas próximas etapas da Onda 1." />
+      <View style={styles.section}>
+        <AppText variant="overline" tone="muted">Legiões</AppText>
+        {legions.isPending ? (
+          <ActivityIndicator color={colors.gold} />
+        ) : legions.isError ? (
+          <Notice tone="danger" message={errorMessage(legions.error)} />
+        ) : legions.data.length === 0 ? (
+          <AppText tone="secondary">Você ainda não está em nenhuma Legião.</AppText>
+        ) : (
+          legions.data.map((legion) => (
+            <LinkRow
+              key={legion.id}
+              label={legion.name}
+              description={`${legion.role === 'owner' ? 'Fundador · ' : ''}${legion.memberCount} ${legion.memberCount === 1 ? 'membro' : 'membros'}`}
+              onPress={() => router.push({ pathname: '/legioes/[id]', params: { id: legion.id } })}
+            />
+          ))
+        )}
+        <Button label="Fundar ou entrar em outra Legião" variant="ghost" icon="mais" onPress={() => router.navigate('/legiao')} />
+      </View>
 
-      <Button label="Sair" variant="secondary" onPress={() => void signOut()} />
+      <View style={styles.section}>
+        <AppText variant="overline" tone="muted">Privacidade</AppText>
+        <View style={styles.privacy}>
+          <Icon name="escudo" size={18} color={colors.gold} />
+          <AppText variant="label" tone="secondary" style={styles.flex}>
+            Seu perfil só aparece para membros das suas Legiões. Seus treinos ficam só com você.
+          </AppText>
+        </View>
+        <LinkRow label="Política de Privacidade" icon="pergaminho" onPress={() => router.push('/privacidade')} />
+        <LinkRow label="Termos de Uso" icon="pergaminho" onPress={() => router.push('/termos')} />
+      </View>
+
+      <View style={styles.section}>
+        <AppText variant="overline" tone="muted">Conta</AppText>
+        {confirmSignOut ? (
+          <Notice
+            message={`Você tem ${queue.pending.length} ${queue.pending.length === 1 ? 'treino guardado' : 'treinos guardados'} neste aparelho, ainda sem envio. Ao sair, eles são descartados e não rendem Glória.`}
+          />
+        ) : null}
+        <Button label={confirmSignOut ? 'Sair mesmo assim' : 'Sair'} icon="sair" variant="secondary" onPress={() => void leave()} />
+        {confirmSignOut ? <Button label="Cancelar" variant="ghost" onPress={() => setConfirmSignOut(false)} /> : null}
+        <LinkRow
+          label="Excluir conta e dados"
+          icon="excluir"
+          tone="danger"
+          description="Apaga seu perfil, seus treinos e sua Glória"
+          onPress={() => router.push('/excluir-conta')}
+        />
+      </View>
     </ScrollView>
   );
 }
@@ -54,6 +181,39 @@ const styles = StyleSheet.create({
   },
   identityText: {
     flex: 1,
-    gap: space.xxs,
+    gap: 2,
+  },
+  rankCard: {
+    gap: space.md,
+  },
+  rankRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.lg,
+  },
+  rankText: {
+    flex: 1,
+    gap: 2,
+  },
+  rankLinks: {
+    marginHorizontal: -space.lg,
+  },
+  tabular: {
+    fontVariant: ['tabular-nums'],
+  },
+  block: {
+    gap: space.md,
+  },
+  section: {
+    gap: space.xs,
+  },
+  privacy: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: space.sm,
+    marginBottom: space.xs,
+  },
+  flex: {
+    flex: 1,
   },
 });

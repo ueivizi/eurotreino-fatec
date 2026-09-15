@@ -10,6 +10,7 @@ import { useEffect } from 'react';
 
 import { LoadingScreen, StatusScreen } from '@/components/status-screen';
 import { SessionProvider, useSession } from '@/features/auth/session';
+import { OfflineQueueProvider } from '@/features/workouts/offline-queue-provider';
 import { queryClient } from '@/lib/query-client';
 import type { SupabaseConfigProblem } from '@/lib/supabase-config';
 import { supabaseConfig } from '@/lib/supabase';
@@ -94,9 +95,19 @@ function RootNavigator() {
         <Stack.Screen name="legioes/nova" />
         <Stack.Screen name="legioes/entrar" />
         <Stack.Screen name="legioes/[id]" />
+        <Stack.Screen name="membro/[id]" />
+        <Stack.Screen name="editar-perfil" />
+        <Stack.Screen name="excluir-conta" />
+        <Stack.Screen name="ranks" />
+        <Stack.Screen name="gloria" />
+        <Stack.Screen name="comecar" />
       </Stack.Protected>
-      {/* Link de convite: abre em qualquer estado e guarda o código até a pessoa entrar. */}
+      {/* Abrem em qualquer estado: link de convite (guarda o código até a pessoa entrar), retorno do
+          login social e documentos legais (acessíveis antes de criar a conta). */}
       <Stack.Screen name="convite/[codigo]" />
+      <Stack.Screen name="auth/callback" />
+      <Stack.Screen name="privacidade" />
+      <Stack.Screen name="termos" />
     </Stack>
   );
 }
@@ -126,7 +137,9 @@ export default function RootLayout() {
         {supabaseConfig.ok ? (
           <QueryClientProvider client={queryClient}>
             <SessionProvider>
-              <RootNavigator />
+              <OfflineQueueProvider>
+                <RootNavigator />
+              </OfflineQueueProvider>
             </SessionProvider>
           </QueryClientProvider>
         ) : (

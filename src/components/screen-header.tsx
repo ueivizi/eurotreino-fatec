@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router';
+import { useRouter, type Href } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Icon } from '@/components/ui/icon';
@@ -9,10 +9,12 @@ import { space, touchTarget } from '@/theme/tokens';
 type Props = {
   title: string;
   subtitle?: string;
+  /** Para onde ir quando não há tela anterior (ex.: link aberto direto no navegador). */
+  fallbackHref?: Href;
 };
 
 /** Cabeçalho das telas empilhadas sobre as abas, com voltar sempre visível. */
-export function ScreenHeader({ title, subtitle }: Props) {
+export function ScreenHeader({ title, subtitle, fallbackHref = '/' }: Props) {
   const { colors } = useTheme();
   const router = useRouter();
   return (
@@ -20,7 +22,7 @@ export function ScreenHeader({ title, subtitle }: Props) {
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Voltar"
-        onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
+        onPress={() => (router.canGoBack() ? router.back() : router.replace(fallbackHref))}
         style={styles.back}>
         <Icon name="chevronLeft" size={24} color={colors.gold} />
       </Pressable>

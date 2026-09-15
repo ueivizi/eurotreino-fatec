@@ -23,6 +23,7 @@ const MESSAGES: Record<string, string> = {
   request_id_conflict: 'Este registro já foi enviado com outros dados. Abra o registro de novo.',
   invalid_request_id: 'Não foi possível identificar o registro. Tente de novo.',
   invalid_week_offset: 'Semana indisponível.',
+  reauthentication_required: 'Por segurança, confirme com o código enviado ao seu e-mail.',
 };
 
 export const RPC_MESSAGES = {
@@ -30,15 +31,19 @@ export const RPC_MESSAGES = {
   generic: 'Não foi possível concluir agora. Tente de novo em instantes.',
 } as const;
 
+/** Falha de rede no supabase-js: sem código do Postgres e mensagem vinda do fetch. */
+export function isNetworkFailure(error: unknown): boolean {
+  if (typeof error !== 'object' || error === null) return false;
+  const { code, message } = error as { code?: unknown; message?: unknown };
+  return (code === '' || code === undefined) && typeof message === 'string' && /fetch|network/i.test(message);
+}
+
 export function rpcErrorMessage(error: unknown): string {
   if (typeof error !== 'object' || error === null) return RPC_MESSAGES.generic;
-  const { code, message } = error as { code?: unknown; message?: unknown };
+  const { message } = error as { message?: unknown };
 
   if (typeof message === 'string' && Object.hasOwn(MESSAGES, message)) return MESSAGES[message];
-  // Falha de rede no supabase-js: sem código do Postgres e mensagem vinda do fetch.
-  if ((code === '' || code === undefined) && typeof message === 'string' && /fetch|network/i.test(message)) {
-    return RPC_MESSAGES.network;
-  }
+  if (isNetworkFailure(error)) return RPC_MESSAGES.network;
   return RPC_MESSAGES.generic;
 }
 
@@ -52,16 +57,19 @@ export function rpcErrorCode(error: unknown): string | null {
 /** Erro já pronto para a tela: `message` é texto para a pessoa; `code`, o código estável (ou null). */
 export class ApiError extends Error {
   readonly code: string | null;
+  /** Verdadeiro quando o pedido nem chegou ao servidor (sem internet, servidor fora do ar). */
+  readonly network: boolean;
 
-  constructor(message: string, code: string | null = null) {
+  constructor(message: string, code: string | null = null, network = false) {
     super(message);
     this.name = 'ApiError';
     this.code = code;
+    this.network = network;
   }
 }
 
 export function toApiError(error: unknown): ApiError {
-  return new ApiError(rpcErrorMessage(error), rpcErrorCode(error));
+  return new ApiError(rpcErrorMessage(error), rpcErrorCode(error), isNetworkFailure(error));
 }
 
 /** Resposta fora do formato combinado com o banco: tratada como falha, nunca como dado válido. */
