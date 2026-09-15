@@ -1,6 +1,7 @@
 import { TabList, TabSlot, TabTrigger, Tabs } from 'expo-router/ui';
 
 import { TabBar } from '@/components/tab-bar';
+import { CelebrationHost } from '@/features/celebrations/celebration-host';
 
 export default function TabsLayout() {
   return (
@@ -14,6 +15,8 @@ export default function TabsLayout() {
         <TabTrigger name="perfil" href="/perfil" />
       </TabList>
       <TabBar />
+      {/* Cerimônias de conquista tocam por cima das abas, depois que a folha de registro fecha. */}
+      <CelebrationHost />
     </Tabs>
   );
 }

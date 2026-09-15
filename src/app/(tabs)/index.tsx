@@ -1,9 +1,15 @@
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useEffect } from 'react';
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Halo } from '@/components/motion/halo';
+import { PressableScale } from '@/components/motion/pressable-scale';
+import { Reveal } from '@/components/motion/reveal';
+import { RollingNumber } from '@/components/motion/rolling-number';
+import { Shimmer } from '@/components/motion/shimmer';
+import { Skeleton } from '@/components/motion/skeleton';
 import { EmblemAvatar } from '@/components/rank/emblem-avatar';
 import { RankMedallion } from '@/components/rank/rank-medallion';
 import { Button } from '@/components/ui/button';
@@ -24,6 +30,29 @@ import { errorMessage } from '@/lib/rpc-errors';
 import { formatRemaining, toRoman, weekInfo } from '@/lib/week';
 import { useTheme } from '@/theme/theme';
 import { radius, space, touchTarget } from '@/theme/tokens';
+
+const MEDALLION = 148;
+/** O disco da moeda ocupa 124 de 168 unidades do desenho do medalhão. */
+const COIN = Math.round((MEDALLION * 124) / 168);
+const HALO = 300;
+
+/** Forma do Início enquanto os dados chegam: a pessoa já vê onde cada coisa vai ficar. */
+function HomeSkeleton() {
+  return (
+    <View style={styles.skeleton} accessibilityLabel="Carregando seu progresso" accessibilityRole="progressbar">
+      <View style={styles.rank}>
+        <Skeleton width={COIN} height={COIN} radius={COIN / 2} style={{ margin: (MEDALLION - COIN) / 2 }} />
+        <Skeleton width={150} height={24} />
+        <Skeleton width={96} height={16} />
+      </View>
+      <Skeleton width="100%" height={6} radius={3} />
+      <View style={styles.stats}>
+        <Skeleton width="48%" height={104} />
+        <Skeleton width="48%" height={104} />
+      </View>
+    </View>
+  );
+}
 
 export default function HomeScreen() {
   const { colors } = useTheme();
@@ -72,7 +101,7 @@ export default function HomeScreen() {
           tintColor={colors.gold}
         />
       }>
-      <View style={styles.header}>
+      <Reveal style={styles.header}>
         <View style={styles.headerText}>
           <AppText variant="overline" tone="muted">
             {`Semana ${toRoman(week.number)} · termina em ${formatRemaining(week.remainingMs)}`}
@@ -80,7 +109,7 @@ export default function HomeScreen() {
           <AppText variant="title" numberOfLines={1}>{`Ave, ${profile.displayName}`}</AppText>
         </View>
         <EmblemAvatar emblem={profile.emblem} size={46} />
-      </View>
+      </Reveal>
 
       {progress.isError ? (
         <View style={styles.actions}>
@@ -88,18 +117,35 @@ export default function HomeScreen() {
           <Button label="Tentar de novo" variant="secondary" onPress={() => void progress.refetch()} />
         </View>
       ) : !rank || !progress.data ? (
-        <ActivityIndicator color={colors.gold} style={styles.loading} />
+        <HomeSkeleton />
       ) : (
         <>
           <View style={styles.rank}>
-            <RankMedallion tier={rank.tierId} size={148} accessibilityLabel={`Seu rank: ${rank.label}`} />
-            <AppText variant="heading">{rank.label}</AppText>
-            <AppText tone="secondary" style={styles.tabular}>{`${rank.glory} de Glória`}</AppText>
+            <View style={styles.medallion}>
+              <Halo size={HALO} strength={0.22} style={{ top: (MEDALLION - HALO) / 2, left: (MEDALLION - HALO) / 2 }} />
+              <Reveal>
+                <RankMedallion tier={rank.tierId} size={MEDALLION} accessibilityLabel={`Seu rank: ${rank.label}`} />
+              </Reveal>
+              {/* O brilho passa só sobre o disco da moeda, a cada ~7 s. */}
+              <View style={[styles.coin, { width: COIN, height: COIN, borderRadius: COIN / 2 }]}>
+                <Shimmer radius={COIN / 2} delay={1600} interval={7000} />
+              </View>
+            </View>
+            <Reveal index={1}>
+              <AppText variant="heading" style={styles.center}>{rank.label}</AppText>
+            </Reveal>
+            <RollingNumber
+              value={rank.glory}
+              suffix=" de Glória"
+              tone="secondary"
+              accessibilityLabel={`${rank.glory} de Glória`}
+            />
           </View>
 
-          <View style={styles.progress}>
+          <Reveal index={2} style={styles.progress}>
             <ProgressBar
               value={rank.progress}
+              delay={180}
               accessibilityLabel={rank.next ? `Progresso até ${rank.next.label}` : 'Rank máximo alcançado'}
             />
             <View style={styles.progressLabels}>
@@ -108,66 +154,78 @@ export default function HomeScreen() {
                 {rank.next ? `Faltam ${rank.next.remaining} para ${rank.next.label}` : 'Você chegou ao Olimpo'}
               </AppText>
             </View>
-          </View>
+          </Reveal>
 
           <View style={styles.stats}>
-            <Card style={styles.stat}>
-              <AppText variant="caption" tone="muted">Glória da semana</AppText>
-              <AppText variant="stat" tone="goldHighlight">{String(progress.data.weekGlory)}</AppText>
-              <AppText variant="caption" tone="secondary">
-                {`${progress.data.weekScoredWorkouts} ${progress.data.weekScoredWorkouts === 1 ? 'treino' : 'treinos'}`}
-              </AppText>
-            </Card>
-            <Pressable
-              style={styles.statPressable}
-              accessibilityRole="button"
-              accessibilityLabel={legion ? `Arena da ${legion.name}` : 'Arena: funde ou entre em uma Legião'}
-              onPress={() => router.navigate(legion ? { pathname: '/arena', params: { legiao: legion.id } } : '/legiao')}>
+            <Reveal index={3} style={styles.statColumn}>
               <Card style={styles.stat}>
-                {legion ? (
-                  <>
-                    <AppText variant="caption" tone="muted" numberOfLines={1}>{`Arena · ${legion.name}`}</AppText>
-                    <AppText variant="stat">{me ? `${me.place}º` : '—'}</AppText>
-                    {me && leader && !leader.isMe && leader.weekGlory > me.weekGlory ? (
-                      <AppText variant="caption" tone="secondary" style={styles.tabular} numberOfLines={1}>
-                        {`${leader.weekGlory - me.weekGlory} atrás de ${leader.displayName}`}
-                      </AppText>
-                    ) : me ? (
-                      <AppText variant="caption" tone="secondary">Na liderança</AppText>
-                    ) : null}
-                  </>
-                ) : legions.isSuccess ? (
-                  <>
-                    <AppText variant="caption" tone="muted">Arena</AppText>
-                    <AppText variant="bodyMedium">Sem Legião ainda</AppText>
-                    <AppText variant="caption" tone="gold">Fundar ou entrar</AppText>
-                  </>
-                ) : (
-                  <ActivityIndicator color={colors.gold} />
-                )}
+                <AppText variant="caption" tone="muted">Glória da semana</AppText>
+                <RollingNumber value={progress.data.weekGlory} variant="stat" tone="goldHighlight" />
+                <AppText variant="caption" tone="secondary">
+                  {`${progress.data.weekScoredWorkouts} ${progress.data.weekScoredWorkouts === 1 ? 'treino' : 'treinos'}`}
+                </AppText>
               </Card>
-            </Pressable>
+            </Reveal>
+            <Reveal index={4} style={styles.statColumn}>
+              <PressableScale
+                style={styles.statColumn}
+                accessibilityRole="button"
+                accessibilityLabel={legion ? `Arena da ${legion.name}` : 'Arena: funde ou entre em uma Legião'}
+                onPress={() => router.navigate(legion ? { pathname: '/arena', params: { legiao: legion.id } } : '/legiao')}>
+                <Card style={styles.stat}>
+                  {legion ? (
+                    <>
+                      <AppText variant="caption" tone="muted" numberOfLines={1}>{`Arena · ${legion.name}`}</AppText>
+                      {me ? (
+                        <RollingNumber value={me.place} suffix="º" variant="stat" accessibilityLabel={`${me.place}º lugar`} />
+                      ) : (
+                        <AppText variant="stat">—</AppText>
+                      )}
+                      {me && leader && !leader.isMe && leader.weekGlory > me.weekGlory ? (
+                        <AppText variant="caption" tone="secondary" style={styles.tabular} numberOfLines={1}>
+                          {`${leader.weekGlory - me.weekGlory} atrás de ${leader.displayName}`}
+                        </AppText>
+                      ) : me ? (
+                        <AppText variant="caption" tone="secondary">Na liderança</AppText>
+                      ) : null}
+                    </>
+                  ) : legions.isSuccess ? (
+                    <>
+                      <AppText variant="caption" tone="muted">Arena</AppText>
+                      <AppText variant="bodyMedium">Sem Legião ainda</AppText>
+                      <AppText variant="caption" tone="gold">Fundar ou entrar</AppText>
+                    </>
+                  ) : (
+                    <>
+                      <Skeleton width="60%" height={12} />
+                      <Skeleton width={56} height={32} />
+                      <Skeleton width="80%" height={12} />
+                    </>
+                  )}
+                </Card>
+              </PressableScale>
+            </Reveal>
           </View>
         </>
       )}
 
-      <View style={styles.actions}>
+      <Reveal index={5} style={styles.actions}>
         <Button label="Registrar treino" icon="registrar" onPress={() => router.push('/registrar')} />
         {last && lastLabel ? (
-          <Pressable
+          <PressableScale
             accessibilityRole="button"
             accessibilityLabel={`Repetir último treino: ${lastLabel}`}
             onPress={() => router.push('/registrar')}
-            style={({ pressed }) => [styles.repeat, { borderColor: colors.hairline }, pressed && { opacity: 0.85 }]}>
+            style={[styles.repeat, { borderColor: colors.hairline }]}>
             <Icon name="repetir" size={22} color={colors.gold} />
             <View style={styles.repeatText}>
               <AppText variant="bodyMedium">Repetir último</AppText>
               <AppText variant="label" tone="muted">{lastLabel}</AppText>
             </View>
             <Icon name="chevronRight" size={18} color={colors.textMuted} />
-          </Pressable>
+          </PressableScale>
         ) : null}
-      </View>
+      </Reveal>
     </ScrollView>
   );
 }
@@ -188,12 +246,25 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     gap: space.xs,
   },
-  loading: {
-    marginVertical: space.xxxl * 2,
+  skeleton: {
+    gap: space.xl,
   },
   rank: {
     alignItems: 'center',
     gap: space.xs,
+  },
+  medallion: {
+    width: MEDALLION,
+    height: MEDALLION,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  coin: {
+    position: 'absolute',
+    pointerEvents: 'none',
+  },
+  center: {
+    textAlign: 'center',
   },
   tabular: {
     fontVariant: ['tabular-nums'],
@@ -208,14 +279,15 @@ const styles = StyleSheet.create({
   },
   stats: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     gap: space.md,
+  },
+  statColumn: {
+    flex: 1,
   },
   stat: {
     flex: 1,
     gap: space.xs,
-  },
-  statPressable: {
-    flex: 1,
   },
   actions: {
     gap: space.md,

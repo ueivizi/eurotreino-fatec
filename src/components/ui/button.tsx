@@ -1,7 +1,8 @@
-import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Platform, Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
+import { PressableScale } from '@/components/motion/pressable-scale';
+import * as haptics from '@/lib/haptics';
 import { useTheme } from '@/theme/theme';
 import { goldGradient, radius, space, touchTarget } from '@/theme/tokens';
 
@@ -19,11 +20,9 @@ type Props = {
   accessibilityHint?: string;
 };
 
+/** Retorno tátil de toque. Mantido para as telas que já o chamam direto. */
 export function tapFeedback() {
-  if (Platform.OS === 'web') return;
-  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {
-    // O retorno tátil é opcional: aparelhos sem motor de vibração rejeitam a chamada e o fluxo segue igual.
-  });
+  haptics.tap();
 }
 
 export function Button({ label, onPress, variant = 'primary', icon, disabled = false, accessibilityHint }: Props) {
@@ -42,23 +41,20 @@ export function Button({ label, onPress, variant = 'primary', icon, disabled = f
   const iconColor = disabled ? colors.textMuted : variant === 'primary' ? colors.onGold : variant === 'danger' ? colors.danger : colors.gold;
 
   return (
-    <Pressable
+    <PressableScale
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityHint={accessibilityHint}
       accessibilityState={{ disabled }}
       disabled={disabled}
-      onPress={() => {
-        tapFeedback();
-        onPress();
-      }}
-      style={({ pressed }) => [
+      onPress={onPress}
+      scaleTo={variant === 'ghost' ? 0.96 : 0.975}
+      style={[
         styles.base,
         variant === 'primary' && styles.primary,
         variant === 'secondary' && { borderWidth: 1, borderColor: colors.hairlineStrong },
         variant === 'danger' && { borderWidth: 1, borderColor: colors.danger },
         disabled && variant !== 'ghost' && { backgroundColor: colors.track, borderColor: colors.track },
-        pressed && !disabled && styles.pressed,
       ]}>
       {showGradient ? (
         <LinearGradient
@@ -75,7 +71,7 @@ export function Button({ label, onPress, variant = 'primary', icon, disabled = f
           {label}
         </AppText>
       </View>
-    </Pressable>
+    </PressableScale>
   );
 }
 
@@ -96,8 +92,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: space.sm,
-  },
-  pressed: {
-    opacity: 0.85,
   },
 });

@@ -84,9 +84,11 @@ export function LaurelCrown({ size, tone = 'gold', delay = 0, leaves = 7, style 
     return () => cancelAnimation(progress);
   }, [reduced, delay, total, progress]);
 
+  // Em coroas grandes (cerimônias), as folhas afinam para não pesar.
+  const slim = size > 140 ? 0.72 : 1;
   const radius = size * 0.42;
-  const width = size * 0.064;
-  const height = size * 0.14;
+  const width = size * 0.064 * slim;
+  const height = size * 0.14 * slim;
   // Com 7 folhas, 15° entre elas: a mesma coroa aberta no topo dos louros estáticos.
   const step = leaves > 1 ? 90 / (leaves - 1) : 0;
   const color = LAUREL_TONES[tone].leaf;

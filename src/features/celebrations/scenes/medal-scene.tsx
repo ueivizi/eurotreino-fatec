@@ -105,7 +105,7 @@ export function MedalScene({ title, description, icon, onContinue }: Props) {
           </View>
         </Animated.View>
       </View>
-      <Overline text="MEDALHA CONQUISTADA" delay={1000} />
+      <Overline text="MEDALHA" delay={1000} />
       <Reveal delay={1120}>
         <AppText variant="title" style={styles.center}>
           {title}

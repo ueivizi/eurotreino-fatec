@@ -1,6 +1,7 @@
 import { View } from 'react-native';
 import Svg, { Ellipse } from 'react-native-svg';
 
+import { LaurelCrown } from '@/components/motion/laurel-crown';
 import { Icon } from '@/components/ui/icon';
 import type { EmblemName } from '@/features/profile/emblems';
 import { useTheme } from '@/theme/theme';
@@ -23,16 +24,20 @@ type Props = {
   size?: number;
   /** Louros do pódio da Arena (1º, 2º e 3º lugares). */
   laurel?: Laurel;
+  /** Os louros surgem folha a folha ("Coroar"), a partir deste atraso em ms. */
+  crownDelay?: number;
 };
 
-export function EmblemAvatar({ emblem, size = 48, laurel }: Props) {
+export function EmblemAvatar({ emblem, size = 48, laurel, crownDelay }: Props) {
   const { colors } = useTheme();
   const rim = laurel ? LAUREL_COLORS[laurel].rim : colors.hairline;
   const inner = laurel ? size * 0.64 : size;
 
   return (
     <View style={{ width: size, height: size, alignItems: 'center', justifyContent: 'center' }}>
-      {laurel ? (
+      {laurel && crownDelay !== undefined ? (
+        <LaurelCrown size={size} tone={laurel} delay={crownDelay} />
+      ) : laurel ? (
         <Svg width={size} height={size} viewBox="0 0 100 100" style={{ position: 'absolute', pointerEvents: 'none' }}>
           {LEAVES.map((transform) => (
             <Ellipse key={transform} cx={50} cy={50} rx={3.2} ry={7} fill={LAUREL_COLORS[laurel].leaf} transform={transform} />

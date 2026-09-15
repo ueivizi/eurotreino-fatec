@@ -351,7 +351,10 @@ export function MedalDisc({ size, icon }: { size: number; icon: IconName }) {
           ])}
         </G>
       </Svg>
-      <Icon name={icon} size={size * 0.34} color="#5E4410" strokeWidth={2} />
+      {/* zIndex explícito: na Web o SVG absoluto seria pintado por cima do ícone. */}
+      <View style={{ zIndex: 1 }}>
+        <Icon name={icon} size={size * 0.34} color="#5E4410" strokeWidth={2} />
+      </View>
     </View>
   );
 }
@@ -364,14 +367,14 @@ const styles = StyleSheet.create({
     gap: space.md,
   },
   overlineRule: {
-    width: 44,
+    width: 36,
     height: 1,
   },
   overlineText: {
     fontFamily: fonts.display,
     fontSize: 14,
     lineHeight: 20,
-    letterSpacing: 4.2,
+    letterSpacing: 3.2,
   },
   ribbonText: {
     fontFamily: fonts.displayBold,

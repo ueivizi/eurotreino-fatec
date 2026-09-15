@@ -164,7 +164,7 @@ export function ArenaScene({ celebration, onContinue }: Props) {
 
   return (
     <SceneFrame layout="full" announcement={announcement} onSkip={onContinue} actions={actions} actionsDelay={1700}>
-      <Overline text={celebration.toPlace === 1 ? 'LIDERANÇA DA ARENA' : 'PÓDIO DA ARENA'} delay={900} />
+      <Overline text={celebration.toPlace === 1 ? 'LIDERANÇA' : 'PÓDIO'} delay={900} />
       <View style={styles.stage}>
         <Halo size={300} strength={0.3} style={{ top: -60, left: -60 }} />
         <RippleRing size={150} delay={640} />

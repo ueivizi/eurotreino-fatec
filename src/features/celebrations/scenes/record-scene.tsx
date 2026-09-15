@@ -63,7 +63,7 @@ export function RecordScene({ celebration, onContinue }: Props) {
       onSkip={onContinue}
       actions={[{ label: 'Continuar', onPress: onContinue }]}
       actionsDelay={1700}>
-      <Overline text="RECORDE PESSOAL" delay={950} />
+      <Overline text="RECORDE" delay={950} />
       <Reveal delay={1000}>
         <AppText variant="heading" style={styles.center}>
           {celebration.exercise}

@@ -54,7 +54,7 @@ export function SceneFrame({ layout, announcement, onSkip, actions, actionsDelay
       <Animated.View
         style={[
           StyleSheet.absoluteFill,
-          { backgroundColor: layout === 'full' ? 'rgba(8,7,5,0.95)' : colors.scrim },
+          { backgroundColor: layout === 'full' ? 'rgba(8,7,5,0.985)' : colors.scrim },
           { animationName: fadeIn, animationDuration: 220, animationFillMode: 'backwards' },
         ]}
       />
