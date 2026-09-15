@@ -22,6 +22,7 @@ import { fetchWeeklyRanking } from '@/features/arena/arena-api';
 import { useProfile } from '@/features/auth/session';
 import { fetchMyLegions } from '@/features/legions/legions-api';
 import { takePendingInvite } from '@/features/legions/pending-invite';
+import { takeFirstSteps } from '@/features/onboarding/first-steps';
 import { rankFromGlory } from '@/features/ranks/tiers';
 import { intensityLabel, workoutTypeLabel } from '@/features/workouts/workout-types';
 import { fetchMyProgress } from '@/features/workouts/workouts-api';
@@ -70,6 +71,12 @@ export default function HomeScreen() {
   });
 
   useEffect(() => {
+    // Logo depois de criar o perfil, os primeiros passos continuam de onde pararam. Eles também
+    // consomem o convite pendente no fim do caminho, por isso vêm antes.
+    if (takeFirstSteps()) {
+      router.push({ pathname: '/gloria', params: { primeiro: '1' } });
+      return;
+    }
     // Link de convite aberto antes do login: segue para a entrada na Legião.
     const code = takePendingInvite();
     if (code) router.push({ pathname: '/legioes/entrar', params: { codigo: code } });

@@ -7,6 +7,7 @@ import { Icon } from '@/components/ui/icon';
 import { Notice } from '@/components/ui/notice';
 import { ProgressBar } from '@/components/ui/progress-bar';
 import { AppText } from '@/components/ui/text';
+import { SCORING } from '@/features/ranks/scoring';
 import { rankFromGlory } from '@/features/ranks/tiers';
 import type { LoggedWorkout } from '@/features/workouts/workouts-parsers';
 import { useTheme } from '@/theme/theme';
@@ -63,7 +64,7 @@ export function WorkoutResult({ result, summary, intensityLabel, arenaLine, onCl
             message={
               result.replayed
                 ? 'Este registro já tinha chegado ao servidor. Nada foi somado de novo.'
-                : 'Você já tem 2 treinos pontuados hoje. Este fica no seu histórico, sem Glória.'
+                : `Você já tem ${SCORING.maxScoredPerDay} treinos pontuados hoje. Este fica no seu histórico, sem Glória.`
             }
           />
         </Reveal>
@@ -78,7 +79,7 @@ export function WorkoutResult({ result, summary, intensityLabel, arenaLine, onCl
     { label: 'Presença', value: result.presence },
     { label: 'Duração', value: result.duration },
     { label: `Intensidade · ${intensityLabel.toLowerCase()}`, value: result.intensity },
-    ...(result.bonus > 0 ? [{ label: 'Constância · 3º treino da semana', value: result.bonus }] : []),
+    ...(result.bonus > 0 ? [{ label: `Constância · ${SCORING.weeklyBonusAt}º treino da semana`, value: result.bonus }] : []),
   ];
 
   return (

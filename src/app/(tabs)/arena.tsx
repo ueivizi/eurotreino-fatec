@@ -120,6 +120,12 @@ export default function ArenaScreen() {
     enabled: legion !== null,
   });
 
+  // Tocar em alguém abre a visão restrita da Legião (RF009); no seu próprio nome, o seu perfil.
+  function openMember(entry: RankingEntry) {
+    if (entry.isMe) router.navigate('/perfil');
+    else if (legion) router.push({ pathname: '/membro/[id]', params: { id: entry.userId, legiao: legion.id } });
+  }
+
   const week = weekInfo(new Date());
   const entries = ranking.data?.entries ?? [];
   const podium = entries.slice(0, 3);
@@ -213,16 +219,22 @@ export default function ArenaScreen() {
                   const hasGlory = entry.weekGlory > 0;
                   const riseDelay = slot.rise * RISE_STEP;
                   return (
-                    <View key={entry.userId} style={styles.podiumColumn} accessible accessibilityLabel={describe(entry)}>
+                    <View key={entry.userId} style={styles.podiumColumn}>
                       <Reveal delay={riseDelay + 180} style={styles.podiumPerson}>
-                        <EmblemAvatar
-                          emblem={entry.emblem}
-                          size={slot.index === 0 ? 88 : 76}
-                          laurel={hasGlory ? style.laurel : undefined}
-                          crownDelay={riseDelay + 320}
-                        />
-                        <AppText variant="bodyMedium" numberOfLines={1}>{entry.isMe ? `${entry.displayName} · você` : entry.displayName}</AppText>
-                        <AppText variant="caption" tone="muted" numberOfLines={1}>{rankFromGlory(entry.totalGlory).label}</AppText>
+                        <PressableScale
+                          accessibilityRole="button"
+                          accessibilityLabel={`${describe(entry)}. Ver perfil.`}
+                          onPress={() => openMember(entry)}
+                          style={styles.podiumPerson}>
+                          <EmblemAvatar
+                            emblem={entry.emblem}
+                            size={slot.index === 0 ? 88 : 76}
+                            laurel={hasGlory ? style.laurel : undefined}
+                            crownDelay={riseDelay + 320}
+                          />
+                          <AppText variant="bodyMedium" numberOfLines={1}>{entry.isMe ? `${entry.displayName} · você` : entry.displayName}</AppText>
+                          <AppText variant="caption" tone="muted" numberOfLines={1}>{rankFromGlory(entry.totalGlory).label}</AppText>
+                        </PressableScale>
                       </Reveal>
                       <RollingNumber
                         value={entry.weekGlory}
@@ -241,14 +253,15 @@ export default function ArenaScreen() {
                 {rest.map((entry, index) => (
                   <Animated.View key={entry.userId} layout={LinearTransition.springify().damping(22).stiffness(150)}>
                     <Reveal index={index} delay={520}>
-                      <View
+                      <PressableScale
+                        accessibilityRole="button"
+                        accessibilityLabel={`${describe(entry)}. Ver perfil.`}
+                        onPress={() => openMember(entry)}
                         style={[
                           styles.row,
                           { borderBottomColor: colors.hairlineSoft },
                           entry.isMe ? { backgroundColor: colors.selectedFill } : null,
-                        ]}
-                        accessible
-                        accessibilityLabel={describe(entry)}>
+                        ]}>
                         <AppText variant="bodyMedium" tone="muted" style={styles.position}>{String(entry.place)}</AppText>
                         <EmblemAvatar emblem={entry.emblem} size={36} />
                         <View style={styles.rowText}>
@@ -256,7 +269,7 @@ export default function ArenaScreen() {
                           <AppText variant="caption" tone="muted">{rankFromGlory(entry.totalGlory).label}</AppText>
                         </View>
                         <RollingNumber value={entry.weekGlory} variant="bodyMedium" tone="secondary" containerStyle={styles.glory} />
-                      </View>
+                      </PressableScale>
                     </Reveal>
                   </Animated.View>
                 ))}

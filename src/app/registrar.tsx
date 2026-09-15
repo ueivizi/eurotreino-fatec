@@ -2,20 +2,20 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { randomUUID } from 'expo-crypto';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, Share, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
-import { RankMedallion } from '@/components/rank/rank-medallion';
 import { Button, tapFeedback } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Icon, type IconName } from '@/components/ui/icon';
 import { Notice } from '@/components/ui/notice';
-import { ProgressBar } from '@/components/ui/progress-bar';
 import { AppText } from '@/components/ui/text';
 import { fetchWeeklyRanking } from '@/features/arena/arena-api';
 import type { WeeklyRanking } from '@/features/arena/arena-parsers';
+import { enqueueCelebrations } from '@/features/celebrations/celebration-store';
+import { celebrationsForWorkout, type ArenaSnapshot } from '@/features/celebrations/detect';
+import { WorkoutResult } from '@/features/celebrations/workout-result';
 import { fetchMyLegions } from '@/features/legions/legions-api';
 import { SCORING } from '@/features/ranks/scoring';
-import { rankFromGlory } from '@/features/ranks/tiers';
 import { QueueFullError } from '@/features/workouts/offline-queue';
 import { useOfflineQueue } from '@/features/workouts/offline-queue-provider';
 import {
@@ -50,7 +50,9 @@ const FALLBACK = { type: 'musculacao' as WorkoutTypeId, durationMin: 45, intensi
 
 type Draft = { type: WorkoutTypeId; durationMin: number; intensity: IntensityId; performedAt: Date | null };
 type ArenaChange = { legionId: string; legionName: string; before: number | null; after: number };
-type Outcome = { kind: 'logged'; logged: LoggedWorkout; arena: ArenaChange | null } | { kind: 'queued'; performedAt: Date };
+type Outcome =
+  | { kind: 'logged'; logged: LoggedWorkout; arena: ArenaChange | null; snapshots: readonly ArenaSnapshot[]; previousTotalWorkouts: number | null }
+  | { kind: 'queued'; performedAt: Date };
 
 function StepButton({ icon, label, onPress, disabled }: { icon: IconName; label: string; onPress: () => void; disabled: boolean }) {
   const { colors } = useTheme();
@@ -110,20 +112,12 @@ function Segmented<T extends string | number>({
   );
 }
 
-function ResultLine({ label, value, strong = false }: { label: string; value: number; strong?: boolean }) {
-  return (
-    <View style={styles.resultLine}>
-      <AppText tone={strong ? 'primary' : 'secondary'} variant={strong ? 'bodyMedium' : 'body'}>{label}</AppText>
-      <AppText variant="bodyMedium" tone="goldHighlight" style={styles.tabular}>{`+${value}`}</AppText>
-    </View>
-  );
-}
-
 function workoutSummary(draft: Draft, now: Date): string {
   const base = `${workoutTypeLabel(draft.type)} · ${draft.durationMin} min · ${intensityLabel(draft.intensity)}`;
   return draft.performedAt ? `${base} · ${describePerformedAt(draft.performedAt, now).toLowerCase()}` : base;
 }
 
+/** Frase da Arena quando a posição melhorou; `null` quando não houve ganho a comemorar. */
 function arenaMessage(arena: ArenaChange | null): string | null {
   if (!arena || arena.before === null || arena.after >= arena.before) return null;
   return arena.after === 1
@@ -131,126 +125,33 @@ function arenaMessage(arena: ArenaChange | null): string | null {
     : `Você subiu para o ${arena.after}º lugar na Arena da ${arena.legionName}.`;
 }
 
-/** Cerimônia de Ascensão: novo rank ou nova divisão. */
-function Ascension({ totalGlory, onContinue }: { totalGlory: number; onContinue: () => void }) {
-  const rank = rankFromGlory(totalGlory);
-  async function share() {
-    try {
-      await Share.share({
-        message: `Cheguei a ${rank.label} no EuroTreino, com ${rank.glory} de Glória. Per aspera ad astra!`,
-      });
-    } catch {
-      // Sem folha de compartilhamento disponível: a cerimônia segue normalmente.
-    }
-  }
-  return (
-    <View style={styles.result} accessibilityLiveRegion="polite">
-      <AppText variant="overline" tone="gold">Ascensão</AppText>
-      <RankMedallion tier={rank.tierId} size={168} accessibilityLabel={`Novo rank: ${rank.label}`} />
-      {rank.division ? <AppText variant="heading" tone="goldHighlight">{rank.division}</AppText> : null}
-      <AppText variant="title" style={styles.center}>{rank.tierName}</AppText>
-      <View style={styles.motto}>
-        <AppText variant="motto" tone="gold" style={styles.center}>Per aspera ad astra</AppText>
-        <AppText variant="label" tone="muted" style={styles.center}>Por caminhos ásperos até as estrelas</AppText>
-      </View>
-      <View style={styles.motto}>
-        <AppText tone="secondary" style={[styles.center, styles.tabular]}>{`Você chegou a ${rank.glory} de Glória.`}</AppText>
-        {rank.next ? (
-          <AppText tone="secondary" style={[styles.center, styles.tabular]}>{`Próxima divisão: ${rank.next.label}, com ${rank.next.min}.`}</AppText>
-        ) : (
-          <AppText tone="secondary" style={styles.center}>Você está no topo do Olimpo.</AppText>
-        )}
-        <AppText tone="secondary" style={styles.center}>Sua Glória nunca é perdida.</AppText>
-      </View>
-      <View style={styles.fullWidth}>
-        <Button label="Continuar" onPress={onContinue} />
-      </View>
-      <View style={styles.fullWidth}>
-        <Button label="Compartilhar com a Legião" icon="compartilhar" variant="ghost" onPress={() => void share()} />
-      </View>
-    </View>
-  );
-}
-
-function WorkoutResult({
+/**
+ * Treino registrado e pontuado: a folha mostra a composição da Glória, e as cerimônias maiores
+ * (Ascensão, nova divisão, Arena, constância) tocam sobre as abas quando a folha fecha.
+ */
+function LoggedResult({
   outcome,
   draft,
+  now,
   onClose,
   onOpenArena,
 }: {
   outcome: Extract<Outcome, { kind: 'logged' }>;
   draft: Draft;
+  now: Date;
   onClose: () => void;
   onOpenArena: (legionId: string) => void;
 }) {
-  const { logged, arena } = outcome;
-  const [now] = useState(() => new Date());
-  const before = rankFromGlory(Math.max(0, logged.totalGlory - logged.points));
-  const after = rankFromGlory(logged.totalGlory);
-  const ascended = !logged.replayed && after.label !== before.label;
-  const [ceremony, setCeremony] = useState(ascended);
-
-  if (ceremony) return <Ascension totalGlory={logged.totalGlory} onContinue={() => setCeremony(false)} />;
-
-  const message = arenaMessage(arena);
-
+  const { arena } = outcome;
   return (
-    <View style={styles.result} accessibilityLiveRegion="polite">
-      {logged.replayed ? (
-        <>
-          <AppText variant="heading">Treino já registrado</AppText>
-          <Notice message="Este registro já tinha chegado ao servidor. Nada foi somado de novo." />
-        </>
-      ) : logged.isScored ? (
-        <>
-          <AppText variant="display" tone="goldHighlight" style={styles.tabular}>{`+${logged.points}`}</AppText>
-          <AppText variant="subheading">Glória</AppText>
-          <AppText variant="label" tone="muted" style={styles.center}>{workoutSummary(draft, now)}</AppText>
-          <Card style={styles.breakdown}>
-            <ResultLine label="Presença" value={logged.presence} />
-            <ResultLine label={`Duração · ${draft.durationMin} min`} value={logged.duration} />
-            <ResultLine label={`Intensidade · ${intensityLabel(draft.intensity).toLowerCase()}`} value={logged.intensity} />
-            {logged.bonus > 0 ? <ResultLine label={`Constância · ${SCORING.weeklyBonusAt}º treino da semana`} value={logged.bonus} /> : null}
-            <View style={styles.separator} />
-            <ResultLine label="Total" value={logged.points} strong />
-          </Card>
-        </>
-      ) : (
-        <>
-          <AppText variant="heading">Treino registrado</AppText>
-          <Notice message={`Você já tem ${SCORING.maxScoredPerDay} treinos pontuados neste dia. Este fica no seu histórico, sem Glória.`} />
-        </>
-      )}
-
-      <Card style={styles.rankCard}>
-        <View style={styles.rankRow}>
-          <RankMedallion tier={after.tierId} size={48} accessibilityLabel={after.label} />
-          <View style={styles.flex}>
-            <AppText variant="subheading">{after.label}</AppText>
-            <AppText variant="label" tone="secondary" style={styles.tabular}>
-              {logged.points > 0 && !logged.replayed ? `${before.glory} → ${after.glory}` : `${after.glory} de Glória`}
-            </AppText>
-          </View>
-        </View>
-        <ProgressBar value={after.progress} accessibilityLabel={after.next ? `Progresso até ${after.next.label}` : 'Rank máximo alcançado'} />
-        <AppText variant="caption" tone="secondary" style={styles.tabular}>
-          {after.next ? `Faltam ${after.next.remaining} para ${after.next.label}` : 'Você chegou ao Olimpo'}
-        </AppText>
-      </Card>
-
-      {message ? <Notice message={message} /> : null}
-
-      <AppText variant="caption" tone="muted" style={styles.tabular}>{`Glória da semana: ${logged.weekGlory}`}</AppText>
-
-      {arena ? (
-        <View style={styles.fullWidth}>
-          <Button label="Ver Arena" icon="arena" variant="secondary" onPress={() => onOpenArena(arena.legionId)} />
-        </View>
-      ) : null}
-      <View style={styles.fullWidth}>
-        <Button label="Fechar" onPress={onClose} />
-      </View>
-    </View>
+    <WorkoutResult
+      result={outcome.logged}
+      summary={workoutSummary(draft, now)}
+      intensityLabel={intensityLabel(draft.intensity)}
+      arenaLine={arenaMessage(arena)}
+      onClose={onClose}
+      onOpenArena={arena ? () => onOpenArena(arena.legionId) : undefined}
+    />
   );
 }
 
@@ -333,7 +234,9 @@ export default function RegisterWorkoutScreen() {
     mutationFn: async (): Promise<Outcome> => {
       const legion = legions.data?.[0] ?? null;
       const cached = legion ? queryClient.getQueryData<WeeklyRanking>(queryKeys.ranking(legion.id, 0)) : undefined;
-      const before = cached?.entries.find((entry) => entry.isMe)?.place ?? null;
+      const beforeEntries = cached?.entries ?? null;
+      const before = beforeEntries?.find((entry) => entry.isMe)?.place ?? null;
+      const previousTotalWorkouts = progress.data?.totalWorkouts ?? null;
       const at = performedAt ? clampPerformedAt(performedAt, new Date()) : null;
 
       let logged: LoggedWorkout;
@@ -348,6 +251,7 @@ export default function RegisterWorkoutScreen() {
       }
 
       let arena: ArenaChange | null = null;
+      const snapshots: ArenaSnapshot[] = [];
       if (legion && logged.isScored && !logged.replayed) {
         try {
           const ranking = await queryClient.fetchQuery({
@@ -357,16 +261,28 @@ export default function RegisterWorkoutScreen() {
           });
           const me = ranking.entries.find((entry) => entry.isMe);
           if (me) arena = { legionId: legion.id, legionName: legion.name, before, after: me.place };
+          // Sem o ranking anterior em cache não há como saber quem foi ultrapassado: sem cena da Arena.
+          if (beforeEntries) {
+            snapshots.push({ legionId: legion.id, legionName: legion.name, before: beforeEntries, after: ranking.entries });
+          }
         } catch {
           // A posição na Arena é um extra do resultado; o treino já foi registrado.
         }
       }
-      return { kind: 'logged', logged, arena };
+      return { kind: 'logged', logged, arena, snapshots, previousTotalWorkouts };
     },
     onSuccess: (outcome) => {
       if (outcome.kind === 'logged') {
         void queryClient.invalidateQueries({ queryKey: queryKeys.progress });
         void queryClient.invalidateQueries({ queryKey: queryKeys.rankings });
+        // As cerimônias ficam na fila e tocam quando a folha fecha, sobre as abas.
+        enqueueCelebrations(
+          celebrationsForWorkout({
+            result: outcome.logged,
+            previousTotalWorkouts: outcome.previousTotalWorkouts,
+            arenas: outcome.snapshots,
+          }),
+        );
       }
     },
   });
@@ -418,7 +334,7 @@ export default function RegisterWorkoutScreen() {
         save.data.kind === 'queued' ? (
           <QueuedResult draft={draft} performedAt={save.data.performedAt} onClose={close} />
         ) : (
-          <WorkoutResult outcome={save.data} draft={draft} onClose={close} onOpenArena={openArena} />
+          <LoggedResult outcome={save.data} draft={draft} now={now} onClose={close} onOpenArena={openArena} />
         )
       ) : (
         <>

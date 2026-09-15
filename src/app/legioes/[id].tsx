@@ -5,11 +5,13 @@ import { useState } from 'react';
 import { ActivityIndicator, RefreshControl, ScrollView, Share, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { PressableScale } from '@/components/motion/pressable-scale';
 import { ScreenHeader } from '@/components/screen-header';
 import { EmblemAvatar } from '@/components/rank/emblem-avatar';
 import { StatusScreen } from '@/components/status-screen';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Icon } from '@/components/ui/icon';
 import { Notice } from '@/components/ui/notice';
 import { AppText } from '@/components/ui/text';
 import { fetchWeeklyRanking } from '@/features/arena/arena-api';
@@ -205,7 +207,16 @@ export default function LegionDetailScreen() {
             .slice()
             .sort((a, b) => a.displayName.localeCompare(b.displayName, 'pt-BR'))
             .map((member) => (
-              <View key={member.userId} style={[styles.memberRow, { borderBottomColor: colors.hairlineSoft }]}>
+              <PressableScale
+                key={member.userId}
+                accessibilityRole="button"
+                accessibilityLabel={`${member.displayName}${member.isMe ? ' (você)' : ''}, ${rankFromGlory(member.totalGlory).label}. Ver perfil.`}
+                onPress={() =>
+                  member.isMe
+                    ? router.navigate('/perfil')
+                    : router.push({ pathname: '/membro/[id]', params: { id: member.userId, legiao: legion.id } })
+                }
+                style={[styles.memberRow, { borderBottomColor: colors.hairlineSoft }]}>
                 <EmblemAvatar emblem={member.emblem} size={36} />
                 <View style={styles.memberText}>
                   <AppText variant="bodyMedium" numberOfLines={1}>
@@ -215,7 +226,8 @@ export default function LegionDetailScreen() {
                     {`${rankFromGlory(member.totalGlory).label}${member.role === 'owner' ? ' · Fundador' : ''}`}
                   </AppText>
                 </View>
-              </View>
+                <Icon name="chevronRight" size={18} color={colors.textMuted} />
+              </PressableScale>
             ))
         )}
       </View>
