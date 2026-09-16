@@ -1,6 +1,7 @@
 import { FunctionsFetchError, FunctionsHttpError, FunctionsRelayError } from '@supabase/supabase-js';
 
 import { isRow } from '@/lib/parse';
+import { toApiError } from '@/lib/rpc-errors';
 import { getSupabase } from '@/lib/supabase';
 
 export type DeleteAccountResult =
@@ -29,4 +30,14 @@ export async function deleteAccount(): Promise<DeleteAccountResult> {
   if (error instanceof FunctionsHttpError) return { ok: false, reason: deletionFailureReason(await readJson(error.context)) };
   if (error instanceof FunctionsFetchError || error instanceof FunctionsRelayError) return { ok: false, reason: 'network' };
   return { ok: false, reason: 'failed' };
+}
+
+/**
+ * Consentimento específico para medidas de saúde (LGPD art. 11, I). Desligar apaga, no servidor e
+ * na mesma transação, todas as frequências cardíacas já guardadas.
+ */
+export async function setHealthConsent(granted: boolean): Promise<string | null> {
+  const { data, error } = await getSupabase().rpc('set_health_consent', { p_granted: granted });
+  if (error) throw toApiError(error);
+  return typeof data === 'string' ? data : null;
 }

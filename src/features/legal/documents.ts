@@ -21,7 +21,7 @@ export type LegalDocument = {
 
 export const PRIVACY_POLICY: LegalDocument = {
   title: 'Política de Privacidade',
-  updatedAt: '15 de setembro de 2026',
+  updatedAt: '16 de setembro de 2026',
   intro:
     'O EuroTreino é um aplicativo de treino com ranking privado entre amigos, criado como projeto acadêmico por estudantes da Fatec Osasco. Esta política explica quais dados usamos, para quê e como você controla seus dados, de acordo com a Lei Geral de Proteção de Dados (Lei nº 13.709/2018).',
   sections: [
@@ -35,8 +35,9 @@ export const PRIVACY_POLICY: LegalDocument = {
       heading: 'Quais dados usamos',
       items: [
         'Conta: seu e-mail, usado para entrar com código. Se você entrar com o Google, o serviço de autenticação também recebe o nome e a foto da conta Google; eles não aparecem no app.',
-        'Perfil: nome de exibição e emblema. Não pedimos foto, idade, peso, medidas nem localização.',
-        'Treinos: tipo, duração, intensidade, dia e horário de cada treino, e a Glória calculada.',
+        'Perfil: nome de exibição, emblema e a cor escolhida. Não pedimos foto, idade, peso, medidas nem localização.',
+        'Treinos: tipo, duração, intensidade, dia e horário de cada treino, e a Glória calculada. Se você quiser, também a distância percorrida, as séries feitas com repetições e carga, e os exercícios da sua ficha.',
+        'Medidas de saúde (só com seu consentimento): frequência cardíaca média e máxima que você digitar. Sem o consentimento, o app recusa o envio.',
         'Legiões: as Legiões que você fundou ou em que entrou, seu papel, a data de entrada e os códigos de convite gerados.',
         'Segurança: tentativas de código de convite inválido e registros de ações como fundar, entrar e sair de Legiões, trocar código e editar o perfil. Esses registros não guardam códigos, nomes nem senhas.',
         'No aparelho: a sessão de acesso fica no armazenamento seguro do celular (ou no navegador, na versão Web), e treinos registrados sem internet ficam guardados até o envio.',
@@ -84,7 +85,8 @@ export const PRIVACY_POLICY: LegalDocument = {
     {
       heading: 'Com que base usamos',
       paragraphs: [
-        'Usamos seus dados para prestar o serviço que você pediu ao criar a conta (entrar, perfil, Legiões e Arena) e, no caso dos registros de segurança, para proteger o serviço e as pessoas que o usam. Os registros de treino são tratados com o cuidado de dados sensíveis: você escolhe o que registrar, e pode apagar tudo a qualquer momento excluindo a conta.',
+        'Usamos seus dados para prestar o serviço que você pediu ao criar a conta (entrar, perfil, Legiões e Arena) e, no caso dos registros de segurança, para proteger o serviço e as pessoas que o usam. Você escolhe o que registrar, e pode apagar tudo a qualquer momento excluindo a conta.',
+        'A frequência cardíaca é a única exceção: por ser dado sensível de saúde, ela só é tratada mediante o seu consentimento específico, ligado e desligado por você no Perfil.',
       ],
     },
     {
@@ -104,6 +106,19 @@ export const PRIVACY_POLICY: LegalDocument = {
         'As regras de quem pode ver cada dado ficam no próprio banco de dados, e não só no app.',
         'A Glória é calculada no servidor: ninguém grava pontos diretamente.',
         'Excluir a conta exige confirmação com código enviado ao seu e-mail.',
+      ],
+    },
+    {
+      heading: 'Frequência cardíaca: consentimento específico',
+      paragraphs: [
+        'A frequência cardíaca é dado pessoal sensível de saúde pela Lei Geral de Proteção de Dados (art. 5º, II). Por isso ela não entra junto com o resto: só é registrada depois de você ligar esse consentimento no Perfil, de forma separada e específica (art. 11, I).',
+        'Você pode desligar a qualquer momento. Ao desligar, apagamos na mesma hora todas as frequências cardíacas já guardadas nos seus treinos — o treino continua no histórico, sem a medida.',
+      ],
+      items: [
+        'A medida é digitada por você, olhando o relógio: o app não lê sensor nenhum.',
+        'Ela serve só para o seu próprio histórico.',
+        'Nunca aparece para a sua Legião, não entra na Arena, não conta na Glória e não vai no texto de compartilhar.',
+        'Sem o consentimento ligado, o servidor recusa o envio — não é o app que decide isso.',
       ],
     },
     {
@@ -130,7 +145,7 @@ export const PRIVACY_POLICY: LegalDocument = {
 
 export const TERMS_OF_USE: LegalDocument = {
   title: 'Termos de Uso',
-  updatedAt: '15 de setembro de 2026',
+  updatedAt: '16 de setembro de 2026',
   intro:
     'Ao usar o EuroTreino, você concorda com estes termos. Eles são curtos de propósito: leia com atenção.',
   sections: [

@@ -10,6 +10,7 @@ import { Icon, type IconName } from '@/components/ui/icon';
 import { Notice } from '@/components/ui/notice';
 import { AppText } from '@/components/ui/text';
 import { fetchWeeklyRanking } from '@/features/arena/arena-api';
+import { useProfile } from '@/features/auth/session';
 import type { WeeklyRanking } from '@/features/arena/arena-parsers';
 import { enqueueCelebrations } from '@/features/celebrations/celebration-store';
 import { celebrationsForWorkout, type ArenaSnapshot } from '@/features/celebrations/detect';
@@ -63,6 +64,8 @@ type Draft = {
   distanceM: number | null;
   setsCount: number | null;
   loadKg: number | null;
+  /** Medida de saúde: só existe com consentimento ligado no Perfil. */
+  avgHeartRate: number | null;
 };
 type ArenaChange = { legionId: string; legionName: string; before: number | null; after: number };
 type Outcome =
@@ -346,6 +349,8 @@ export default function RegisterWorkoutScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const queue = useOfflineQueue();
+  const profile = useProfile();
+  const healthConsent = profile?.healthConsentAt !== null && profile?.healthConsentAt !== undefined;
   const progress = useQuery({ queryKey: queryKeys.progress, queryFn: fetchMyProgress });
   const legions = useQuery({ queryKey: queryKeys.legions, queryFn: fetchMyLegions });
 
@@ -357,6 +362,7 @@ export default function RegisterWorkoutScreen() {
   const [performedAt, setPerformedAt] = useState<Date | null>(null);
   const [choosingTime, setChoosingTime] = useState(false);
   const [distanceM, setDistanceM] = useState<number | null>(null);
+  const [avgHeartRate, setAvgHeartRate] = useState<number | null>(null);
   const [setsCount, setSetsCount] = useState<number | null>(null);
   const [loadKg, setLoadKg] = useState<number | null>(null);
   const [now, setNow] = useState(() => new Date());
@@ -377,6 +383,7 @@ export default function RegisterWorkoutScreen() {
     distanceM: module === 'resistencia' ? distanceM : null,
     setsCount: module === 'forca' ? setsCount : null,
     loadKg: module === 'forca' ? loadKg : null,
+    avgHeartRate: healthConsent ? avgHeartRate : null,
   };
 
   const save = useMutation({
@@ -399,6 +406,7 @@ export default function RegisterWorkoutScreen() {
           ...(draft.distanceM === null ? {} : { distanceM: draft.distanceM }),
           ...(draft.setsCount === null ? {} : { setsCount: draft.setsCount }),
           ...(draft.loadKg === null ? {} : { loadKg: draft.loadKg }),
+          ...(draft.avgHeartRate === null ? {} : { avgHeartRate: draft.avgHeartRate }),
         });
       } catch (error) {
         if (!(error instanceof ApiError && error.network)) throw error;
@@ -576,6 +584,21 @@ export default function RegisterWorkoutScreen() {
               start={5000}
               disabled={disabled}
               onChange={(value) => change(() => setDistanceM(value))}
+            />
+          ) : null}
+
+          {healthConsent ? (
+            <DetailRow
+              label="Frequência cardíaca média"
+              hint="Dado de saúde: fica só com você, nunca vai para a Legião"
+              value={avgHeartRate}
+              format={(value) => `${value} bpm`}
+              step={5}
+              min={30}
+              max={240}
+              start={140}
+              disabled={disabled}
+              onChange={(value) => change(() => setAvgHeartRate(value))}
             />
           ) : null}
 

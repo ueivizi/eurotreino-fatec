@@ -249,6 +249,7 @@ export default function HomeScreen() {
 
       <Reveal index={6} style={styles.actions}>
         <Button label="Registrar treino" icon="registrar" onPress={() => router.push('/registrar')} />
+        <Button label="Treinar agora" icon="ampulheta" variant="secondary" onPress={() => router.push('/sessao')} />
         {last && lastLabel ? (
           <PressableScale
             accessibilityRole="button"

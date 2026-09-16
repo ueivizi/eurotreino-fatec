@@ -277,6 +277,7 @@ export type Database = {
           display_name: string
           emblem: string
           emblem_color: string
+          health_consent_at: string | null
           id: string
           updated_at: string
         }
@@ -285,6 +286,7 @@ export type Database = {
           display_name: string
           emblem: string
           emblem_color?: string
+          health_consent_at?: string | null
           id: string
           updated_at?: string
         }
@@ -293,6 +295,7 @@ export type Database = {
           display_name?: string
           emblem?: string
           emblem_color?: string
+          health_consent_at?: string | null
           id?: string
           updated_at?: string
         }
@@ -467,6 +470,7 @@ export type Database = {
       }
       workouts: {
         Row: {
+          avg_heart_rate: number | null
           bonus_points: number
           client_request_id: string
           distance_m: number | null
@@ -479,6 +483,7 @@ export type Database = {
           load_kg: number | null
           local_date: string
           logged_at: string
+          max_heart_rate: number | null
           performed_at: string
           points: number | null
           presence_points: number
@@ -489,6 +494,7 @@ export type Database = {
           workout_type: string
         }
         Insert: {
+          avg_heart_rate?: number | null
           bonus_points: number
           client_request_id: string
           distance_m?: number | null
@@ -501,6 +507,7 @@ export type Database = {
           load_kg?: number | null
           local_date: string
           logged_at?: string
+          max_heart_rate?: number | null
           performed_at: string
           points?: number | null
           presence_points: number
@@ -511,6 +518,7 @@ export type Database = {
           workout_type: string
         }
         Update: {
+          avg_heart_rate?: number | null
           bonus_points?: number
           client_request_id?: string
           distance_m?: number | null
@@ -523,6 +531,7 @@ export type Database = {
           load_kg?: number | null
           local_date?: string
           logged_at?: string
+          max_heart_rate?: number | null
           performed_at?: string
           points?: number | null
           presence_points?: number
@@ -565,6 +574,7 @@ export type Database = {
           display_name: string
           emblem: string
           emblem_color: string
+          health_consent_at: string | null
           id: string
           updated_at: string
         }
@@ -650,11 +660,13 @@ export type Database = {
       }
       log_workout: {
         Args: {
+          p_avg_heart_rate?: number
           p_client_request_id: string
           p_distance_m?: number
           p_duration_min: number
           p_intensity: string
           p_load_kg?: number
+          p_max_heart_rate?: number
           p_performed_at?: string
           p_sets_count?: number
           p_workout_type: string
@@ -760,6 +772,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      set_health_consent: { Args: { p_granted: boolean }; Returns: string }
     }
     Enums: {
       [_ in never]: never

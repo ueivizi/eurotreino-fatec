@@ -106,7 +106,7 @@ select tests.assert_equal(
     || 'public.create_group, public.delete_routine, public.get_group_invite, public.group_weekly_ranking, '
     || 'public.join_group_by_code, public.leave_group, public.log_strength_workout, public.log_workout, '
     || 'public.my_groups, public.my_honor, public.my_progress, public.my_records, public.preview_invite, '
-    || 'public.regenerate_invite, public.save_routine'
+    || 'public.regenerate_invite, public.save_routine, public.set_health_consent'
 );
 
 -- caso: esquema private fechado para os papéis da API
@@ -131,7 +131,7 @@ select tests.assert_equal(
     || 'public.get_group_invite, public.group_weekly_ranking, public.join_group_by_code, public.leave_group, '
     || 'public.log_strength_workout, public.log_workout, public.my_groups, public.my_honor, '
     || 'public.my_progress, public.my_records, public.preview_invite, public.regenerate_invite, '
-    || 'public.save_routine'
+    || 'public.save_routine, public.set_health_consent'
 );
 
 -- caso: toda função de public e private fixa search_path vazio

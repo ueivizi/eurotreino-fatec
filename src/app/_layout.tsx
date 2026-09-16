@@ -10,6 +10,7 @@ import { useEffect, type ReactNode } from 'react';
 
 import { LoadingScreen, StatusScreen } from '@/components/status-screen';
 import { SessionProvider, useSession } from '@/features/auth/session';
+import { TrainingSessionProvider } from '@/features/training/session-provider';
 import { OfflineQueueProvider } from '@/features/workouts/offline-queue-provider';
 import { queryClient } from '@/lib/query-client';
 import type { SupabaseConfigProblem } from '@/lib/supabase-config';
@@ -106,6 +107,11 @@ function RootNavigator() {
         <Stack.Screen name="excluir-conta" />
         <Stack.Screen name="ranks" />
         <Stack.Screen name="recordes" />
+        <Stack.Screen name="honra" />
+        <Stack.Screen name="fichas" />
+        <Stack.Screen name="fichas/[id]" />
+        <Stack.Screen name="exercicios" />
+        <Stack.Screen name="sessao" />
         <Stack.Screen name="gloria" />
         <Stack.Screen name="comecar" />
       </Stack.Protected>
@@ -155,7 +161,9 @@ export default function RootLayout() {
           <QueryClientProvider client={queryClient}>
             <SessionProvider>
               <OfflineQueueProvider>
-                <RootNavigator />
+                <TrainingSessionProvider>
+                  <RootNavigator />
+                </TrainingSessionProvider>
               </OfflineQueueProvider>
             </SessionProvider>
           </QueryClientProvider>

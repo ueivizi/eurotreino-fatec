@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
@@ -14,6 +14,7 @@ import { Notice } from '@/components/ui/notice';
 import { ProgressBar } from '@/components/ui/progress-bar';
 import { SegmentedControl } from '@/components/ui/segmented-control';
 import { AppText } from '@/components/ui/text';
+import { setHealthConsent } from '@/features/account/account-api';
 import { useSession } from '@/features/auth/session';
 import { fetchMyLegions } from '@/features/legions/legions-api';
 import { rankFromGlory } from '@/features/ranks/tiers';
@@ -36,10 +37,20 @@ export default function ProfileScreen() {
   const { colors, preference, setPreference } = useTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { state, signOut } = useSession();
+  const { state, signOut, retry: refreshProfile } = useSession();
+  const queryClient = useQueryClient();
   const queue = useOfflineQueue();
   const [confirmSignOut, setConfirmSignOut] = useState(false);
   const [shareNote, setShareNote] = useState<string | null>(null);
+
+  const consent = useMutation({
+    mutationFn: (granted: boolean) => setHealthConsent(granted),
+    onSuccess: async () => {
+      // O perfil guarda o consentimento: recarrega para a tela refletir na hora.
+      refreshProfile();
+      void queryClient.invalidateQueries({ queryKey: queryKeys.progress });
+    },
+  });
 
   async function share(message: string) {
     setShareNote(SHARE_FEEDBACK[await shareText(message)]);
@@ -128,6 +139,7 @@ export default function ProfileScreen() {
         <View style={styles.rankLinks}>
           <Button label="Ver todos os ranks" variant="ghost" onPress={() => router.push('/ranks')} />
           <Button label="Meus recordes" variant="ghost" onPress={() => router.push('/recordes')} />
+          <Button label="Minha Honra" variant="ghost" onPress={() => router.push('/honra')} />
           <Button label="Como conquistar Glória" variant="ghost" onPress={() => router.push('/gloria')} />
         </View>
       </Card>
@@ -178,6 +190,24 @@ export default function ProfileScreen() {
             Seu perfil só aparece para membros das suas Legiões. Seus treinos ficam só com você.
           </AppText>
         </View>
+        <View style={styles.consent}>
+          <View style={styles.flex}>
+            <AppText variant="bodyMedium">Registrar frequência cardíaca</AppText>
+            <AppText variant="caption" tone="muted">
+              {profile.healthConsentAt
+                ? 'Ligado: o campo aparece ao registrar treino. Desligar apaga as medidas já guardadas.'
+                : 'Desligado. Frequência cardíaca é dado sensível de saúde: só registramos com seu consentimento.'}
+            </AppText>
+          </View>
+        </View>
+        <Button
+          label={consent.isPending ? 'Salvando…' : profile.healthConsentAt ? 'Desligar e apagar medidas' : 'Ligar o registro'}
+          variant="secondary"
+          icon={profile.healthConsentAt ? 'excluir' : 'check'}
+          onPress={() => consent.mutate(!profile.healthConsentAt)}
+          disabled={consent.isPending}
+        />
+        {consent.isError ? <Notice tone="danger" message={errorMessage(consent.error)} /> : null}
         <LinkRow label="Política de Privacidade" icon="pergaminho" onPress={() => router.push('/privacidade')} />
         <LinkRow label="Termos de Uso" icon="pergaminho" onPress={() => router.push('/termos')} />
       </View>
@@ -241,6 +271,11 @@ const styles = StyleSheet.create({
   },
   section: {
     gap: space.xs,
+  },
+  consent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
   },
   privacy: {
     flexDirection: 'row',

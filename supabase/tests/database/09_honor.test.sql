@@ -252,3 +252,48 @@ select tests.assert_equal(
   'Tânia=102, Vitor=0'
 );
 select tests.clear_authentication();
+
+-- caso: medida de saúde só entra com consentimento específico, e sair apaga o que já entrou
+select tests.authenticate_as('vitor');
+select tests.assert_raises(
+  'sem consentimento, a frequência cardíaca é recusada',
+  $$select * from public.log_workout(gen_random_uuid(), 'corrida', 30, 'leve', null, 5000, null, null, 150)$$,
+  'health_consent_required'
+);
+select tests.assert_equal(
+  'e o treino inteiro não foi gravado',
+  (select count(*)::integer from public.workouts where user_id = tests.user_id('vitor')),
+  0
+);
+select tests.assert_true('consentir devolve a data', (select public.set_health_consent(true)) is not null);
+select public.log_workout(gen_random_uuid(), 'corrida', 30, 'leve', null, 5000, null, null, 150, 175);
+select tests.assert_equal(
+  'com consentimento, a medida é guardada',
+  (select format('%s/%s', w.avg_heart_rate, w.max_heart_rate) from public.workouts as w where w.user_id = tests.user_id('vitor')),
+  '150/175'
+);
+select tests.assert_raises(
+  'média maior que a máxima é recusada',
+  $$select * from public.log_workout(gen_random_uuid(), 'corrida', 30, 'leve', null, null, null, null, 180, 150)$$,
+  'invalid_heart_rate'
+);
+select tests.assert_raises(
+  'batimento fora da faixa humana',
+  $$select * from public.log_workout(gen_random_uuid(), 'corrida', 30, 'leve', null, null, null, null, 400)$$,
+  'invalid_heart_rate'
+);
+select tests.assert_true('retirar o consentimento devolve nulo', (select public.set_health_consent(false)) is null);
+select tests.assert_equal(
+  'retirar o consentimento apaga as medidas já guardadas',
+  (
+    select count(*)::integer from public.workouts as w
+    where w.user_id = tests.user_id('vitor') and (w.avg_heart_rate is not null or w.max_heart_rate is not null)
+  ),
+  0
+);
+select tests.assert_equal(
+  'mas o treino em si continua no histórico',
+  (select count(*)::integer from public.workouts where user_id = tests.user_id('vitor')),
+  1
+);
+select tests.clear_authentication();

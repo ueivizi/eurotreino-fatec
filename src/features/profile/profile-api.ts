@@ -8,16 +8,25 @@ export type Profile = {
   displayName: string;
   emblem: EmblemName;
   emblemColor: EmblemColor;
+  /** Quando a pessoa consentiu em registrar medidas de saúde; `null` = sem consentimento. */
+  healthConsentAt: string | null;
 };
 
 /** Resposta do servidor é dado externo: só vira Profile se tiver exatamente o formato esperado. */
 export function parseProfileRow(row: unknown): Profile | null {
   if (typeof row !== 'object' || row === null) return null;
   const { id, display_name: displayName, emblem, emblem_color: emblemColor } = row as Record<string, unknown>;
+  const consent = (row as Record<string, unknown>).health_consent_at;
   if (typeof id !== 'string' || typeof displayName !== 'string' || typeof emblem !== 'string') return null;
   if (!isEmblemName(emblem)) return null;
   // Cor desconhecida (app antigo, valor novo no banco) cai no padrão em vez de derrubar o perfil.
-  return { id, displayName, emblem, emblemColor: isEmblemColor(emblemColor) ? emblemColor : DEFAULT_EMBLEM_COLOR };
+  return {
+    id,
+    displayName,
+    emblem,
+    emblemColor: isEmblemColor(emblemColor) ? emblemColor : DEFAULT_EMBLEM_COLOR,
+    healthConsentAt: typeof consent === 'string' ? consent : null,
+  };
 }
 
 export type ProfileLookup = { kind: 'found'; profile: Profile } | { kind: 'missing' } | { kind: 'error' };
@@ -26,7 +35,7 @@ export type ProfileLookup = { kind: 'found'; profile: Profile } | { kind: 'missi
 export async function fetchOwnProfile(userId: string): Promise<ProfileLookup> {
   const { data, error } = await getSupabase()
     .from('profiles')
-    .select('id, display_name, emblem, emblem_color')
+    .select('id, display_name, emblem, emblem_color, health_consent_at')
     .eq('id', userId)
     .maybeSingle();
 
