@@ -1,6 +1,9 @@
 import {
   MAX_SESSION_HOURS,
+  addLap,
   addSet,
+  lapDurations,
+  removeLastLap,
   durationMinutes,
   elapsedMs,
   finishSession,
@@ -128,5 +131,35 @@ describe('sessão guardada no aparelho', () => {
     expect(parseSession(JSON.stringify({ ...session, elapsedBeforePauseMs: -1 }))).toBeNull();
     expect(parseSession(JSON.stringify({ ...session, sets: [{ exerciseId: 'supino', reps: 0 }] }))).toBeNull();
     expect(parseSession(JSON.stringify({ ...session, sets: [{ exerciseId: 'supino', reps: 5, loadKg: 900 }] }))).toBeNull();
+  });
+});
+
+describe('voltas', () => {
+  it('marca voltas com o tempo do cronômetro e calcula a duração de cada uma', () => {
+    let session = newSession();
+    session = addLap(session, at(4));
+    session = addLap(session, at(9));
+    session = addLap(session, at(15));
+
+    expect(session.laps).toEqual([4 * 60_000, 9 * 60_000, 15 * 60_000]);
+    expect(lapDurations(session)).toEqual([4 * 60_000, 5 * 60_000, 6 * 60_000]);
+  });
+
+  it('desfaz a última volta', () => {
+    const session = addLap(addLap(newSession(), at(4)), at(9));
+    expect(removeLastLap(session).laps).toEqual([4 * 60_000]);
+    expect(removeLastLap(newSession()).laps).toEqual([]);
+  });
+
+  it('sessão antiga sem voltas continua válida', () => {
+    const { laps: _laps, ...semVoltas } = newSession();
+    expect(parseSession(JSON.stringify(semVoltas))?.laps).toEqual([]);
+  });
+
+  it('volta fora de ordem ou negativa derruba a sessão guardada', () => {
+    const session = newSession();
+    expect(parseSession(JSON.stringify({ ...session, laps: [1000, 500] }))).toBeNull();
+    expect(parseSession(JSON.stringify({ ...session, laps: [-1] }))).toBeNull();
+    expect(parseSession(JSON.stringify({ ...session, laps: ['x'] }))).toBeNull();
   });
 });

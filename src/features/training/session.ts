@@ -32,6 +32,8 @@ export type Session = {
   elapsedBeforePauseMs: number;
   routineId: string | null;
   sets: SessionSet[];
+  /** Voltas marcadas na resistência: tempo decorrido, em ms, no momento de cada toque. */
+  laps: number[];
 };
 
 export const SESSION_STORAGE_KEY = 'eurotreino.sessao';
@@ -55,6 +57,7 @@ export function startSession(input: {
     elapsedBeforePauseMs: 0,
     routineId: input.routineId ?? null,
     sets: [],
+    laps: [],
   };
 }
 
@@ -87,6 +90,21 @@ export function removeLastSet(session: Session, exerciseId: string): Session {
   const index = session.sets.map((set) => set.exerciseId).lastIndexOf(exerciseId);
   if (index < 0) return session;
   return { ...session, sets: session.sets.filter((_, position) => position !== index) };
+}
+
+/** Marca uma volta com o tempo atual do cronômetro. Até 200: mais que isso é dedo nervoso. */
+export function addLap(session: Session, now: Date): Session {
+  if (session.laps.length >= 200) return session;
+  return { ...session, laps: [...session.laps, elapsedMs(session, now)] };
+}
+
+export function removeLastLap(session: Session): Session {
+  return session.laps.length === 0 ? session : { ...session, laps: session.laps.slice(0, -1) };
+}
+
+/** Duração de cada volta: a diferença entre uma marca e a anterior. */
+export function lapDurations(session: Session): number[] {
+  return session.laps.map((lap, index) => lap - (index === 0 ? 0 : session.laps[index - 1]));
 }
 
 export function setsOf(session: Session, exerciseId: string): SessionSet[] {
@@ -148,6 +166,16 @@ export function parseSession(raw: string | null): Session | null {
   }
   if (!Array.isArray(sets)) return null;
 
+  const laps = value.laps === undefined ? [] : value.laps;
+  if (!Array.isArray(laps)) return null;
+  // Volta é tempo decorrido: número finito, não negativo e em ordem crescente.
+  const parsedLaps: number[] = [];
+  for (const lap of laps) {
+    if (typeof lap !== 'number' || !Number.isFinite(lap) || lap < 0) return null;
+    if (parsedLaps.length > 0 && lap < parsedLaps[parsedLaps.length - 1]) return null;
+    parsedLaps.push(lap);
+  }
+
   const parsedSets: SessionSet[] = [];
   for (const item of sets) {
     const parsed = parseSet(item);
@@ -164,6 +192,7 @@ export function parseSession(raw: string | null): Session | null {
     elapsedBeforePauseMs,
     routineId: typeof routineId === 'string' ? routineId : null,
     sets: parsedSets,
+    laps: parsedLaps,
   };
 }
 

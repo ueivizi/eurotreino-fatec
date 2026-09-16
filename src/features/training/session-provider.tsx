@@ -5,9 +5,11 @@ import { deviceStorage } from '@/lib/device-storage';
 
 import {
   SESSION_STORAGE_KEY,
+  addLap,
   addSet,
   parseSession,
   pauseSession,
+  removeLastLap,
   removeLastSet,
   resumeSession,
   startSession,
@@ -29,6 +31,8 @@ type SessionContextValue = {
   resume: () => Promise<void>;
   addSet: (set: Omit<SessionSet, 'doneAt'>) => Promise<void>;
   removeLastSet: (exerciseId: string) => Promise<void>;
+  addLap: () => Promise<void>;
+  removeLastLap: () => Promise<void>;
   discard: () => Promise<void>;
 };
 
@@ -92,6 +96,12 @@ export function TrainingSessionProvider({ children }: { children: ReactNode }) {
       },
       removeLastSet: async (exerciseId) => {
         if (current) await persist(removeLastSet(current, exerciseId));
+      },
+      addLap: async () => {
+        if (current) await persist(addLap(current, new Date()));
+      },
+      removeLastLap: async () => {
+        if (current) await persist(removeLastLap(current));
       },
       discard: () => persist(null),
     }),
