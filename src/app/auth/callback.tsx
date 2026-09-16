@@ -6,7 +6,7 @@ import { useSession } from '@/features/auth/session';
 import { OAUTH_CANCELLED_MESSAGE, exchangeAuthCode, isAuthCode } from '@/features/auth/oauth';
 
 /**
- * Retorno do login com Google (Web, e no celular quando o sistema entrega o link ao app).
+ * Retorno do login social (Web, e no celular quando o sistema entrega o link ao app).
  * O código só é trocado pela sessão sem ninguém conectado; depois, vai direto à tela do estado.
  */
 export default function AuthCallbackScreen() {

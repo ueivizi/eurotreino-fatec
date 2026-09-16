@@ -1,4 +1,4 @@
-/** Entrada por código enviado ao e-mail (RF001): validação do que a pessoa digita. */
+/** Entrada com e-mail e senha ou por código enviado ao e-mail (RF001): validação do que se digita. */
 
 export const EMAIL_MAX_LENGTH = 254;
 
@@ -25,3 +25,39 @@ export function isValidOtp(code: string): boolean {
 
 /** Tempo mínimo entre dois pedidos de código, para não esbarrar no limite de envio de e-mails. */
 export const RESEND_COOLDOWN_SECONDS = 60;
+
+/**
+ * Senha: o mínimo do app é maior que o do Supabase (6) de propósito. O máximo é o do bcrypt usado
+ * pelo Auth — acima de 72 bytes o resto seria descartado em silêncio, e a senha valeria menos do
+ * que a pessoa pensa. A senha nunca é guardada nem registrada aqui: vai direto para o Supabase.
+ */
+export const PASSWORD_MIN_LENGTH = 8;
+export const PASSWORD_MAX_BYTES = 72;
+
+export type PasswordProblem = 'short' | 'long' | 'common';
+
+/** Senhas que qualquer lista de ataque tenta primeiro; recusadas antes mesmo de sair do aparelho. */
+const OBVIOUS_PASSWORDS = new Set([
+  '12345678',
+  '123456789',
+  '1234567890',
+  'password',
+  'senha123',
+  'eurotreino',
+  'qwertyui',
+  'abc12345',
+]);
+
+export function passwordProblem(password: string): PasswordProblem | null {
+  if (password.length < PASSWORD_MIN_LENGTH) return 'short';
+  // O limite do bcrypt é em bytes: acentos e emojis ocupam mais de um.
+  if (new TextEncoder().encode(password).length > PASSWORD_MAX_BYTES) return 'long';
+  if (OBVIOUS_PASSWORDS.has(password.toLowerCase())) return 'common';
+  return null;
+}
+
+export const PASSWORD_MESSAGES: Record<PasswordProblem, string> = {
+  short: `A senha precisa de pelo menos ${PASSWORD_MIN_LENGTH} caracteres.`,
+  long: 'Essa senha é longa demais. Use até 72 caracteres.',
+  common: 'Essa senha é fácil de adivinhar. Escolha outra.',
+};

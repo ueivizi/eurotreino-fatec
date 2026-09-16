@@ -9,6 +9,7 @@ import { Monogram } from '@/components/brand/monogram';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Notice } from '@/components/ui/notice';
+import { PasswordField } from '@/components/ui/password-field';
 import { AppText } from '@/components/ui/text';
 import { TextField } from '@/components/ui/text-field';
 import { takeAccountDeleted } from '@/features/account/deletion-notice';
@@ -22,12 +23,22 @@ import {
   normalizeEmail,
   normalizeOtp,
 } from '@/features/auth/credentials';
-import { OAUTH_CANCELLED_MESSAGE, fetchAuthProviders, signInWithGoogle } from '@/features/auth/oauth';
+import { PROVIDER_LABELS, SOCIAL_PROVIDERS, fetchAuthProviders, oauthCancelledMessage, signInWithProvider, type SocialProvider } from '@/features/auth/oauth';
+import { confirmSignUp, resendSignUpCode, signInWithPassword } from '@/features/auth/password-auth';
 import { getSupabase } from '@/lib/supabase';
 import { useTheme } from '@/theme/theme';
 import { space } from '@/theme/tokens';
 
-type Step = { kind: 'gates' } | { kind: 'email' } | { kind: 'code'; email: string };
+/**
+ * Portões (RF001). Quem já tem conta entra direto com e-mail e senha — é o caminho principal.
+ * Os outros caminhos ficam um toque atrás: entrada social, código por e-mail e criar conta.
+ */
+type Step =
+  | { kind: 'senha' }
+  /** Conta criada mas ainda não confirmada: o código do e-mail libera a entrada. */
+  | { kind: 'confirmar'; email: string }
+  | { kind: 'email' }
+  | { kind: 'codigo'; email: string };
 
 /** Faixa de grega (meandro) sob o nome, como no canvas. */
 function Meander() {
@@ -45,19 +56,21 @@ function Meander() {
   );
 }
 
-/** Portões (RF001): entrada com Google, quando configurado, ou com código enviado ao e-mail. */
 export default function SignInScreen() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
 
   const providers = useQuery({ queryKey: ['auth-providers'], queryFn: fetchAuthProviders, staleTime: 5 * 60_000 });
-  const googleEnabled = providers.data?.google === true;
+  const enabledProviders = SOCIAL_PROVIDERS.filter((provider) => providers.data?.[provider] === true);
 
-  const [step, setStep] = useState<Step>({ kind: 'gates' });
+  const [step, setStep] = useState<Step>({ kind: 'senha' });
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [code, setCode] = useState('');
-  const [fieldError, setFieldError] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [codeError, setCodeError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(() => (takeAccountDeleted() ? 'Sua conta e seus dados foram excluídos.' : null));
   const [busy, setBusy] = useState(false);
@@ -68,9 +81,6 @@ export default function SignInScreen() {
     const timer = setTimeout(() => setCooldown((seconds) => seconds - 1), 1000);
     return () => clearTimeout(timer);
   }, [cooldown]);
-
-  // Sem Google configurado, os Portões levam direto ao e-mail: um botão sozinho seria um toque a mais.
-  const current: Step = step.kind === 'gates' && !providers.isPending && !googleEnabled ? { kind: 'email' } : step;
 
   async function run(action: () => Promise<void>) {
     setBusy(true);
@@ -85,19 +95,67 @@ export default function SignInScreen() {
     }
   }
 
-  function continueWithGoogle() {
+  function goTo(next: Step) {
+    setStep(next);
+    setEmailError(null);
+    setPasswordError(null);
+    setCodeError(null);
+    setError(null);
+    setInfo(null);
+  }
+
+  function continueWithProvider(provider: SocialProvider) {
     void run(async () => {
-      const result = await signInWithGoogle();
+      const result = await signInWithProvider(provider);
       // Com sucesso, a sessão muda e o layout raiz leva à próxima tela.
       if (result.status === 'error') setError(result.message);
-      else if (result.status === 'cancelled') setInfo(OAUTH_CANCELLED_MESSAGE);
+      else if (result.status === 'cancelled') setInfo(oauthCancelledMessage(provider));
+    });
+  }
+
+  /** Entrada principal: e-mail e senha. */
+  function submitPassword() {
+    const target = normalizeEmail(email);
+    if (!isValidEmail(target)) {
+      setEmailError('Digite um e-mail válido, como voce@exemplo.com.');
+      return;
+    }
+    if (password.length === 0) {
+      setPasswordError('Digite sua senha.');
+      return;
+    }
+    void run(async () => {
+      const result = await signInWithPassword(target, password);
+      if (result.status === 'error') {
+        setError(result.message);
+      } else if (result.status === 'needs-code') {
+        setPassword('');
+        setCode('');
+        setCooldown(RESEND_COOLDOWN_SECONDS);
+        goTo({ kind: 'confirmar', email: target });
+        setInfo('Falta confirmar seu e-mail. Enviamos um código para você.');
+      }
+    });
+  }
+
+  /** Confirmação do cadastro: o código do e-mail abre a conta. */
+  function submitConfirmation() {
+    if (step.kind !== 'confirmar') return;
+    const token = normalizeOtp(code);
+    if (!isValidOtp(token)) {
+      setCodeError('O código tem só números. Confira o e-mail que enviamos.');
+      return;
+    }
+    void run(async () => {
+      const result = await confirmSignUp(step.email, token);
+      if (result.status === 'error') setError(result.message);
     });
   }
 
   async function sendCode(target: string): Promise<boolean> {
     const { error: requestError } = await getSupabase().auth.signInWithOtp({
       email: target,
-      options: { shouldCreateUser: true },
+      options: { shouldCreateUser: false },
     });
     if (requestError) {
       setError(authErrorMessage(requestError));
@@ -107,146 +165,210 @@ export default function SignInScreen() {
     return true;
   }
 
+  /** Caminho alternativo: entrar por código, sem senha. */
   function submitEmail() {
     const target = normalizeEmail(email);
     if (!isValidEmail(target)) {
-      setFieldError('Digite um e-mail válido, como voce@exemplo.com.');
+      setEmailError('Digite um e-mail válido, como voce@exemplo.com.');
       return;
     }
     void run(async () => {
       if (await sendCode(target)) {
         setCode('');
-        setStep({ kind: 'code', email: target });
+        goTo({ kind: 'codigo', email: target });
       }
     });
   }
 
   function submitCode() {
-    if (current.kind !== 'code') return;
+    if (step.kind !== 'codigo') return;
     const token = normalizeOtp(code);
     if (!isValidOtp(token)) {
-      setFieldError('O código tem só números. Confira o e-mail que enviamos.');
+      setCodeError('O código tem só números. Confira o e-mail que enviamos.');
       return;
     }
     void run(async () => {
-      const { error: verifyError } = await getSupabase().auth.verifyOtp({ email: current.email, token, type: 'email' });
+      const { error: verifyError } = await getSupabase().auth.verifyOtp({ email: step.email, token, type: 'email' });
       if (verifyError) setError(authErrorMessage(verifyError));
     });
   }
 
   function resendCode() {
-    if (current.kind !== 'code' || cooldown > 0) return;
+    if (cooldown > 0) return;
     void run(async () => {
-      if (await sendCode(current.email)) setInfo('Enviamos um código novo. Confira também a caixa de spam.');
+      if (step.kind === 'codigo') {
+        if (await sendCode(step.email)) setInfo('Enviamos um código novo. Confira também a caixa de spam.');
+        return;
+      }
+      if (step.kind !== 'confirmar') return;
+      const result = await resendSignUpCode(step.email);
+      if (result.ok) {
+        setCooldown(RESEND_COOLDOWN_SECONDS);
+        setInfo('Enviamos um código novo. Confira também a caixa de spam.');
+      } else {
+        setError(result.message);
+      }
     });
   }
 
-  function goTo(next: Step) {
-    setStep(next);
-    setFieldError(null);
-    setError(null);
-    setInfo(null);
-  }
+  const emailField = (
+    <TextField
+      label="E-mail"
+      value={email}
+      onChangeText={(text) => {
+        setEmail(text);
+        setEmailError(null);
+      }}
+      placeholder="voce@exemplo.com"
+      keyboardType="email-address"
+      inputMode="email"
+      autoCapitalize="none"
+      autoCorrect={false}
+      autoComplete="email"
+      textContentType="emailAddress"
+      maxLength={EMAIL_MAX_LENGTH}
+      returnKeyType="next"
+      error={emailError}
+    />
+  );
+
+  const codeField = (
+    <TextField
+      label="Código"
+      value={code}
+      onChangeText={(text) => {
+        setCode(text);
+        setCodeError(null);
+      }}
+      placeholder={'0'.repeat(OTP_LENGTH)}
+      keyboardType="number-pad"
+      inputMode="numeric"
+      autoComplete="one-time-code"
+      textContentType="oneTimeCode"
+      maxLength={12}
+      autoFocus
+      returnKeyType="done"
+      onSubmitEditing={step.kind === 'confirmar' ? submitConfirmation : submitCode}
+      error={codeError}
+    />
+  );
+
+  const codeActions = (
+    <View style={styles.secondaryActions}>
+      <Button
+        variant="ghost"
+        label={cooldown > 0 ? `Reenviar código em ${cooldown} s` : 'Reenviar código'}
+        onPress={resendCode}
+        disabled={busy || cooldown > 0}
+      />
+      <Button variant="ghost" label="Voltar" onPress={() => goTo({ kind: 'senha' })} disabled={busy} />
+    </View>
+  );
 
   return (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: colors.background }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={[styles.content, { paddingTop: insets.top + space.xxxl, paddingBottom: insets.bottom + space.xxl }]}>
+        contentContainerStyle={[styles.content, { paddingTop: insets.top + space.xxl, paddingBottom: insets.bottom + space.xxl }]}>
         <View style={styles.hero}>
-          <Monogram size={current.kind === 'gates' ? 132 : 96} />
+          <Monogram size={step.kind === 'senha' ? 112 : 88} />
           <AppText variant="title" tone="goldHighlight" style={styles.brand}>EUROTREINO</AppText>
           <Meander />
-          {current.kind === 'gates' ? (
-            <>
-              <View style={styles.motto}>
-                <AppText variant="motto" style={styles.center}>Mens sana in corpore sano</AppText>
-                <AppText variant="label" tone="muted" style={styles.center}>Mente sã em corpo são</AppText>
-              </View>
-              <AppText tone="secondary" style={[styles.center, styles.tagline]}>
-                Treine com seus amigos, conquiste Glória e suba do Recruta ao Olimpiano.
-              </AppText>
-            </>
+          {step.kind === 'senha' ? (
+            <View style={styles.motto}>
+              <AppText variant="motto" style={styles.center}>Mens sana in corpore sano</AppText>
+              <AppText variant="label" tone="muted" style={styles.center}>Mente sã em corpo são</AppText>
+            </View>
           ) : null}
         </View>
 
-        {current.kind === 'gates' ? (
-          <View style={styles.form}>
-            {providers.isPending ? (
-              <ActivityIndicator color={colors.gold} />
-            ) : (
-              <>
-                <Button label={busy ? 'Abrindo o Google…' : 'Continuar com Google'} onPress={continueWithGoogle} disabled={busy} />
-                <Button label="Receber código por e-mail" icon="email" variant="ghost" onPress={() => goTo({ kind: 'email' })} disabled={busy} />
-              </>
-            )}
-            {error ? <Notice tone="danger" message={error} /> : info ? <Notice message={info} /> : null}
-          </View>
-        ) : current.kind === 'email' ? (
+        {step.kind === 'senha' ? (
           <View style={styles.form}>
             <View style={styles.intro}>
-              <AppText variant="heading">Entrar com e-mail</AppText>
-              <AppText tone="secondary">Receba um código no seu e-mail. Não há senha para lembrar.</AppText>
+              <AppText variant="heading">Entrar</AppText>
+              <AppText tone="secondary">Use o e-mail e a senha da sua conta.</AppText>
             </View>
             {info ? <Notice message={info} /> : null}
-            <TextField
-              label="E-mail"
-              value={email}
+            {emailField}
+            <PasswordField
+              label="Senha"
+              value={password}
               onChangeText={(text) => {
-                setEmail(text);
-                setFieldError(null);
+                setPassword(text);
+                setPasswordError(null);
               }}
-              placeholder="voce@exemplo.com"
-              keyboardType="email-address"
-              inputMode="email"
-              autoCapitalize="none"
-              autoCorrect={false}
-              autoComplete="email"
-              textContentType="emailAddress"
-              maxLength={EMAIL_MAX_LENGTH}
-              returnKeyType="send"
-              onSubmitEditing={submitEmail}
-              error={fieldError}
+              placeholder="Sua senha"
+              autoComplete="current-password"
+              textContentType="password"
+              returnKeyType="go"
+              onSubmitEditing={submitPassword}
+              error={passwordError}
             />
+            <Button label={busy ? 'Entrando…' : 'Entrar'} onPress={submitPassword} disabled={busy} />
+            {error ? <Notice tone="danger" message={error} /> : null}
+            <View style={styles.secondaryActions}>
+              <Button label="Esqueci minha senha" variant="ghost" onPress={() => router.push('/recuperar-senha')} disabled={busy} />
+              <Button label="Criar conta" variant="secondary" icon="perfil" onPress={() => router.push('/criar-conta')} disabled={busy} />
+            </View>
+
+            {providers.isPending ? (
+              <ActivityIndicator color={colors.gold} />
+            ) : enabledProviders.length > 0 ? (
+              <View style={styles.social}>
+                <View style={styles.dividerRow}>
+                  <View style={[styles.divider, { backgroundColor: colors.hairlineSoft }]} />
+                  <AppText variant="caption" tone="muted">ou</AppText>
+                  <View style={[styles.divider, { backgroundColor: colors.hairlineSoft }]} />
+                </View>
+                {enabledProviders.map((provider) => (
+                  <Button
+                    key={provider}
+                    label={`Continuar com ${PROVIDER_LABELS[provider]}`}
+                    variant="secondary"
+                    onPress={() => continueWithProvider(provider)}
+                    disabled={busy}
+                  />
+                ))}
+              </View>
+            ) : null}
+
+            <Button label="Entrar com código por e-mail" icon="email" variant="ghost" onPress={() => goTo({ kind: 'email' })} disabled={busy} />
+          </View>
+        ) : step.kind === 'confirmar' ? (
+          <View style={styles.form}>
+            <View style={styles.intro}>
+              <AppText variant="heading">Confirme seu e-mail</AppText>
+              <AppText tone="secondary">{`Enviamos um código de ${OTP_LENGTH} dígitos para ${step.email}.`}</AppText>
+            </View>
+            {info ? <Notice message={info} /> : null}
+            {codeField}
+            <Button label={busy ? 'Confirmando…' : 'Confirmar e entrar'} onPress={submitConfirmation} disabled={busy} />
+            {error ? <Notice tone="danger" message={error} /> : null}
+            {codeActions}
+          </View>
+        ) : step.kind === 'email' ? (
+          <View style={styles.form}>
+            <View style={styles.intro}>
+              <AppText variant="heading">Entrar com código</AppText>
+              <AppText tone="secondary">Receba um código no e-mail da sua conta, sem digitar a senha.</AppText>
+            </View>
+            {info ? <Notice message={info} /> : null}
+            {emailField}
             <Button label={busy ? 'Enviando…' : 'Receber código'} onPress={submitEmail} disabled={busy} />
             {error ? <Notice tone="danger" message={error} /> : null}
-            {googleEnabled ? <Button label="Voltar" variant="ghost" onPress={() => goTo({ kind: 'gates' })} disabled={busy} /> : null}
+            <Button label="Voltar" variant="ghost" onPress={() => goTo({ kind: 'senha' })} disabled={busy} />
           </View>
         ) : (
           <View style={styles.form}>
             <View style={styles.intro}>
               <AppText variant="heading">Digite o código</AppText>
-              <AppText tone="secondary">{`Enviamos um código de ${OTP_LENGTH} dígitos para ${current.email}.`}</AppText>
+              <AppText tone="secondary">{`Enviamos um código de ${OTP_LENGTH} dígitos para ${step.email}.`}</AppText>
             </View>
-            <TextField
-              label="Código"
-              value={code}
-              onChangeText={(text) => {
-                setCode(text);
-                setFieldError(null);
-              }}
-              placeholder={'0'.repeat(OTP_LENGTH)}
-              keyboardType="number-pad"
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              textContentType="oneTimeCode"
-              maxLength={12}
-              autoFocus
-              returnKeyType="done"
-              onSubmitEditing={submitCode}
-              error={fieldError}
-            />
+            {info ? <Notice message={info} /> : null}
+            {codeField}
             <Button label={busy ? 'Entrando…' : 'Entrar'} onPress={submitCode} disabled={busy} />
-            {error ? <Notice tone="danger" message={error} /> : info ? <Notice message={info} /> : null}
-            <View style={styles.secondaryActions}>
-              <Button
-                variant="ghost"
-                label={cooldown > 0 ? `Reenviar código em ${cooldown} s` : 'Reenviar código'}
-                onPress={resendCode}
-                disabled={busy || cooldown > 0}
-              />
-              <Button variant="ghost" label="Usar outro e-mail" onPress={() => goTo({ kind: 'email' })} disabled={busy} />
-            </View>
+            {error ? <Notice tone="danger" message={error} /> : null}
+            {codeActions}
           </View>
         )}
 
@@ -276,7 +398,7 @@ const styles = StyleSheet.create({
   content: {
     flexGrow: 1,
     paddingHorizontal: space.xl,
-    gap: space.xxl,
+    gap: space.xl,
   },
   hero: {
     alignItems: 'center',
@@ -287,9 +409,6 @@ const styles = StyleSheet.create({
   },
   motto: {
     gap: 2,
-  },
-  tagline: {
-    maxWidth: 300,
   },
   center: {
     textAlign: 'center',
@@ -302,6 +421,18 @@ const styles = StyleSheet.create({
   },
   secondaryActions: {
     gap: space.xs,
+  },
+  social: {
+    gap: space.md,
+  },
+  dividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+  },
+  divider: {
+    flex: 1,
+    height: 1,
   },
   footer: {
     marginTop: 'auto',

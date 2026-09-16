@@ -3,11 +3,12 @@ import { isAuthCode, parseAuthProviders, parseAuthRedirect } from './oauth';
 jest.mock('@/lib/supabase', () => ({ getSupabase: jest.fn(), supabaseConfig: { ok: false, problem: 'missing' } }));
 
 describe('parseAuthProviders', () => {
-  it('só liga o Google quando o Auth diz exatamente true', () => {
-    expect(parseAuthProviders({ external: { google: true, email: true } })).toEqual({ google: true });
-    expect(parseAuthProviders({ external: { google: 'true' } })).toEqual({ google: false });
-    expect(parseAuthProviders({ external: null })).toEqual({ google: false });
-    expect(parseAuthProviders('erro')).toEqual({ google: false });
+  it('só liga cada provedor quando o Auth diz exatamente true', () => {
+    expect(parseAuthProviders({ external: { google: true, apple: false, email: true } })).toEqual({ google: true, apple: false });
+    expect(parseAuthProviders({ external: { apple: true } })).toEqual({ google: false, apple: true });
+    expect(parseAuthProviders({ external: { google: 'true', apple: 1 } })).toEqual({ google: false, apple: false });
+    expect(parseAuthProviders({ external: null })).toEqual({ google: false, apple: false });
+    expect(parseAuthProviders('erro')).toEqual({ google: false, apple: false });
   });
 });
 

@@ -8,27 +8,36 @@ import { getSupabase, supabaseConfig } from '@/lib/supabase';
 import { AUTH_MESSAGES, authErrorMessage } from './auth-errors';
 
 /**
- * Entrada com Google (RF001) pelo fluxo PKCE: o código de autorização que volta na URL só vale
- * junto com o verificador guardado neste aparelho, então um link de retorno interceptado não abre
- * a conta. Os endereços de retorno aceitos ficam na lista do Supabase Auth.
+ * Entrada social (RF001) pelo fluxo PKCE: o código de autorização que volta na URL só vale junto
+ * com o verificador guardado neste aparelho, então um link de retorno interceptado não abre a
+ * conta. Os endereços de retorno aceitos ficam na lista do Supabase Auth.
  */
 
-export type AuthProviders = { google: boolean };
+/** Provedores sociais que o app sabe abrir. Outros só entram com botão e ícone próprios. */
+export const SOCIAL_PROVIDERS = ['google', 'apple'] as const;
+export type SocialProvider = (typeof SOCIAL_PROVIDERS)[number];
+
+export const PROVIDER_LABELS: Record<SocialProvider, string> = { google: 'Google', apple: 'Apple' };
+
+export type AuthProviders = Record<SocialProvider, boolean>;
+
+const NO_PROVIDERS: AuthProviders = { google: false, apple: false };
 
 /** Configuração pública do Auth (/auth/v1/settings): só o que o app usa, e falso na dúvida. */
 export function parseAuthProviders(value: unknown): AuthProviders {
-  if (!isRow(value) || !isRow(value.external)) return { google: false };
-  return { google: value.external.google === true };
+  if (!isRow(value) || !isRow(value.external)) return { ...NO_PROVIDERS };
+  const external = value.external;
+  return { google: external.google === true, apple: external.apple === true };
 }
 
-/** Provedores ligados no projeto: o botão do Google só aparece depois de configurado. */
+/** Provedores ligados no projeto: cada botão só aparece depois de configurado no Supabase. */
 export async function fetchAuthProviders(): Promise<AuthProviders> {
-  if (!supabaseConfig.ok) return { google: false };
+  if (!supabaseConfig.ok) return { ...NO_PROVIDERS };
   // A URL do projeto já foi validada por formato fixo; o caminho é constante.
   const response = await fetch(`${supabaseConfig.url}/auth/v1/settings`, {
     headers: { apikey: supabaseConfig.publishableKey },
   });
-  if (!response.ok) return { google: false };
+  if (!response.ok) return { ...NO_PROVIDERS };
   return parseAuthProviders(await response.json());
 }
 
@@ -67,7 +76,12 @@ export type OAuthResult =
   | { status: 'cancelled' }
   | { status: 'error'; message: string };
 
-export const OAUTH_CANCELLED_MESSAGE = 'A entrada com o Google foi cancelada.';
+/** Quando o retorno não diz qual provedor era (tela de callback). */
+export const OAUTH_CANCELLED_MESSAGE = 'A entrada foi cancelada.';
+
+export function oauthCancelledMessage(provider: SocialProvider): string {
+  return `A entrada com ${PROVIDER_LABELS[provider]} foi cancelada.`;
+}
 
 const exchangedCodes = new Set<string>();
 
@@ -79,18 +93,18 @@ export async function exchangeAuthCode(code: string): Promise<OAuthResult> {
   return error ? { status: 'error', message: authErrorMessage(error) } : { status: 'signed-in' };
 }
 
-export async function signInWithGoogle(): Promise<OAuthResult> {
+export async function signInWithProvider(provider: SocialProvider): Promise<OAuthResult> {
   const supabase = getSupabase();
   const redirectTo = Linking.createURL('auth/callback');
 
   if (Platform.OS === 'web') {
-    // Na Web a página inteira vai ao Google e volta em /auth/callback.
-    const { error } = await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo } });
+    // Na Web a página inteira vai ao provedor e volta em /auth/callback.
+    const { error } = await supabase.auth.signInWithOAuth({ provider, options: { redirectTo } });
     return error ? { status: 'error', message: authErrorMessage(error) } : { status: 'redirecting' };
   }
 
   const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: 'google',
+    provider,
     options: { redirectTo, skipBrowserRedirect: true },
   });
   if (error || !data.url) return { status: 'error', message: error ? authErrorMessage(error) : AUTH_MESSAGES.generic };
@@ -100,7 +114,7 @@ export async function signInWithGoogle(): Promise<OAuthResult> {
 
   const redirect = parseAuthRedirect(result.url);
   if (redirect.kind === 'error') {
-    return { status: 'error', message: redirect.error === 'access_denied' ? OAUTH_CANCELLED_MESSAGE : AUTH_MESSAGES.generic };
+    return { status: 'error', message: redirect.error === 'access_denied' ? oauthCancelledMessage(provider) : AUTH_MESSAGES.generic };
   }
   if (redirect.kind === 'none') return { status: 'error', message: AUTH_MESSAGES.generic };
   return exchangeAuthCode(redirect.code);
