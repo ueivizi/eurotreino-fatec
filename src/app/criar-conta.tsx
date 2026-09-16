@@ -226,6 +226,17 @@ export default function SignUpScreen() {
             />
             <Button label={busy ? 'Criando…' : 'Criar conta'} onPress={submit} disabled={busy} />
             {error ? <Notice tone="danger" message={error} /> : null}
+            <AppText variant="caption" tone="muted" style={styles.center}>
+              {'Ao criar a conta, você aceita os '}
+              <AppText variant="caption" tone="gold" accessibilityRole="link" onPress={() => router.push('/termos')}>
+                Termos de Uso
+              </AppText>
+              {' e a '}
+              <AppText variant="caption" tone="gold" accessibilityRole="link" onPress={() => router.push('/privacidade')}>
+                Política de Privacidade
+              </AppText>
+              {', e declara ter 16 anos ou mais.'}
+            </AppText>
             <Button label="Já tenho conta" variant="ghost" onPress={() => router.replace('/entrar')} disabled={busy} />
           </View>
         )}
@@ -248,5 +259,8 @@ const styles = StyleSheet.create({
   },
   secondaryActions: {
     gap: space.xs,
+  },
+  center: {
+    textAlign: 'center',
   },
 });

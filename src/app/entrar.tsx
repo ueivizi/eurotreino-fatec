@@ -386,7 +386,7 @@ export default function SignInScreen() {
             <AppText variant="caption" tone="gold" accessibilityRole="link" onPress={() => router.push('/privacidade')}>
               Política de Privacidade
             </AppText>
-            .
+            {', e declara ter 16 anos ou mais.'}
           </AppText>
         </View>
       </ScrollView>

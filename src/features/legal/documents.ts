@@ -107,8 +107,19 @@ export const PRIVACY_POLICY: LegalDocument = {
       ],
     },
     {
-      heading: 'Idade',
-      paragraphs: ['O EuroTreino é destinado a pessoas com 18 anos ou mais.'],
+      heading: 'Idade mínima: 16 anos',
+      paragraphs: [
+        'O EuroTreino é para pessoas com 16 anos ou mais. Quem tem entre 16 e 18 anos deve usar o app com o conhecimento de um responsável, que pode pedir a exclusão da conta a qualquer momento pelo e-mail de contato.',
+        'Não criamos conta para menores de 16 anos. Se soubermos que uma conta é de alguém com menos de 16, ela é excluída com os dados.',
+        'O app é feito de um jeito que reduz o risco para quem é mais novo:',
+      ],
+      items: [
+        'A Legião é fechada e só se entra por convite: não existe busca por pessoas, perfil público nem sugestão de amigos.',
+        'Não há mensagens nem chat entre membros: o que se troca é treino e posição na Arena.',
+        'Não pedimos foto, localização, peso, medidas nem data de nascimento.',
+        'Seu perfil só é visto por quem está em uma Legião com você.',
+        'Não há publicidade, rastreamento, compras nem qualquer cobrança.',
+      ],
     },
     {
       heading: 'Mudanças nesta política',
@@ -156,6 +167,14 @@ export const TERMS_OF_USE: LegalDocument = {
       items: [
         'Use nome de exibição e nome de Legião respeitosos: nada de ofensas, discriminação ou se passar por outra pessoa.',
         'Contas usadas para abuso podem ser excluídas pela equipe.',
+      ],
+    },
+    {
+      heading: 'Idade mínima',
+      items: [
+        'É preciso ter 16 anos ou mais para usar o EuroTreino.',
+        'Entre 16 e 18 anos, o uso deve ser com o conhecimento de um responsável, que pode pedir a exclusão da conta pelo e-mail de contato.',
+        'Ao criar a conta, você declara ter 16 anos ou mais.',
       ],
     },
     {
