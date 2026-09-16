@@ -127,6 +127,7 @@ export default function ProfileScreen() {
         )}
         <View style={styles.rankLinks}>
           <Button label="Ver todos os ranks" variant="ghost" onPress={() => router.push('/ranks')} />
+          <Button label="Meus recordes" variant="ghost" onPress={() => router.push('/recordes')} />
           <Button label="Como conquistar Glória" variant="ghost" onPress={() => router.push('/gloria')} />
         </View>
       </Card>

@@ -105,6 +105,7 @@ function RootNavigator() {
         <Stack.Screen name="editar-perfil" />
         <Stack.Screen name="excluir-conta" />
         <Stack.Screen name="ranks" />
+        <Stack.Screen name="recordes" />
         <Stack.Screen name="gloria" />
         <Stack.Screen name="comecar" />
       </Stack.Protected>

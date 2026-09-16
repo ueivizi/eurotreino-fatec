@@ -18,6 +18,7 @@ export const queryClient = new QueryClient({
 
 export const queryKeys = {
   progress: ['progress'] as const,
+  records: ['records'] as const,
   legions: ['legions'] as const,
   invite: (legionId: string) => ['legions', legionId, 'invite'] as const,
   rankings: ['ranking'] as const,
