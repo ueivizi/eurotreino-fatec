@@ -32,6 +32,51 @@ export type Database = {
         }
         Relationships: []
       }
+      exercise_records: {
+        Row: {
+          achieved_at: string
+          best_e1rm: number | null
+          best_load_kg: number | null
+          best_reps: number | null
+          best_volume_kg: number | null
+          exercise_id: string
+          user_id: string
+        }
+        Insert: {
+          achieved_at?: string
+          best_e1rm?: number | null
+          best_load_kg?: number | null
+          best_reps?: number | null
+          best_volume_kg?: number | null
+          exercise_id: string
+          user_id: string
+        }
+        Update: {
+          achieved_at?: string
+          best_e1rm?: number | null
+          best_load_kg?: number | null
+          best_reps?: number | null
+          best_volume_kg?: number | null
+          exercise_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exercise_records_exercise_id_fkey"
+            columns: ["exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exercise_records_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       exercises: {
         Row: {
           created_at: string
@@ -140,6 +185,70 @@ export type Database = {
           created_at?: string
           emblem?: string
           id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      honor: {
+        Row: {
+          exercise_id: string | null
+          points: number
+          updated_at: string
+          user_id: string
+          workout_type: string | null
+        }
+        Insert: {
+          exercise_id?: string | null
+          points?: number
+          updated_at?: string
+          user_id: string
+          workout_type?: string | null
+        }
+        Update: {
+          exercise_id?: string | null
+          points?: number
+          updated_at?: string
+          user_id?: string
+          workout_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "honor_exercise_id_fkey"
+            columns: ["exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "honor_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "honor_workout_type_fkey"
+            columns: ["workout_type"]
+            isOneToOne: false
+            referencedRelation: "workout_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      honor_levels: {
+        Row: {
+          id: number
+          min_points: number
+          name: string
+        }
+        Insert: {
+          id: number
+          min_points: number
+          name: string
+        }
+        Update: {
+          id?: number
+          min_points?: number
           name?: string
         }
         Relationships: []
@@ -289,6 +398,45 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workout_sets: {
+        Row: {
+          exercise_id: string
+          load_kg: number | null
+          position: number
+          reps: number
+          workout_id: string
+        }
+        Insert: {
+          exercise_id: string
+          load_kg?: number | null
+          position: number
+          reps: number
+          workout_id: string
+        }
+        Update: {
+          exercise_id?: string
+          load_kg?: number | null
+          position?: number
+          reps?: number
+          workout_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workout_sets_exercise_id_fkey"
+            columns: ["exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workout_sets_workout_id_fkey"
+            columns: ["workout_id"]
+            isOneToOne: false
+            referencedRelation: "workouts"
             referencedColumns: ["id"]
           },
         ]
@@ -488,6 +636,18 @@ export type Database = {
         }[]
       }
       leave_group: { Args: { p_group_id: string }; Returns: undefined }
+      log_strength_workout: {
+        Args: {
+          p_client_request_id: string
+          p_duration_min: number
+          p_intensity: string
+          p_performed_at?: string
+          p_routine_id?: string
+          p_sets: Json
+          p_workout_type: string
+        }
+        Returns: Json
+      }
       log_workout: {
         Args: {
           p_client_request_id: string
@@ -522,6 +682,21 @@ export type Database = {
           member_count: number
           name: string
           role: string
+        }[]
+      }
+      my_honor: {
+        Args: never
+        Returns: {
+          best_e1rm: number
+          best_load_kg: number
+          best_reps: number
+          exercise_id: string
+          exercise_name: string
+          level_id: number
+          level_name: string
+          next_level_points: number
+          points: number
+          workout_type: string
         }[]
       }
       my_progress: {
