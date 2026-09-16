@@ -13,6 +13,7 @@ const RESULT: LoggedWorkout = {
   weekGlory: 52,
   totalGlory: 320,
   replayed: false,
+  isDistanceRecord: false,
 };
 
 describe('workoutShareMessage', () => {
@@ -42,6 +43,32 @@ describe('workoutShareMessage', () => {
     // Cada modalidade abre com uma linha diferente das outras.
     const firstLines = new Set(messages.map((message) => message.split('\n')[0]));
     expect(firstLines.size).toBe(WORKOUT_TYPES.length);
+  });
+
+  it('inclui distância e desempenho quando a modalidade tem', () => {
+    const corrida = workoutShareMessage({ type: 'corrida', durationMin: 30, intensity: 'leve', result: RESULT, distanceM: 6000 });
+    expect(corrida).toContain('6 km · 5:00 /km');
+    // Bike se lê em velocidade, não em ritmo.
+    const bike = workoutShareMessage({ type: 'bike', durationMin: 60, intensity: 'leve', result: RESULT, distanceM: 24000 });
+    expect(bike).toContain('24 km · 24,0 km/h');
+  });
+
+  it('anuncia o recorde só quando o servidor confirma', () => {
+    const comum = workoutShareMessage({ type: 'corrida', durationMin: 30, intensity: 'leve', result: RESULT, distanceM: 6000 });
+    expect(comum).not.toContain('recorde');
+    const recorde = workoutShareMessage({
+      type: 'corrida',
+      durationMin: 30,
+      intensity: 'leve',
+      result: { ...RESULT, isDistanceRecord: true },
+      distanceM: 6000,
+    });
+    expect(recorde).toContain('recorde pessoal');
+  });
+
+  it('sem distância, o texto não inventa linha nenhuma', () => {
+    const message = workoutShareMessage({ type: 'corrida', durationMin: 30, intensity: 'leve', result: RESULT });
+    expect(message.split('\n')).toHaveLength(3);
   });
 
   it('não vaza nome de Legião, de membro nem posição de terceiros', () => {

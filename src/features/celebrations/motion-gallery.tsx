@@ -123,6 +123,7 @@ const SAMPLE_RESULT: LoggedWorkout = {
   weekGlory: 78,
   totalGlory: 485,
   replayed: false,
+  isDistanceRecord: false,
 };
 
 function Section({ title, children }: { title: string; children: ReactNode }) {

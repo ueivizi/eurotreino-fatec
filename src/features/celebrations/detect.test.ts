@@ -15,6 +15,7 @@ function logged(overrides: Partial<LoggedWorkout> = {}): LoggedWorkout {
     weekGlory: 16,
     totalGlory: 20,
     replayed: false,
+  isDistanceRecord: false,
     ...overrides,
   };
 }

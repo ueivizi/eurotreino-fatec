@@ -30,12 +30,17 @@ import {
   withDayOffset,
 } from '@/features/workouts/performed-at';
 import { workoutShareMessage } from '@/features/workouts/share-workout';
+import { formatDistance, formatLoad, formatPerformance, paceModality } from '@/features/workouts/metrics';
 import {
+  DISTANCE,
   DURATION,
   INTENSITIES,
+  LOAD,
+  SETS,
   WORKOUT_TYPES,
   intensityLabel,
   stepDuration,
+  workoutModule,
   workoutTypeLabel,
   type IntensityId,
   type WorkoutTypeId,
@@ -49,7 +54,16 @@ import { radius, space, touchTarget } from '@/theme/tokens';
 
 const FALLBACK = { type: 'musculacao' as WorkoutTypeId, durationMin: 45, intensity: 'moderado' as IntensityId };
 
-type Draft = { type: WorkoutTypeId; durationMin: number; intensity: IntensityId; performedAt: Date | null };
+type Draft = {
+  type: WorkoutTypeId;
+  durationMin: number;
+  intensity: IntensityId;
+  performedAt: Date | null;
+  /** Detalhes da modalidade, sempre opcionais. */
+  distanceM: number | null;
+  setsCount: number | null;
+  loadKg: number | null;
+};
 type ArenaChange = { legionId: string; legionName: string; before: number | null; after: number };
 type Outcome =
   | { kind: 'logged'; logged: LoggedWorkout; arena: ArenaChange | null; snapshots: readonly ArenaSnapshot[]; previousTotalWorkouts: number | null }
@@ -113,9 +127,118 @@ function Segmented<T extends string | number>({
   );
 }
 
+/**
+ * Detalhe opcional da modalidade (distância, séries, carga). Começa desligado: o fluxo de 3 toques
+ * continua intacto para quem só quer registrar e sair. Quem liga, ajusta com os mesmos passos do
+ * resto da tela, sem teclado.
+ */
+function DetailRow({
+  label,
+  hint,
+  value,
+  format,
+  step,
+  min,
+  max,
+  start,
+  disabled,
+  onChange,
+}: {
+  label: string;
+  hint: string;
+  value: number | null;
+  format: (value: number) => string;
+  step: number;
+  min: number;
+  max: number;
+  /** Valor sugerido ao ligar o detalhe. */
+  start: number;
+  disabled: boolean;
+  onChange: (value: number | null) => void;
+}) {
+  const { colors } = useTheme();
+  const active = value !== null;
+  const clamp = (next: number) => Math.min(max, Math.max(min, Math.round(next / step) * step));
+
+  return (
+    <View style={styles.group}>
+      <View style={styles.row}>
+        <View style={styles.headerText}>
+          <AppText variant="bodyMedium">{label}</AppText>
+          <AppText variant="caption" tone="muted">{active ? hint : 'Opcional'}</AppText>
+        </View>
+        {active ? (
+          <View style={styles.stepper}>
+            <StepButton
+              icon="menos"
+              label={`Diminuir ${label.toLowerCase()}`}
+              disabled={disabled || value <= min}
+              onPress={() => onChange(clamp(value - step))}
+            />
+            <AppText variant="bodyMedium" style={styles.value} accessibilityLiveRegion="polite">{format(value)}</AppText>
+            <StepButton
+              icon="mais"
+              label={`Aumentar ${label.toLowerCase()}`}
+              disabled={disabled || value >= max}
+              onPress={() => onChange(clamp(value + step))}
+            />
+          </View>
+        ) : (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Informar ${label.toLowerCase()}`}
+            disabled={disabled}
+            onPress={() => {
+              tapFeedback();
+              onChange(start);
+            }}
+            style={[styles.whenChip, { borderColor: colors.hairline }]}>
+            <Icon name="mais" size={16} color={colors.gold} />
+            <AppText variant="label" tone="secondary">Informar</AppText>
+          </Pressable>
+        )}
+      </View>
+      {active ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Remover ${label.toLowerCase()}`}
+          disabled={disabled}
+          onPress={() => {
+            tapFeedback();
+            onChange(null);
+          }}
+          style={styles.removeDetail}>
+          <AppText variant="caption" tone="muted">Remover</AppText>
+        </Pressable>
+      ) : null}
+    </View>
+  );
+}
+
 function workoutSummary(draft: Draft, now: Date): string {
-  const base = `${workoutTypeLabel(draft.type)} · ${draft.durationMin} min · ${intensityLabel(draft.intensity)}`;
-  return draft.performedAt ? `${base} · ${describePerformedAt(draft.performedAt, now).toLowerCase()}` : base;
+  const parts = [workoutTypeLabel(draft.type), `${draft.durationMin} min`, intensityLabel(draft.intensity)];
+  if (draft.distanceM !== null) {
+    parts.push(formatDistance(draft.distanceM));
+    const performance = formatPerformance(paceModality(draft.type), draft.distanceM, draft.durationMin);
+    if (performance) parts.push(performance);
+  }
+  if (draft.setsCount !== null) parts.push(`${draft.setsCount} ${draft.setsCount === 1 ? 'série' : 'séries'}`);
+  if (draft.loadKg !== null) parts.push(formatLoad(draft.loadKg));
+  if (draft.performedAt) parts.push(describePerformedAt(draft.performedAt, now).toLowerCase());
+  return parts.join(' · ');
+}
+
+/** Destaque dos detalhes da modalidade no resultado, ex.: "7,0 km · 4:17 /km". */
+function detailLine(draft: Draft): string | null {
+  const parts: string[] = [];
+  if (draft.distanceM !== null) {
+    parts.push(formatDistance(draft.distanceM));
+    const performance = formatPerformance(paceModality(draft.type), draft.distanceM, draft.durationMin);
+    if (performance) parts.push(performance);
+  }
+  if (draft.setsCount !== null) parts.push(`${draft.setsCount} ${draft.setsCount === 1 ? 'série' : 'séries'}`);
+  if (draft.loadKg !== null) parts.push(formatLoad(draft.loadKg));
+  return parts.length > 0 ? parts.join(' · ') : null;
 }
 
 /** Frase da Arena quando a posição melhorou; `null` quando não houve ganho a comemorar. */
@@ -150,11 +273,18 @@ function LoggedResult({
       summary={workoutSummary(draft, now)}
       intensityLabel={intensityLabel(draft.intensity)}
       arenaLine={arenaMessage(arena)}
+      detailLine={detailLine(draft)}
+      recordLine={
+        outcome.logged.isDistanceRecord
+          ? `Novo recorde de distância em ${workoutTypeLabel(draft.type).toLowerCase()}.`
+          : null
+      }
       shareMessage={workoutShareMessage({
         type: draft.type,
         durationMin: draft.durationMin,
         intensity: draft.intensity,
         result: outcome.logged,
+        distanceM: draft.distanceM,
       })}
       onClose={onClose}
       onOpenArena={arena ? () => onOpenArena(arena.legionId) : undefined}
@@ -226,6 +356,9 @@ export default function RegisterWorkoutScreen() {
   const [intensity, setIntensity] = useState<IntensityId>(initial.intensity);
   const [performedAt, setPerformedAt] = useState<Date | null>(null);
   const [choosingTime, setChoosingTime] = useState(false);
+  const [distanceM, setDistanceM] = useState<number | null>(null);
+  const [setsCount, setSetsCount] = useState<number | null>(null);
+  const [loadKg, setLoadKg] = useState<number | null>(null);
   const [now, setNow] = useState(() => new Date());
   // Um identificador por registro: reenviar depois de uma falha de rede não pontua duas vezes.
   const [requestId, setRequestId] = useState(() => randomUUID());
@@ -235,7 +368,16 @@ export default function RegisterWorkoutScreen() {
     return () => clearInterval(timer);
   }, []);
 
-  const draft: Draft = { type, durationMin: minutes, intensity, performedAt };
+  const module = workoutModule(type);
+  const draft: Draft = {
+    type,
+    durationMin: minutes,
+    intensity,
+    performedAt,
+    distanceM: module === 'resistencia' ? distanceM : null,
+    setsCount: module === 'forca' ? setsCount : null,
+    loadKg: module === 'forca' ? loadKg : null,
+  };
 
   const save = useMutation({
     mutationFn: async (): Promise<Outcome> => {
@@ -248,12 +390,30 @@ export default function RegisterWorkoutScreen() {
 
       let logged: LoggedWorkout;
       try {
-        logged = await logWorkout({ requestId, type, durationMin: minutes, intensity, performedAt: at ?? undefined });
+        logged = await logWorkout({
+          requestId,
+          type,
+          durationMin: minutes,
+          intensity,
+          performedAt: at ?? undefined,
+          ...(draft.distanceM === null ? {} : { distanceM: draft.distanceM }),
+          ...(draft.setsCount === null ? {} : { setsCount: draft.setsCount }),
+          ...(draft.loadKg === null ? {} : { loadKg: draft.loadKg }),
+        });
       } catch (error) {
         if (!(error instanceof ApiError && error.network)) throw error;
         // Sem conexão: guarda com o horário real do treino e envia depois com o mesmo identificador.
         const queuedAt = at ?? new Date();
-        await queue.add({ requestId, type, durationMin: minutes, intensity, performedAt: queuedAt.toISOString() });
+        await queue.add({
+          requestId,
+          type,
+          durationMin: minutes,
+          intensity,
+          performedAt: queuedAt.toISOString(),
+          ...(draft.distanceM === null ? {} : { distanceM: draft.distanceM }),
+          ...(draft.setsCount === null ? {} : { setsCount: draft.setsCount }),
+          ...(draft.loadKg === null ? {} : { loadKg: draft.loadKg }),
+        });
         return { kind: 'queued', performedAt: queuedAt };
       }
 
@@ -403,6 +563,50 @@ export default function RegisterWorkoutScreen() {
             <AppText variant="bodyMedium">Intensidade</AppText>
             <Segmented label="Intensidade" options={INTENSITIES} value={intensity} onChange={(id) => change(() => setIntensity(id))} disabled={disabled} />
           </View>
+
+          {module === 'resistencia' ? (
+            <DetailRow
+              label="Distância"
+              hint="Não muda a Glória; entra no seu histórico e nos recordes"
+              value={distanceM}
+              format={formatDistance}
+              step={DISTANCE.step}
+              min={DISTANCE.step}
+              max={DISTANCE.max}
+              start={5000}
+              disabled={disabled}
+              onChange={(value) => change(() => setDistanceM(value))}
+            />
+          ) : null}
+
+          {module === 'forca' ? (
+            <>
+              <DetailRow
+                label="Séries"
+                hint="Quantas séries no total"
+                value={setsCount}
+                format={(value) => `${value}`}
+                step={SETS.step}
+                min={SETS.min}
+                max={SETS.max}
+                start={4}
+                disabled={disabled}
+                onChange={(value) => change(() => setSetsCount(value))}
+              />
+              <DetailRow
+                label="Carga principal"
+                hint="Peso do exercício principal"
+                value={loadKg}
+                format={formatLoad}
+                step={LOAD.step}
+                min={LOAD.step}
+                max={LOAD.max}
+                start={20}
+                disabled={disabled}
+                onChange={(value) => change(() => setLoadKg(value))}
+              />
+            </>
+          ) : null}
 
           <View style={styles.group}>
             <View style={styles.row}>
@@ -563,6 +767,12 @@ const styles = StyleSheet.create({
     minHeight: touchTarget - 6,
     borderRadius: radius.sm,
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: space.xs,
+  },
+  removeDetail: {
+    alignSelf: 'flex-end',
+    minHeight: touchTarget - 16,
     justifyContent: 'center',
     paddingHorizontal: space.xs,
   },

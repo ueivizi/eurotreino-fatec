@@ -140,6 +140,7 @@ describe('progresso e registro de treino', () => {
     week_glory: 61,
     total_glory: 120,
     replayed: false,
+    is_distance_record: false,
   };
 
   it('converte o treino registrado e confere a soma da Glória', () => {
@@ -154,9 +155,12 @@ describe('progresso e registro de treino', () => {
       weekGlory: 61,
       totalGlory: 120,
       replayed: false,
+      isDistanceRecord: false,
     });
     expect(parseLoggedWorkout([{ ...logged, points: 30 }])).toBeNull();
     expect(parseLoggedWorkout([{ ...logged, total_glory: 10 }])).toBeNull();
+    expect(parseLoggedWorkout([{ ...logged, is_distance_record: 'sim' }])).toBeNull();
+    expect(parseLoggedWorkout([{ ...logged, is_distance_record: true }])?.isDistanceRecord).toBe(true);
     expect(parseLoggedWorkout([])).toBeNull();
   });
 });

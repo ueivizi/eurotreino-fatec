@@ -1,6 +1,7 @@
 import { rankFromGlory } from '@/features/ranks/tiers';
 import type { LoggedWorkout } from '@/features/workouts/workouts-parsers';
 
+import { formatDistance, formatPerformance, paceModality } from './metrics';
 import { intensityLabel, type IntensityId, type WorkoutTypeId } from './workout-types';
 
 /**
@@ -39,15 +40,21 @@ export type ShareInput = {
   durationMin: number;
   intensity: IntensityId;
   result: LoggedWorkout;
+  /** Distância percorrida, quando a modalidade tem e a pessoa informou. */
+  distanceM?: number | null;
 };
 
 /** Mensagem do treino recém-registrado. */
-export function workoutShareMessage({ type, durationMin, intensity, result }: ShareInput): string {
+export function workoutShareMessage({ type, durationMin, intensity, result, distanceM }: ShareInput): string {
   const flavor = FLAVORS[type];
   const rank = rankFromGlory(result.totalGlory);
   const lines = [
     `${flavor.mark} ${flavor.verb} ${durationMin} min (${intensityLabel(intensity).toLowerCase()}) no EuroTreino.`,
   ];
+  if (distanceM) {
+    const performance = formatPerformance(paceModality(type), distanceM, durationMin);
+    lines.push(`${formatDistance(distanceM)}${performance ? ` · ${performance}` : ''}${result.isDistanceRecord ? ' · recorde pessoal 🏆' : ''}`);
+  }
   if (result.isScored && result.points > 0) lines.push(`+${result.points} de Glória · ${rank.label}`);
   else lines.push(`${rank.label} · ${rank.glory} de Glória`);
   lines.push(`"${flavor.motto}"`);

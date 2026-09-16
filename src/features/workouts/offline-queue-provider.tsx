@@ -93,6 +93,9 @@ export function OfflineQueueProvider({ children }: { children: ReactNode }) {
             durationMin: item.durationMin,
             intensity: item.intensity,
             performedAt: new Date(item.performedAt),
+            ...(item.distanceM === undefined ? {} : { distanceM: item.distanceM }),
+            ...(item.setsCount === undefined ? {} : { setsCount: item.setsCount }),
+            ...(item.loadKg === undefined ? {} : { loadKg: item.loadKg }),
           });
           await update((current) => withoutRequest(current, item.requestId));
           sent += 1;

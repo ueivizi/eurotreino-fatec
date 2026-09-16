@@ -84,11 +84,11 @@ async function checkSyncWithApp(db) {
   ).map((row, index) => ({ id: index + 1, ...row }));
   check('rank_tiers igual a src/features/ranks/tiers.ts', tiers.rows, expectedTiers);
 
-  const types = await db.query('select id, label from public.workout_types where is_active order by sort_order');
+  const types = await db.query('select id, label, module from public.workout_types where is_active order by sort_order');
   check(
     'workout_types igual a src/features/workouts/workout-types.ts',
     types.rows,
-    WORKOUT_TYPES.map(({ id, label }) => ({ id, label })),
+    WORKOUT_TYPES.map(({ id, label, module }) => ({ id, label, module })),
   );
 
   const intensities = await db.query(

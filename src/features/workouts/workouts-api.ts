@@ -21,6 +21,10 @@ export type WorkoutInput = {
   intensity: IntensityId;
   /** Quando o treino aconteceu (até 48 h antes). Sem valor, vale o relógio do servidor. */
   performedAt?: Date;
+  /** Detalhes da modalidade; o banco recusa o que não pertence à família do tipo. */
+  distanceM?: number;
+  setsCount?: number;
+  loadKg?: number;
 };
 
 /** RF006/RF007: a Glória é calculada só no servidor. */
@@ -31,6 +35,9 @@ export async function logWorkout(input: WorkoutInput): Promise<LoggedWorkout> {
     p_duration_min: input.durationMin,
     p_intensity: input.intensity,
     ...(input.performedAt ? { p_performed_at: input.performedAt.toISOString() } : {}),
+    ...(input.distanceM === undefined ? {} : { p_distance_m: input.distanceM }),
+    ...(input.setsCount === undefined ? {} : { p_sets_count: input.setsCount }),
+    ...(input.loadKg === undefined ? {} : { p_load_kg: input.loadKg }),
   });
   if (error) throw toApiError(error);
   const logged = parseLoggedWorkout(data);

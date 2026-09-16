@@ -28,6 +28,10 @@ type Props = {
   arenaLine?: string | null;
   /** Texto pronto de "compartilhar treino", já no tom da modalidade. */
   shareMessage?: string;
+  /** Detalhes da modalidade, ex.: "7,0 km · 4:17 /km". */
+  detailLine?: string | null;
+  /** Aviso de recorde pessoal, vindo do servidor. */
+  recordLine?: string | null;
   onClose: () => void;
   onOpenArena?: () => void;
 };
@@ -48,7 +52,17 @@ function CompositionLine({ label, value, index }: { label: string; value: number
  * composição entra em cascata e a barra mostra o trecho ganho. Cerimônias maiores ficam na fila e
  * tocam quando a folha fecha.
  */
-export function WorkoutResult({ result, summary, intensityLabel, arenaLine, shareMessage, onClose, onOpenArena }: Props) {
+export function WorkoutResult({
+  result,
+  summary,
+  intensityLabel,
+  arenaLine,
+  shareMessage,
+  detailLine,
+  recordLine,
+  onClose,
+  onOpenArena,
+}: Props) {
   const { colors } = useTheme();
   const pending = usePendingCelebrations();
   const [shareNote, setShareNote] = useState<string | null>(null);
@@ -116,6 +130,13 @@ export function WorkoutResult({ result, summary, intensityLabel, arenaLine, shar
             {summary}
           </AppText>
         </Reveal>
+        {detailLine ? (
+          <Reveal delay={420}>
+            <AppText variant="subheading" tone="goldHighlight" style={styles.centerText}>
+              {detailLine}
+            </AppText>
+          </Reveal>
+        ) : null}
       </View>
 
       <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.hairlineSoft }]}>
@@ -146,6 +167,13 @@ export function WorkoutResult({ result, summary, intensityLabel, arenaLine, shar
           {after.next ? `Faltam ${after.next.remaining} para ${after.next.label}` : 'Você chegou ao Olimpo'}
         </AppText>
       </Reveal>
+
+      {recordLine ? (
+        <Reveal delay={940} style={styles.arena}>
+          <Icon name="arena" size={22} color={colors.goldHighlight} />
+          <AppText style={styles.arenaText}>{recordLine}</AppText>
+        </Reveal>
+      ) : null}
 
       {arenaLine ? (
         <Reveal delay={980} style={styles.arena}>

@@ -26,6 +26,8 @@ export type LoggedWorkout = {
   weekGlory: number;
   totalGlory: number;
   replayed: boolean;
+  /** Distância maior que todas as anteriores desta modalidade. */
+  isDistanceRecord: boolean;
 };
 
 export function parseMyProgress(value: unknown): MyProgress | null {
@@ -65,9 +67,11 @@ export function parseLoggedWorkout(value: unknown): LoggedWorkout | null {
     week_glory: weekGlory,
     total_glory: totalGlory,
     replayed,
+    is_distance_record: isDistanceRecord,
   } = row;
 
   if (!isUuid(workoutId) || typeof isScored !== 'boolean' || typeof replayed !== 'boolean') return null;
+  if (typeof isDistanceRecord !== 'boolean') return null;
   const numbers = [presence, duration, intensity, bonus, points, weekGlory, totalGlory];
   if (!numbers.every(isNonNegativeInteger)) return null;
   const [p, d, i, b, total, week, overall] = numbers as number[];
@@ -84,5 +88,6 @@ export function parseLoggedWorkout(value: unknown): LoggedWorkout | null {
     weekGlory: week,
     totalGlory: overall,
     replayed,
+    isDistanceRecord,
   };
 }
