@@ -146,6 +146,9 @@ export default function SignUpScreen() {
               </AppText>
             </View>
             {info ? <Notice message={info} /> : null}
+            {/* Sem isto a pessoa fica esperando um código que nunca vem: quando o e-mail já tem
+                conta, o Supabase não envia nada (e não avisa, para não revelar quem é cadastrado). */}
+            <Notice message="Não chegou nada? Pode ser que este e-mail já tenha conta — nesse caso não enviamos código. Entre com sua senha ou use “Esqueci minha senha”." />
             <TextField
               label="Código"
               value={code}
@@ -173,6 +176,7 @@ export default function SignUpScreen() {
                 onPress={resend}
                 disabled={busy || cooldown > 0}
               />
+              <Button variant="ghost" label="Esqueci minha senha" onPress={() => router.replace('/recuperar-senha')} disabled={busy} />
               <Button variant="ghost" label="Já tenho conta" onPress={() => router.replace('/entrar')} disabled={busy} />
             </View>
           </View>
