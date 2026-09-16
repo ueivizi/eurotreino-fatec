@@ -29,6 +29,7 @@ import {
   suggestedPerformedAt,
   withDayOffset,
 } from '@/features/workouts/performed-at';
+import { workoutShareMessage } from '@/features/workouts/share-workout';
 import {
   DURATION,
   INTENSITIES,
@@ -149,6 +150,12 @@ function LoggedResult({
       summary={workoutSummary(draft, now)}
       intensityLabel={intensityLabel(draft.intensity)}
       arenaLine={arenaMessage(arena)}
+      shareMessage={workoutShareMessage({
+        type: draft.type,
+        durationMin: draft.durationMin,
+        intensity: draft.intensity,
+        result: outcome.logged,
+      })}
       onClose={onClose}
       onOpenArena={arena ? () => onOpenArena(arena.legionId) : undefined}
     />

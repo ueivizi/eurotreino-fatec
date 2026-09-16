@@ -11,7 +11,9 @@ import { RollingNumber } from '@/components/motion/rolling-number';
 import { Sparks } from '@/components/motion/sparks';
 import { EmblemAvatar } from '@/components/rank/emblem-avatar';
 import { AppText } from '@/components/ui/text';
+import { arenaShareMessage } from '@/features/workouts/share-workout';
 import * as haptics from '@/lib/haptics';
+import { shareText } from '@/lib/share';
 import { spring } from '@/theme/motion';
 import { useTheme } from '@/theme/theme';
 import { radius, space } from '@/theme/tokens';
@@ -118,6 +120,7 @@ export function ArenaScene({ celebration, onContinue }: Props) {
   const podium = celebration.toPlace <= 3;
   const tone = PODIUM_TONES[celebration.toPlace];
   const passedLine = `Você passou ${joinNames(celebration.passed)}.`;
+  const myWeekGlory = celebration.standings.find((standing) => standing.isMe)?.weekGlory ?? 0;
 
   useEffect(() => {
     const timer = setTimeout(() => (podium ? haptics.ceremony() : haptics.success()), reduced ? 0 : 620);
@@ -134,6 +137,11 @@ export function ArenaScene({ celebration, onContinue }: Props) {
         onContinue();
         router.navigate({ pathname: '/arena', params: { legiao: celebration.legionId } });
       },
+    },
+    {
+      label: 'Compartilhar',
+      variant: 'ghost' as const,
+      onPress: () => void shareText(arenaShareMessage(celebration.toPlace, myWeekGlory)),
     },
     { label: 'Continuar', onPress: onContinue, variant: 'ghost' as const },
   ];

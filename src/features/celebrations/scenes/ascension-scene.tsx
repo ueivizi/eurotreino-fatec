@@ -5,6 +5,8 @@ import { LightRays } from '@/components/motion/light-rays';
 import { Reveal } from '@/components/motion/reveal';
 import { Sparks } from '@/components/motion/sparks';
 import { AppText } from '@/components/ui/text';
+import { ascensionShareMessage } from '@/features/workouts/share-workout';
+import { shareText } from '@/lib/share';
 import { useTheme } from '@/theme/theme';
 import { radius, space } from '@/theme/tokens';
 
@@ -34,7 +36,14 @@ export function AscensionScene({ celebration, onContinue }: Props) {
       layout="full"
       announcement={`Ascensão. Agora você é ${celebration.label}, com ${celebration.glory} de Glória.`}
       onSkip={onContinue}
-      actions={[{ label: 'Continuar', onPress: onContinue }]}
+      actions={[
+        { label: 'Continuar', onPress: onContinue },
+        {
+          label: 'Compartilhar',
+          variant: 'ghost' as const,
+          onPress: () => void shareText(ascensionShareMessage(celebration.glory)),
+        },
+      ]}
       actionsDelay={1950}>
       <Overline text="ASCENSÃO" delay={1100} />
 

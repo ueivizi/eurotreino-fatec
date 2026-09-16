@@ -19,8 +19,10 @@ import { fetchMyLegions } from '@/features/legions/legions-api';
 import { rankFromGlory } from '@/features/ranks/tiers';
 import { useOfflineQueue } from '@/features/workouts/offline-queue-provider';
 import { fetchMyProgress } from '@/features/workouts/workouts-api';
+import { profileShareMessage } from '@/features/workouts/share-workout';
 import { queryKeys } from '@/lib/query-client';
 import { errorMessage } from '@/lib/rpc-errors';
+import { SHARE_FEEDBACK, shareText } from '@/lib/share';
 import { THEME_OPTIONS, useTheme } from '@/theme/theme';
 import { space } from '@/theme/tokens';
 
@@ -37,6 +39,11 @@ export default function ProfileScreen() {
   const { state, signOut } = useSession();
   const queue = useOfflineQueue();
   const [confirmSignOut, setConfirmSignOut] = useState(false);
+  const [shareNote, setShareNote] = useState<string | null>(null);
+
+  async function share(message: string) {
+    setShareNote(SHARE_FEEDBACK[await shareText(message)]);
+  }
 
   const progress = useQuery({ queryKey: queryKeys.progress, queryFn: fetchMyProgress });
   const legions = useQuery({ queryKey: queryKeys.legions, queryFn: fetchMyLegions });
@@ -81,6 +88,15 @@ export default function ProfileScreen() {
         </View>
       </View>
       <Button label="Editar nome e emblema" icon="editar" variant="secondary" onPress={() => router.push('/editar-perfil')} />
+      {progress.data ? (
+        <Button
+          label="Compartilhar meu progresso"
+          icon="compartilhar"
+          variant="ghost"
+          onPress={() => void share(profileShareMessage(profile.displayName, progress.data.totalGlory, progress.data.totalWorkouts))}
+        />
+      ) : null}
+      {shareNote ? <Notice message={shareNote} /> : null}
 
       <Card style={styles.rankCard}>
         {progress.isError ? (

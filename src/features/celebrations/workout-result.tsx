@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { Reveal } from '@/components/motion/reveal';
@@ -10,6 +11,7 @@ import { AppText } from '@/components/ui/text';
 import { SCORING } from '@/features/ranks/scoring';
 import { rankFromGlory } from '@/features/ranks/tiers';
 import type { LoggedWorkout } from '@/features/workouts/workouts-parsers';
+import { SHARE_FEEDBACK, shareText } from '@/lib/share';
 import { useTheme } from '@/theme/theme';
 import { radius, space } from '@/theme/tokens';
 
@@ -24,6 +26,8 @@ type Props = {
   intensityLabel: string;
   /** Frase da Arena quando a posição melhorou. */
   arenaLine?: string | null;
+  /** Texto pronto de "compartilhar treino", já no tom da modalidade. */
+  shareMessage?: string;
   onClose: () => void;
   onOpenArena?: () => void;
 };
@@ -44,9 +48,16 @@ function CompositionLine({ label, value, index }: { label: string; value: number
  * composição entra em cascata e a barra mostra o trecho ganho. Cerimônias maiores ficam na fila e
  * tocam quando a folha fecha.
  */
-export function WorkoutResult({ result, summary, intensityLabel, arenaLine, onClose, onOpenArena }: Props) {
+export function WorkoutResult({ result, summary, intensityLabel, arenaLine, shareMessage, onClose, onOpenArena }: Props) {
   const { colors } = useTheme();
   const pending = usePendingCelebrations();
+  const [shareNote, setShareNote] = useState<string | null>(null);
+
+  async function share() {
+    if (!shareMessage) return;
+    setShareNote(SHARE_FEEDBACK[await shareText(shareMessage)]);
+  }
+
   const before = rankFromGlory(Math.max(0, result.totalGlory - result.points));
   const after = rankFromGlory(result.totalGlory);
   const changedDivision = after.label !== before.label;
@@ -144,6 +155,10 @@ export function WorkoutResult({ result, summary, intensityLabel, arenaLine, onCl
       ) : null}
 
       <Reveal delay={1080} style={styles.actions}>
+        {shareNote ? <Notice message={shareNote} /> : null}
+        {shareMessage ? (
+          <Button label="Compartilhar treino" icon="compartilhar" variant="secondary" onPress={() => void share()} />
+        ) : null}
         {arenaLine && onOpenArena ? <Button label="Ver Arena" onPress={onOpenArena} /> : null}
         <Button
           label={pending > 0 ? 'Continuar' : 'Fechar'}
