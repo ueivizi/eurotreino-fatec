@@ -64,7 +64,7 @@ async function checkSyncWithApp(db) {
   console.log('  sincronia com o app');
   const { TIERS } = await importApp('src/features/ranks/tiers.ts');
   const { WORKOUT_TYPES, INTENSITIES, DURATION } = await importApp('src/features/workouts/workout-types.ts');
-  const { EMBLEMS } = await importApp('src/features/profile/emblems.ts');
+  const { EMBLEMS, EMBLEM_COLORS } = await importApp('src/features/profile/emblems.ts');
 
   const check = (name, actual, expected) => {
     const a = JSON.stringify(actual);
@@ -98,13 +98,23 @@ async function checkSyncWithApp(db) {
   check('intensidades do app aceitas pelo banco', intensities.rows[0].accepted, INTENSITIES.map(({ id }) => id).sort());
 
   const emblems = await db.query(
-    "select array_agg(e order by e) filter (where private.is_valid_emblem(e)) as accepted, private.is_valid_emblem('fenix') as accepts_unknown from unnest($1::text[]) as e",
+    "select array_agg(e order by e) filter (where private.is_valid_emblem(e)) as accepted, private.is_valid_emblem('quimera') as accepts_unknown from unnest($1::text[]) as e",
     [EMBLEMS],
   );
   check(
     'emblemas do app aceitos pelo banco (e só eles)',
     emblems.rows[0],
     { accepted: [...EMBLEMS].sort(), accepts_unknown: false },
+  );
+
+  const colors = await db.query(
+    "select array_agg(c order by c) filter (where private.is_valid_emblem_color(c)) as accepted, private.is_valid_emblem_color('rosa') as accepts_unknown from unnest($1::text[]) as c",
+    [EMBLEM_COLORS],
+  );
+  check(
+    'cores do app aceitas pelo banco (e só elas)',
+    colors.rows[0],
+    { accepted: [...EMBLEM_COLORS].sort(), accepts_unknown: false },
   );
 
   const { isValidDisplayName } = await importApp('src/features/profile/display-name.ts');

@@ -11,7 +11,7 @@ import { Notice } from '@/components/ui/notice';
 import { TextField } from '@/components/ui/text-field';
 import { useSession } from '@/features/auth/session';
 import { DISPLAY_NAME_MAX_LENGTH, isValidDisplayName, normalizeDisplayName } from '@/features/profile/display-name';
-import type { EmblemName } from '@/features/profile/emblems';
+import { DEFAULT_EMBLEM_COLOR, type EmblemColor, type EmblemName } from '@/features/profile/emblems';
 import { saveProfile } from '@/features/profile/profile-api';
 import { queryKeys } from '@/lib/query-client';
 import { RPC_MESSAGES } from '@/lib/rpc-errors';
@@ -31,6 +31,7 @@ export default function EditProfileScreen() {
 
   const [name, setName] = useState(current?.displayName ?? '');
   const [emblem, setEmblem] = useState<EmblemName>(current?.emblem ?? 'aguia');
+  const [emblemColor, setEmblemColor] = useState<EmblemColor>(current?.emblemColor ?? DEFAULT_EMBLEM_COLOR);
   const [touched, setTouched] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -39,7 +40,8 @@ export default function EditProfileScreen() {
 
   const displayName = normalizeDisplayName(name);
   const nameValid = isValidDisplayName(displayName);
-  const changed = displayName !== current.displayName || emblem !== current.emblem;
+  const changed =
+    displayName !== current.displayName || emblem !== current.emblem || emblemColor !== current.emblemColor;
 
   async function submit() {
     setTouched(true);
@@ -47,7 +49,7 @@ export default function EditProfileScreen() {
     setBusy(true);
     setError(null);
     try {
-      const result = await saveProfile(displayName, emblem);
+      const result = await saveProfile(displayName, emblem, emblemColor);
       if (result.ok) {
         profileSaved(result.profile);
         // Nome e emblema aparecem na Arena e nos membros das Legiões.
@@ -89,7 +91,7 @@ export default function EditProfileScreen() {
           error={touched && !nameValid ? NAME_RULE : null}
         />
 
-        <EmblemPicker label="Emblema" value={emblem} onChange={setEmblem} />
+        <EmblemPicker label="Emblema" value={emblem} onChange={setEmblem} color={emblemColor} onChangeColor={setEmblemColor} />
 
         <View style={styles.actions}>
           <Button label={busy ? 'Salvando…' : 'Salvar'} onPress={() => void submit()} disabled={busy || !changed} />

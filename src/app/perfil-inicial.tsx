@@ -10,7 +10,7 @@ import { TextField } from '@/components/ui/text-field';
 import { useSession } from '@/features/auth/session';
 import { startFirstSteps } from '@/features/onboarding/first-steps';
 import { DISPLAY_NAME_MAX_LENGTH, isValidDisplayName, normalizeDisplayName } from '@/features/profile/display-name';
-import type { EmblemName } from '@/features/profile/emblems';
+import { DEFAULT_EMBLEM_COLOR, type EmblemColor, type EmblemName } from '@/features/profile/emblems';
 import { saveProfile } from '@/features/profile/profile-api';
 import { RPC_MESSAGES } from '@/lib/rpc-errors';
 import { useTheme } from '@/theme/theme';
@@ -26,6 +26,7 @@ export default function InitialProfileScreen() {
 
   const [name, setName] = useState('');
   const [emblem, setEmblem] = useState<EmblemName>('aguia');
+  const [emblemColor, setEmblemColor] = useState<EmblemColor>(DEFAULT_EMBLEM_COLOR);
   const [touched, setTouched] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -39,7 +40,7 @@ export default function InitialProfileScreen() {
     setBusy(true);
     setError(null);
     try {
-      const result = await saveProfile(displayName, emblem);
+      const result = await saveProfile(displayName, emblem, emblemColor);
       if (result.ok) {
         // Depois do perfil, o Início abre "Como conquistar Glória" e a escolha da Legião.
         startFirstSteps();
@@ -87,7 +88,13 @@ export default function InitialProfileScreen() {
           error={touched && !nameValid ? NAME_RULE : null}
         />
 
-        <EmblemPicker label="Emblema (no lugar da foto)" value={emblem} onChange={setEmblem} />
+        <EmblemPicker
+          label="Emblema (no lugar da foto)"
+          value={emblem}
+          onChange={setEmblem}
+          color={emblemColor}
+          onChangeColor={setEmblemColor}
+        />
 
         <Notice message="Sem foto: seu emblema representa você na Arena. Seu nome e seu emblema aparecem só para quem está nas suas Legiões, e os detalhes dos seus treinos ficam só com você." />
 

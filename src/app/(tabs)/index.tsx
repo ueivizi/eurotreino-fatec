@@ -117,7 +117,7 @@ export default function HomeScreen() {
           </AppText>
           <AppText variant="title" numberOfLines={1}>{`Ave, ${profile.displayName}`}</AppText>
         </View>
-        <EmblemAvatar emblem={profile.emblem} size={46} />
+        <EmblemAvatar emblem={profile.emblem} color={profile.emblemColor} size={46} />
       </Reveal>
 
       {progress.isError ? (

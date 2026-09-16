@@ -36,13 +36,13 @@ const BIA = { displayName: 'Bia', emblem: 'tridente' } as const;
 
 function standing(
   userId: string,
-  person: { displayName: string; emblem: ArenaStanding['emblem'] },
+  person: { displayName: string; emblem: ArenaStanding['emblem']; emblemColor?: ArenaStanding['emblemColor'] },
   beforePlace: number,
   afterPlace: number,
   weekGlory: number,
   isMe = false,
 ): ArenaStanding {
-  return { userId, ...person, beforePlace, afterPlace, weekGlory, isMe };
+  return { userId, emblemColor: 'ouro', ...person, beforePlace, afterPlace, weekGlory, isMe };
 }
 
 const ASCENSION: Celebration = {
@@ -65,6 +65,7 @@ const PODIUM: Celebration = {
   passed: ['Camila', 'Digão'],
   standings: [standing('c', CAMILA, 2, 3, 52), standing('d', DIGAO, 1, 2, 90), standing('l', LUCAS, 3, 1, 94, true)],
   emblem: 'aguia',
+  emblemColor: 'ouro',
 };
 
 const SAMPLES: { label: string; description: string; celebrations: Celebration[] }[] = [
@@ -88,6 +89,7 @@ const SAMPLES: { label: string; description: string; celebrations: Celebration[]
         toPlace: 4,
         passed: ['Bia'],
         standings: [standing('b', BIA, 4, 5, 41), standing('l', LUCAS, 5, 4, 44, true)],
+        emblemColor: 'ouro',
         emblem: 'aguia',
       },
     ],

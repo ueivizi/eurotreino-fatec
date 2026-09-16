@@ -1,11 +1,18 @@
 import { isLegionRole, type LegionRole } from '@/features/legions/legions-parsers';
-import { isEmblemName, type EmblemName } from '@/features/profile/emblems';
+import {
+  DEFAULT_EMBLEM_COLOR,
+  isEmblemColor,
+  isEmblemName,
+  type EmblemColor,
+  type EmblemName,
+} from '@/features/profile/emblems';
 import { isIsoDate, isNonEmptyText, isNonNegativeInteger, isRow, isUuid, parseList } from '@/lib/parse';
 
 export type RankingEntry = {
   userId: string;
   displayName: string;
   emblem: EmblemName;
+  emblemColor: EmblemColor;
   role: LegionRole;
   weekGlory: number;
   totalGlory: number;
@@ -23,13 +30,14 @@ export type WeeklyRanking = {
 function parseEntry(item: unknown): (RankingEntry & { weekStart: string }) | null {
   if (!isRow(item)) return null;
   const { user_id: userId, display_name: displayName, emblem, role, week_glory: weekGlory } = item;
+  const emblemColor = isEmblemColor(item.emblem_color) ? item.emblem_color : DEFAULT_EMBLEM_COLOR;
   const { total_glory: totalGlory, place, is_me: isMe, week_start: weekStart } = item;
   if (!isUuid(userId) || !isNonEmptyText(displayName, 32) || typeof emblem !== 'string' || !isEmblemName(emblem)) {
     return null;
   }
   if (!isLegionRole(role) || !isNonNegativeInteger(weekGlory) || !isNonNegativeInteger(totalGlory)) return null;
   if (!isNonNegativeInteger(place) || place < 1 || typeof isMe !== 'boolean' || !isIsoDate(weekStart)) return null;
-  return { userId, displayName, emblem, role, weekGlory, totalGlory, place, isMe, weekStart };
+  return { userId, displayName, emblem, emblemColor, role, weekGlory, totalGlory, place, isMe, weekStart };
 }
 
 export function parseWeeklyRanking(value: unknown): WeeklyRanking | null {

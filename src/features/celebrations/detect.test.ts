@@ -25,6 +25,7 @@ function entry(userId: string, place: number, weekGlory: number, isMe = false): 
     userId,
     displayName: isMe ? 'Lucas' : `Membro ${userId}`,
     emblem: 'aguia',
+  emblemColor: 'ouro' as const,
     role: 'member',
     weekGlory,
     totalGlory: 400,

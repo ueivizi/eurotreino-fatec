@@ -60,7 +60,7 @@ select tests.clear_authentication();
 
 -- caso: emblema fora da lista é recusado
 select tests.authenticate_as('ana');
-select tests.assert_raises('emblema inventado', $$select public.complete_profile('Ana', 'fenix')$$, 'invalid_emblem');
+select tests.assert_raises('emblema inventado', $$select public.complete_profile('Ana', 'quimera')$$, 'invalid_emblem');
 select tests.assert_raises('emblema nulo', $$select public.complete_profile('Ana', null)$$, 'invalid_emblem');
 select tests.clear_authentication();
 
@@ -177,5 +177,39 @@ select tests.assert_equal(
   'edição depois da janela',
   (public.complete_profile('Fábio', 'aguia')).emblem,
   'aguia'
+);
+select tests.clear_authentication();
+
+-- caso: cor do emblema (lista fechada, nunca hexadecimal do app)
+select tests.authenticate_as('ana');
+select tests.assert_equal(
+  'cor padrão é ouro',
+  (select p.emblem_color from public.complete_profile('Ana', 'touro') as p),
+  'ouro'
+);
+select tests.assert_equal(
+  'cor escolhida é guardada',
+  (select p.emblem_color from public.complete_profile('Ana', 'touro', 'porfiro') as p),
+  'porfiro'
+);
+select tests.assert_equal(
+  'sem cor informada, a escolha anterior fica de pé',
+  (select p.emblem_color from public.complete_profile('Ana', 'serpente') as p),
+  'porfiro'
+);
+select tests.assert_raises(
+  'cor inventada',
+  $$select public.complete_profile('Ana', 'touro', 'rosa')$$,
+  'invalid_emblem_color'
+);
+select tests.assert_raises(
+  'hexadecimal no lugar da cor',
+  $$select public.complete_profile('Ana', 'touro', '#FF0000')$$,
+  'invalid_emblem_color'
+);
+select tests.assert_equal(
+  'nada disso mudou a cor gravada',
+  (select p.emblem_color from public.profiles as p where p.id = tests.user_id('ana')),
+  'porfiro'
 );
 select tests.clear_authentication();

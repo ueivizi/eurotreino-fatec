@@ -23,7 +23,7 @@ describe('parseMyLegions', () => {
 
   it('recusa a resposta inteira se um item vier fora do formato', () => {
     expect(parseMyLegions([row, { ...row, role: 'admin' }])).toBeNull();
-    expect(parseMyLegions([{ ...row, emblem: 'fenix' }])).toBeNull();
+    expect(parseMyLegions([{ ...row, emblem: 'quimera' }])).toBeNull();
     expect(parseMyLegions([{ ...row, member_count: -1 }])).toBeNull();
     expect(parseMyLegions({ rows: [row] })).toBeNull();
   });

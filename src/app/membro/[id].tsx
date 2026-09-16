@@ -83,6 +83,7 @@ export default function MemberProfileScreen() {
           <View style={styles.identity}>
             <EmblemAvatar
               emblem={member.emblem}
+              color={member.emblemColor}
               size={120}
               laurel={member.weekGlory > 0 ? LAURELS[member.place] : undefined}
             />

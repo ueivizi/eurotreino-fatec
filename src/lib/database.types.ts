@@ -76,6 +76,7 @@ export type Database = {
           created_at: string
           display_name: string
           emblem: string
+          emblem_color: string
           id: string
           updated_at: string
         }
@@ -83,6 +84,7 @@ export type Database = {
           created_at?: string
           display_name: string
           emblem: string
+          emblem_color?: string
           id: string
           updated_at?: string
         }
@@ -90,6 +92,7 @@ export type Database = {
           created_at?: string
           display_name?: string
           emblem?: string
+          emblem_color?: string
           id?: string
           updated_at?: string
         }
@@ -233,11 +236,16 @@ export type Database = {
     }
     Functions: {
       complete_profile: {
-        Args: { p_display_name: string; p_emblem: string }
+        Args: {
+          p_display_name: string
+          p_emblem: string
+          p_emblem_color?: string
+        }
         Returns: {
           created_at: string
           display_name: string
           emblem: string
+          emblem_color: string
           id: string
           updated_at: string
         }
@@ -270,6 +278,7 @@ export type Database = {
         Returns: {
           display_name: string
           emblem: string
+          emblem_color: string
           is_me: boolean
           place: number
           role: string

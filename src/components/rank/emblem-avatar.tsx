@@ -3,7 +3,7 @@ import Svg, { Ellipse } from 'react-native-svg';
 
 import { LaurelCrown } from '@/components/motion/laurel-crown';
 import { Icon } from '@/components/ui/icon';
-import type { EmblemName } from '@/features/profile/emblems';
+import { DEFAULT_EMBLEM_COLOR, EMBLEM_COLOR_TONES, type EmblemColor, type EmblemName } from '@/features/profile/emblems';
 import { useTheme } from '@/theme/theme';
 
 export type Laurel = 'gold' | 'silver' | 'bronze';
@@ -21,6 +21,8 @@ const LEAVES = Array.from({ length: 7 }, (_, i) => [
 
 type Props = {
   emblem: EmblemName;
+  /** Cor escolhida no perfil; sem valor, o tom neutro do tema. */
+  color?: EmblemColor;
   size?: number;
   /** Louros do pódio da Arena (1º, 2º e 3º lugares). */
   laurel?: Laurel;
@@ -28,9 +30,10 @@ type Props = {
   crownDelay?: number;
 };
 
-export function EmblemAvatar({ emblem, size = 48, laurel, crownDelay }: Props) {
-  const { colors } = useTheme();
-  const rim = laurel ? LAUREL_COLORS[laurel].rim : colors.hairline;
+export function EmblemAvatar({ emblem, color, size = 48, laurel, crownDelay }: Props) {
+  const { colors, name } = useTheme();
+  const tone = EMBLEM_COLOR_TONES[color ?? DEFAULT_EMBLEM_COLOR][name];
+  const rim = laurel ? LAUREL_COLORS[laurel].rim : color ? tone : colors.hairline;
   const inner = laurel ? size * 0.64 : size;
 
   return (
@@ -55,7 +58,7 @@ export function EmblemAvatar({ emblem, size = 48, laurel, crownDelay }: Props) {
           alignItems: 'center',
           justifyContent: 'center',
         }}>
-        <Icon name={emblem} size={Math.round(inner * 0.5)} color={laurel ? rim : colors.textSecondary} />
+        <Icon name={emblem} size={Math.round(inner * 0.5)} color={laurel ? rim : color ? tone : colors.textSecondary} />
       </View>
     </View>
   );

@@ -37,7 +37,7 @@ select tests.assert_raises(
 );
 select tests.assert_raises(
   'emblema inventado',
-  $$select * from public.create_group('Legião Fênix', 'fenix')$$,
+  $$select * from public.create_group('Legião Fênix', 'quimera')$$,
   'invalid_emblem'
 );
 select tests.clear_authentication();

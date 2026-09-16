@@ -1,4 +1,4 @@
-import type { EmblemName } from '@/features/profile/emblems';
+import type { EmblemColor, EmblemName } from '@/features/profile/emblems';
 import type { TierId } from '@/features/ranks/tiers';
 
 /** Próxima divisão, para a frase "Faltam N para X". */
@@ -9,6 +9,7 @@ export type ArenaStanding = {
   userId: string;
   displayName: string;
   emblem: EmblemName;
+  emblemColor: EmblemColor;
   isMe: boolean;
   beforePlace: number;
   afterPlace: number;
@@ -50,6 +51,7 @@ export type Celebration =
       passed: string[];
       standings: ArenaStanding[];
       emblem: EmblemName;
+  emblemColor: EmblemColor;
     }
   | { kind: 'constancy'; bonus: number; weekGlory: number }
   | { kind: 'first-workout' }

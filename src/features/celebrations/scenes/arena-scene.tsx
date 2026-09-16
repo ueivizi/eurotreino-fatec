@@ -81,7 +81,7 @@ function StandingRow({ row, from, to, delay }: { row: ArenaStanding; from: numbe
         delay={delay}
         containerStyle={styles.place}
       />
-      <EmblemAvatar emblem={row.emblem} size={34} />
+      <EmblemAvatar emblem={row.emblem} color={row.emblemColor} size={34} />
       <AppText variant="bodyMedium" numberOfLines={1} style={styles.name}>
         {row.isMe ? `${row.displayName} · você` : row.displayName}
       </AppText>
@@ -178,7 +178,7 @@ export function ArenaScene({ celebration, onContinue }: Props) {
         <RippleRing size={150} delay={640} />
         <Sparks size={320} count={30} seed={celebration.toPlace * 17} delay={640} style={{ top: -70, left: -70 }} />
         <LaurelCrown size={180} tone={tone} delay={560} />
-        <EmblemAvatar emblem={celebration.emblem} size={112} />
+        <EmblemAvatar emblem={celebration.emblem} color={celebration.emblemColor} size={112} />
       </View>
       <RollingNumber
         value={celebration.toPlace}

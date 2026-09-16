@@ -78,7 +78,7 @@ export default function ProfileScreen() {
       <AppText variant="title">Perfil</AppText>
 
       <View style={styles.identity}>
-        <EmblemAvatar emblem={profile.emblem} size={64} />
+        <EmblemAvatar emblem={profile.emblem} color={profile.emblemColor} size={64} />
         <View style={styles.identityText}>
           <AppText variant="heading" numberOfLines={1}>{profile.displayName}</AppText>
           <AppText variant="label" tone="secondary">

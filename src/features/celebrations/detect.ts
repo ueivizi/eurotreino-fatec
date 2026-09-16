@@ -58,6 +58,7 @@ function arenaCelebration(snapshot: ArenaSnapshot): Extract<Celebration, { kind:
       userId: entry.userId,
       displayName: entry.displayName,
       emblem: entry.emblem,
+      emblemColor: entry.emblemColor,
       isMe: entry.isMe,
       beforePlace: entry.place,
       afterPlace: later.place,
@@ -74,6 +75,7 @@ function arenaCelebration(snapshot: ArenaSnapshot): Extract<Celebration, { kind:
     passed: passedEntries.map((entry) => entry.displayName),
     standings,
     emblem: meAfter.emblem,
+    emblemColor: meAfter.emblemColor,
   };
 }
 

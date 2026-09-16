@@ -217,7 +217,7 @@ export default function LegionDetailScreen() {
                     : router.push({ pathname: '/membro/[id]', params: { id: member.userId, legiao: legion.id } })
                 }
                 style={[styles.memberRow, { borderBottomColor: colors.hairlineSoft }]}>
-                <EmblemAvatar emblem={member.emblem} size={36} />
+                <EmblemAvatar emblem={member.emblem} color={member.emblemColor} size={36} />
                 <View style={styles.memberText}>
                   <AppText variant="bodyMedium" numberOfLines={1}>
                     {member.isMe ? `${member.displayName} · você` : member.displayName}

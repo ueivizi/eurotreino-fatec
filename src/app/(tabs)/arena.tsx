@@ -228,6 +228,7 @@ export default function ArenaScreen() {
                           style={styles.podiumPerson}>
                           <EmblemAvatar
                             emblem={entry.emblem}
+                            color={entry.emblemColor}
                             size={slot.index === 0 ? 88 : 76}
                             laurel={hasGlory ? style.laurel : undefined}
                             crownDelay={riseDelay + 320}
@@ -263,7 +264,7 @@ export default function ArenaScreen() {
                           entry.isMe ? { backgroundColor: colors.selectedFill } : null,
                         ]}>
                         <AppText variant="bodyMedium" tone="muted" style={styles.position}>{String(entry.place)}</AppText>
-                        <EmblemAvatar emblem={entry.emblem} size={36} />
+                        <EmblemAvatar emblem={entry.emblem} color={entry.emblemColor} size={36} />
                         <View style={styles.rowText}>
                           <AppText variant="bodyMedium" numberOfLines={1}>{entry.isMe ? `${entry.displayName} · você` : entry.displayName}</AppText>
                           <AppText variant="caption" tone="muted">{rankFromGlory(entry.totalGlory).label}</AppText>
