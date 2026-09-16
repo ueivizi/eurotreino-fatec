@@ -62,7 +62,9 @@ select tests.assert_equal(
       and c.relkind in ('r', 'p', 'v', 'm', 'f')
       and has_any_column_privilege('authenticated', c.oid, 'SELECT')
   ),
-  'public.group_members, public.groups, public.profiles, public.rank_tiers, public.workout_types, public.workouts'
+  'public.equipment, public.exercises, public.group_members, public.groups, public.muscle_groups, '
+    || 'public.profiles, public.rank_tiers, public.routine_exercises, public.routines, '
+    || 'public.workout_types, public.workouts'
 );
 select tests.assert_equal(
   'tabelas graváveis por authenticated',
@@ -100,10 +102,11 @@ select tests.assert_equal(
     join pg_namespace as n on n.oid = p.pronamespace
     where n.nspname in ('public', 'private') and has_function_privilege('authenticated', p.oid, 'EXECUTE')
   ),
-  'private.is_group_member, private.shares_group_with, public.complete_profile, public.create_group, '
-    || 'public.get_group_invite, public.group_weekly_ranking, public.join_group_by_code, public.leave_group, '
-    || 'public.log_workout, public.my_groups, public.my_progress, public.my_records, public.preview_invite, '
-    || 'public.regenerate_invite'
+  'private.is_group_member, private.shares_group_with, public.complete_profile, public.create_exercise, '
+    || 'public.create_group, public.delete_routine, public.get_group_invite, public.group_weekly_ranking, '
+    || 'public.join_group_by_code, public.leave_group, public.log_workout, public.my_groups, '
+    || 'public.my_progress, public.my_records, public.preview_invite, public.regenerate_invite, '
+    || 'public.save_routine'
 );
 
 -- caso: esquema private fechado para os papéis da API
@@ -123,10 +126,11 @@ select tests.assert_equal(
     join pg_namespace as n on n.oid = p.pronamespace
     where n.nspname in ('public', 'private') and p.prosecdef
   ),
-  'private.is_group_member, private.on_group_member_removed, private.shares_group_with, public.complete_profile, '
-    || 'public.create_group, public.get_group_invite, public.group_weekly_ranking, public.join_group_by_code, '
-    || 'public.leave_group, public.log_workout, public.my_groups, public.my_progress, public.my_records, '
-    || 'public.preview_invite, public.regenerate_invite'
+  'private.is_group_member, private.on_group_member_removed, private.shares_group_with, '
+    || 'public.complete_profile, public.create_exercise, public.create_group, public.delete_routine, '
+    || 'public.get_group_invite, public.group_weekly_ranking, public.join_group_by_code, public.leave_group, '
+    || 'public.log_workout, public.my_groups, public.my_progress, public.my_records, public.preview_invite, '
+    || 'public.regenerate_invite, public.save_routine'
 );
 
 -- caso: toda função de public e private fixa search_path vazio

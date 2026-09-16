@@ -14,6 +14,79 @@ export type Database = {
   }
   public: {
     Tables: {
+      equipment: {
+        Row: {
+          id: string
+          label: string
+          sort_order: number
+        }
+        Insert: {
+          id: string
+          label: string
+          sort_order: number
+        }
+        Update: {
+          id?: string
+          label?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
+      exercises: {
+        Row: {
+          created_at: string
+          equipment: string
+          id: string
+          is_active: boolean
+          muscle_group: string
+          name: string
+          owner_id: string | null
+          sort_order: number | null
+        }
+        Insert: {
+          created_at?: string
+          equipment: string
+          id: string
+          is_active?: boolean
+          muscle_group: string
+          name: string
+          owner_id?: string | null
+          sort_order?: number | null
+        }
+        Update: {
+          created_at?: string
+          equipment?: string
+          id?: string
+          is_active?: boolean
+          muscle_group?: string
+          name?: string
+          owner_id?: string | null
+          sort_order?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exercises_equipment_fkey"
+            columns: ["equipment"]
+            isOneToOne: false
+            referencedRelation: "equipment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exercises_muscle_group_fkey"
+            columns: ["muscle_group"]
+            isOneToOne: false
+            referencedRelation: "muscle_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exercises_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       group_members: {
         Row: {
           group_id: string
@@ -71,6 +144,24 @@ export type Database = {
         }
         Relationships: []
       }
+      muscle_groups: {
+        Row: {
+          id: string
+          label: string
+          sort_order: number
+        }
+        Insert: {
+          id: string
+          label: string
+          sort_order: number
+        }
+        Update: {
+          id?: string
+          label?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -121,6 +212,86 @@ export type Database = {
           tier_name?: string
         }
         Relationships: []
+      }
+      routine_exercises: {
+        Row: {
+          exercise_id: string
+          position: number
+          rest_seconds: number | null
+          routine_id: string
+          target_load_kg: number | null
+          target_reps: number
+          target_sets: number
+        }
+        Insert: {
+          exercise_id: string
+          position: number
+          rest_seconds?: number | null
+          routine_id: string
+          target_load_kg?: number | null
+          target_reps: number
+          target_sets: number
+        }
+        Update: {
+          exercise_id?: string
+          position?: number
+          rest_seconds?: number | null
+          routine_id?: string
+          target_load_kg?: number | null
+          target_reps?: number
+          target_sets?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "routine_exercises_exercise_id_fkey"
+            columns: ["exercise_id"]
+            isOneToOne: false
+            referencedRelation: "exercises"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "routine_exercises_routine_id_fkey"
+            columns: ["routine_id"]
+            isOneToOne: false
+            referencedRelation: "routines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      routines: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          position: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          position?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          position?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "routines_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       workout_types: {
         Row: {
@@ -256,6 +427,25 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      create_exercise: {
+        Args: { p_equipment: string; p_muscle_group: string; p_name: string }
+        Returns: {
+          created_at: string
+          equipment: string
+          id: string
+          is_active: boolean
+          muscle_group: string
+          name: string
+          owner_id: string | null
+          sort_order: number | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "exercises"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       create_group: {
         Args: { p_emblem: string; p_name: string }
         Returns: {
@@ -266,6 +456,7 @@ export type Database = {
           name: string
         }[]
       }
+      delete_routine: { Args: { p_routine_id: string }; Returns: boolean }
       get_group_invite: {
         Args: { p_group_id: string }
         Returns: {
@@ -376,6 +567,23 @@ export type Database = {
           code: string
           expires_at: string
         }[]
+      }
+      save_routine: {
+        Args: { p_items: Json; p_name: string; p_routine_id: string }
+        Returns: {
+          created_at: string
+          id: string
+          name: string
+          position: number
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "routines"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
     }
     Enums: {
