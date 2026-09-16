@@ -12,6 +12,7 @@ import { Icon } from '@/components/ui/icon';
 import { LinkRow } from '@/components/ui/link-row';
 import { Notice } from '@/components/ui/notice';
 import { ProgressBar } from '@/components/ui/progress-bar';
+import { SegmentedControl } from '@/components/ui/segmented-control';
 import { AppText } from '@/components/ui/text';
 import { useSession } from '@/features/auth/session';
 import { fetchMyLegions } from '@/features/legions/legions-api';
@@ -20,7 +21,7 @@ import { useOfflineQueue } from '@/features/workouts/offline-queue-provider';
 import { fetchMyProgress } from '@/features/workouts/workouts-api';
 import { queryKeys } from '@/lib/query-client';
 import { errorMessage } from '@/lib/rpc-errors';
-import { useTheme } from '@/theme/theme';
+import { THEME_OPTIONS, useTheme } from '@/theme/theme';
 import { space } from '@/theme/tokens';
 
 function workoutCount(total: number): string {
@@ -30,7 +31,7 @@ function workoutCount(total: number): string {
 
 /** Meu perfil: rank, Legiões, privacidade e conta (sair e excluir). */
 export default function ProfileScreen() {
-  const { colors } = useTheme();
+  const { colors, preference, setPreference } = useTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { state, signOut } = useSession();
@@ -133,6 +134,23 @@ export default function ProfileScreen() {
           ))
         )}
         <Button label="Fundar ou entrar em outra Legião" variant="ghost" icon="mais" onPress={() => router.navigate('/legiao')} />
+      </View>
+
+      <View style={styles.section}>
+        <AppText variant="overline" tone="muted">Aparência</AppText>
+        <SegmentedControl
+          options={THEME_OPTIONS}
+          value={preference}
+          onChange={setPreference}
+          accessibilityLabel="Tema do app"
+        />
+        <AppText variant="caption" tone="muted">
+          {preference === 'sistema'
+            ? 'Segue o tema claro ou escuro do seu aparelho.'
+            : preference === 'marmore'
+              ? 'Mármore: tema claro, para luz forte.'
+              : 'Ônix: tema escuro, o padrão do EuroTreino.'}
+        </AppText>
       </View>
 
       <View style={styles.section}>

@@ -3,10 +3,10 @@ import { CormorantGaramond_500Medium_Italic } from '@expo-google-fonts/cormorant
 import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold } from '@expo-google-fonts/inter';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { useFonts } from 'expo-font';
-import { DarkTheme, Stack, ThemeProvider } from 'expo-router';
+import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
+import { useEffect, type ReactNode } from 'react';
 
 import { LoadingScreen, StatusScreen } from '@/components/status-screen';
 import { SessionProvider, useSession } from '@/features/auth/session';
@@ -14,26 +14,29 @@ import { OfflineQueueProvider } from '@/features/workouts/offline-queue-provider
 import { queryClient } from '@/lib/query-client';
 import type { SupabaseConfigProblem } from '@/lib/supabase-config';
 import { supabaseConfig } from '@/lib/supabase';
-import { AppThemeProvider } from '@/theme/theme';
-import { palettes } from '@/theme/tokens';
+import { AppThemeProvider, useTheme } from '@/theme/theme';
+import { palettes, type ThemeName } from '@/theme/tokens';
 
 SplashScreen.preventAutoHideAsync().catch(() => {
   // Se a splash já tiver sido escondida (ex.: recarga rápida), o app segue normalmente.
 });
 
-const colors = palettes.onix;
-
-const navigationTheme = {
-  ...DarkTheme,
-  colors: {
-    ...DarkTheme.colors,
-    background: colors.background,
-    card: colors.surface,
-    text: colors.text,
-    border: colors.hairlineSoft,
-    primary: colors.gold,
-  },
-};
+/** O tema da navegação segue o tema do app: fundo, cartões e filetes iguais aos das telas. */
+function navigationThemeFor(name: ThemeName) {
+  const base = name === 'marmore' ? DefaultTheme : DarkTheme;
+  const colors = palettes[name];
+  return {
+    ...base,
+    colors: {
+      ...base.colors,
+      background: colors.background,
+      card: colors.surface,
+      text: colors.text,
+      border: colors.hairlineSoft,
+      primary: colors.gold,
+    },
+  };
+}
 
 const CONFIG_PROBLEMS: Record<SupabaseConfigProblem, string> = {
   missing: 'Crie o arquivo .env a partir do .env.example, com a URL e a chave publicável do projeto Supabase.',
@@ -53,6 +56,7 @@ function useHideSplash(ready: boolean) {
 
 function RootNavigator() {
   const { state, retry, signOut } = useSession();
+  const { colors } = useTheme();
   useHideSplash(state.status !== 'loading');
 
   if (state.status === 'loading') return <LoadingScreen />;
@@ -114,6 +118,17 @@ function RootNavigator() {
   );
 }
 
+/** Fica dentro do provedor de tema: navegação, barra de status e fundo seguem o tema escolhido. */
+function ThemedApp({ children }: { children: ReactNode }) {
+  const { name } = useTheme();
+  return (
+    <ThemeProvider value={navigationThemeFor(name)}>
+      <StatusBar style={name === 'marmore' ? 'dark' : 'light'} />
+      {children}
+    </ThemeProvider>
+  );
+}
+
 function ConfigurationProblem({ problem }: { problem: SupabaseConfigProblem }) {
   useHideSplash(true);
   return <StatusScreen icon="info" title="Configuração incompleta" description={CONFIG_PROBLEMS[problem]} />;
@@ -133,9 +148,8 @@ export default function RootLayout() {
   if (!fontsLoaded && !fontError) return null;
 
   return (
-    <AppThemeProvider name="onix">
-      <ThemeProvider value={navigationTheme}>
-        <StatusBar style="light" />
+    <AppThemeProvider>
+      <ThemedApp>
         {supabaseConfig.ok ? (
           <QueryClientProvider client={queryClient}>
             <SessionProvider>
@@ -147,7 +161,7 @@ export default function RootLayout() {
         ) : (
           <ConfigurationProblem problem={supabaseConfig.problem} />
         )}
-      </ThemeProvider>
+      </ThemedApp>
     </AppThemeProvider>
   );
 }
