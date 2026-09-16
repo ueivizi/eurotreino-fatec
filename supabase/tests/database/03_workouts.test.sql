@@ -20,7 +20,10 @@ create function tests.log_at(
   p_duration integer,
   p_intensity text,
   p_performed_at timestamptz default null,
-  p_request_id uuid default gen_random_uuid()
+  p_request_id uuid default gen_random_uuid(),
+  p_distance_m integer default null,
+  p_sets_count integer default null,
+  p_load_kg numeric default null
 )
 returns table (
   workout_id uuid,
@@ -32,12 +35,14 @@ returns table (
   is_scored boolean,
   week_glory integer,
   total_glory integer,
-  replayed boolean
+  replayed boolean,
+  is_distance_record boolean
 )
 language sql
 as $$
   select * from private.log_workout_for(
-    tests.user_id(p_user), p_now, p_request_id, p_type, p_duration, p_intensity, p_performed_at
+    tests.user_id(p_user), p_now, p_request_id, p_type, p_duration, p_intensity, p_performed_at,
+    p_distance_m, p_sets_count, p_load_kg
   );
 $$;
 

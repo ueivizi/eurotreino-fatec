@@ -124,18 +124,21 @@ export type Database = {
           id: string
           is_active: boolean
           label: string
+          module: string
           sort_order: number
         }
         Insert: {
           id: string
           is_active?: boolean
           label: string
+          module?: string
           sort_order: number
         }
         Update: {
           id?: string
           is_active?: boolean
           label?: string
+          module?: string
           sort_order?: number
         }
         Relationships: []
@@ -144,18 +147,21 @@ export type Database = {
         Row: {
           bonus_points: number
           client_request_id: string
+          distance_m: number | null
           duration_min: number
           duration_points: number
           id: string
           intensity: string
           intensity_points: number
           is_scored: boolean
+          load_kg: number | null
           local_date: string
           logged_at: string
           performed_at: string
           points: number | null
           presence_points: number
           scoring_version: number
+          sets_count: number | null
           user_id: string
           week_start: string
           workout_type: string
@@ -163,18 +169,21 @@ export type Database = {
         Insert: {
           bonus_points: number
           client_request_id: string
+          distance_m?: number | null
           duration_min: number
           duration_points: number
           id?: string
           intensity: string
           intensity_points: number
           is_scored: boolean
+          load_kg?: number | null
           local_date: string
           logged_at?: string
           performed_at: string
           points?: number | null
           presence_points: number
           scoring_version: number
+          sets_count?: number | null
           user_id: string
           week_start: string
           workout_type: string
@@ -182,18 +191,21 @@ export type Database = {
         Update: {
           bonus_points?: number
           client_request_id?: string
+          distance_m?: number | null
           duration_min?: number
           duration_points?: number
           id?: string
           intensity?: string
           intensity_points?: number
           is_scored?: boolean
+          load_kg?: number | null
           local_date?: string
           logged_at?: string
           performed_at?: string
           points?: number | null
           presence_points?: number
           scoring_version?: number
+          sets_count?: number | null
           user_id?: string
           week_start?: string
           workout_type?: string
@@ -279,15 +291,19 @@ export type Database = {
       log_workout: {
         Args: {
           p_client_request_id: string
+          p_distance_m?: number
           p_duration_min: number
           p_intensity: string
+          p_load_kg?: number
           p_performed_at?: string
+          p_sets_count?: number
           p_workout_type: string
         }
         Returns: {
           bonus_points: number
           duration_points: number
           intensity_points: number
+          is_distance_record: boolean
           is_scored: boolean
           points: number
           presence_points: number
@@ -319,6 +335,20 @@ export type Database = {
           week_glory: number
           week_scored_workouts: number
           week_start: string
+        }[]
+      }
+      my_records: {
+        Args: never
+        Returns: {
+          best_distance_m: number
+          best_load_kg: number
+          best_pace_s_per_km: number
+          best_sets_count: number
+          module: string
+          total_distance_m: number
+          total_minutes: number
+          workout_type: string
+          workouts_count: number
         }[]
       }
       preview_invite: {
