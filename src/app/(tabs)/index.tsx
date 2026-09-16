@@ -24,6 +24,7 @@ import { fetchMyLegions } from '@/features/legions/legions-api';
 import { takePendingInvite } from '@/features/legions/pending-invite';
 import { takeFirstSteps } from '@/features/onboarding/first-steps';
 import { rankFromGlory } from '@/features/ranks/tiers';
+import { useOfflineQueue } from '@/features/workouts/offline-queue-provider';
 import { intensityLabel, workoutTypeLabel } from '@/features/workouts/workout-types';
 import { fetchMyProgress } from '@/features/workouts/workouts-api';
 import { queryKeys } from '@/lib/query-client';
@@ -60,6 +61,7 @@ export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const profile = useProfile();
+  const queue = useOfflineQueue();
 
   const progress = useQuery({ queryKey: queryKeys.progress, queryFn: fetchMyProgress });
   const legions = useQuery({ queryKey: queryKeys.legions, queryFn: fetchMyLegions });
@@ -216,7 +218,36 @@ export default function HomeScreen() {
         </>
       )}
 
-      <Reveal index={5} style={styles.actions}>
+      {queue.pending.length > 0 || queue.failures.length > 0 ? (
+        <Reveal index={5} style={styles.actions}>
+          {queue.pending.length > 0 ? (
+            <Notice
+              message={`${queue.pending.length} ${
+                queue.pending.length === 1 ? 'treino guardado neste aparelho ainda não foi enviado' : 'treinos guardados neste aparelho ainda não foram enviados'
+              }. A Glória entra quando ${queue.pending.length === 1 ? 'ele chegar' : 'eles chegarem'} ao servidor.`}
+            />
+          ) : null}
+          {queue.failures.length > 0 ? (
+            <Notice tone="danger" message={queue.failures[0]?.message ?? 'Um treino guardado não pôde ser enviado.'} />
+          ) : null}
+          <View style={styles.queueActions}>
+            {queue.pending.length > 0 ? (
+              <Button
+                label={queue.flushing ? 'Enviando…' : 'Enviar agora'}
+                icon="nuvem"
+                variant="secondary"
+                onPress={() => void queue.flush()}
+                disabled={queue.flushing}
+              />
+            ) : null}
+            {queue.failures.length > 0 ? (
+              <Button label="Entendi" variant="ghost" onPress={queue.dismissFailures} />
+            ) : null}
+          </View>
+        </Reveal>
+      ) : null}
+
+      <Reveal index={6} style={styles.actions}>
         <Button label="Registrar treino" icon="registrar" onPress={() => router.push('/registrar')} />
         {last && lastLabel ? (
           <PressableScale
@@ -298,6 +329,9 @@ const styles = StyleSheet.create({
   },
   actions: {
     gap: space.md,
+  },
+  queueActions: {
+    gap: space.xs,
   },
   repeat: {
     minHeight: touchTarget + 16,

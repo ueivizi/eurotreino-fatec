@@ -1,0 +1,60 @@
+# Integração contínua (NF017): tudo que roda na máquina roda aqui, a cada push e pull request.
+#
+# As actions são presas ao SHA do commit, não à tag: uma tag pode ser movida para outro código, e
+# aí a CI passaria a executar algo que ninguém revisou. O comentário ao lado guarda a versão.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+# Só leitura: nada aqui publica, comenta ou altera o repositório.
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  app:
+    name: App (lint, tipos e testes)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run test:functions
+
+  database:
+    name: Banco (migrações e regras)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # PGlite: Postgres dentro do Node, sem Docker e sem tocar no projeto hospedado.
+      - run: npm run test:db
+
+  secrets:
+    name: Segredos no histórico
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          # O histórico inteiro: um segredo apagado depois continua no commit em que entrou.
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
