@@ -1,10 +1,22 @@
-<!-- Modelo "Magic Link" do Supabase Auth: envia só o código (sem link), para digitar no app. -->
+<!-- Modelo "Magic Link" do Supabase Auth: envia só o código (sem link), para digitar no app.
+     O mesmo modelo serve a dois pedidos. A tela de excluir conta envia o endereço de retorno
+     eurotreino://excluir-conta (ACCOUNT_DELETION_REDIRECT no app, liberado em
+     additional_redirect_urls); só ele troca o texto. Endereço fora da lista chega aqui como o Site URL,
+     e o e-mail volta a ser o de entrada. O assunto não aceita condição, por isso é neutro. -->
 <div style="margin:0;padding:32px 16px;background-color:#0B0A08;font-family:Arial,Helvetica,sans-serif;">
   <div style="max-width:420px;margin:0 auto;padding:32px 24px;background-color:#15120E;border:1px solid #6B5626;border-radius:4px;text-align:center;">
     <p style="margin:0;color:#C9A24A;font-size:14px;font-weight:bold;letter-spacing:4px;">EUROTREINO</p>
+{{ if eq .RedirectTo "eurotreino://excluir-conta" }}
+    <h1 style="margin:24px 0 8px;color:#F3ECDD;font-size:20px;font-weight:normal;">Confirme a exclusão da conta</h1>
+    <p style="margin:0 0 24px;color:#CFC5B2;font-size:14px;line-height:20px;">Recebemos um pedido para excluir a sua conta e todos os seus dados. Digite este código no app para confirmar:</p>
+    <p style="margin:0 0 24px;color:#E6C878;font-size:32px;font-weight:bold;letter-spacing:8px;font-family:'Courier New',Courier,monospace;">{{ .Token }}</p>
+    <p style="margin:0 0 12px;color:#D2664C;font-size:13px;line-height:19px;">A exclusão é definitiva: perfil, treinos, Glória e participação nas Legiões não podem ser recuperados.</p>
+    <p style="margin:0;color:#8F8676;font-size:12px;line-height:18px;">O código vale por 1 hora. Se você não pediu para excluir a conta, ignore este e-mail: nada é apagado sem o código.</p>
+{{ else }}
     <h1 style="margin:24px 0 8px;color:#F3ECDD;font-size:20px;font-weight:normal;">Seu código de acesso</h1>
     <p style="margin:0 0 24px;color:#CFC5B2;font-size:14px;line-height:20px;">Digite este código no app para entrar:</p>
     <p style="margin:0 0 24px;color:#E6C878;font-size:32px;font-weight:bold;letter-spacing:8px;font-family:'Courier New',Courier,monospace;">{{ .Token }}</p>
     <p style="margin:0;color:#8F8676;font-size:12px;line-height:18px;">O código vale por 1 hora. Se você não pediu para entrar no EuroTreino, ignore este e-mail: sem o código, ninguém acessa a sua conta.</p>
+{{ end }}
   </div>
 </div>
