@@ -12,6 +12,8 @@ import { AppText } from './text';
 
 const PADDING = 3;
 const GAP = 3;
+/** Borda de 1 pt + recuo: a área de toque vertical cobre o controle inteiro. */
+const SEGMENT_HIT_SLOP = { top: PADDING + 1, bottom: PADDING + 1 } as const;
 
 type Option<T extends string | number> = { id: T; label: string };
 
@@ -65,6 +67,9 @@ export function SegmentedControl<T extends string | number>({ options, value, on
             accessibilityLabel={option.label}
             accessibilityState={{ checked: selected, disabled }}
             disabled={disabled}
+            // O segmento desenhado tem 42 pt; o toque vale até a borda do controle (50 pt), acima do
+            // mínimo de 44 pt no iOS e 48 dp no Android (NF002).
+            hitSlop={SEGMENT_HIT_SLOP}
             onPress={() => {
               if (selected) return;
               haptics.select();
