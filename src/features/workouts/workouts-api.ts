@@ -25,8 +25,9 @@ export type WorkoutInput = {
   distanceM?: number;
   setsCount?: number;
   loadKg?: number;
-  /** Frequência cardíaca média; o servidor recusa sem consentimento. */
+  /** Frequência cardíaca média e máxima; o servidor recusa sem consentimento. */
   avgHeartRate?: number;
+  maxHeartRate?: number;
 };
 
 /** RF006/RF007: a Glória é calculada só no servidor. */
@@ -41,6 +42,7 @@ export async function logWorkout(input: WorkoutInput): Promise<LoggedWorkout> {
     ...(input.setsCount === undefined ? {} : { p_sets_count: input.setsCount }),
     ...(input.loadKg === undefined ? {} : { p_load_kg: input.loadKg }),
     ...(input.avgHeartRate === undefined ? {} : { p_avg_heart_rate: input.avgHeartRate }),
+    ...(input.maxHeartRate === undefined ? {} : { p_max_heart_rate: input.maxHeartRate }),
   });
   if (error) throw toApiError(error);
   const logged = parseLoggedWorkout(data);

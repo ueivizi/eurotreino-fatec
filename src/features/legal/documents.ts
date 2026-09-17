@@ -21,7 +21,7 @@ export type LegalDocument = {
 
 export const PRIVACY_POLICY: LegalDocument = {
   title: 'Política de Privacidade',
-  updatedAt: '16 de setembro de 2026',
+  updatedAt: '17 de setembro de 2026',
   intro:
     'O EuroTreino é um aplicativo de treino com ranking privado entre amigos, criado como projeto acadêmico por estudantes da Fatec Osasco. Esta política explica quais dados usamos, para quê e como você controla seus dados, de acordo com a Lei Geral de Proteção de Dados (Lei nº 13.709/2018).',
   sections: [
@@ -37,7 +37,8 @@ export const PRIVACY_POLICY: LegalDocument = {
         'Conta: seu e-mail, usado para entrar com código. Se você entrar com o Google, o serviço de autenticação também recebe o nome e a foto da conta Google; eles não aparecem no app.',
         'Perfil: nome de exibição, emblema e a cor escolhida. Não pedimos foto, idade, peso, medidas nem localização.',
         'Treinos: tipo, duração, intensidade, dia e horário de cada treino, e a Glória calculada. Se você quiser, também a distância percorrida, as séries feitas com repetições e carga, e os exercícios da sua ficha.',
-        'Medidas de saúde (só com seu consentimento): frequência cardíaca média e máxima que você digitar. Sem o consentimento, o app recusa o envio.',
+        'Medidas de saúde (só com seu consentimento): frequência cardíaca média e máxima que você digitar ou que vier do relógio conectado. Sem o consentimento, o app recusa o envio.',
+        'Relógio (só se você conectar): com a sua permissão no Health Connect, o app lê no próprio aparelho os treinos das últimas 48 horas gravados pelo app do relógio — tipo, início, fim e distância — e, com o consentimento de saúde ligado, a frequência cardíaca. De um arquivo GPX que você escolher, lê o mesmo resumo; o trajeto serve só para calcular a distância no aparelho e não é enviado. Só vira registro o treino que você confirmar, e o app nunca grava nada no Health Connect.',
         'Legiões: as Legiões que você fundou ou em que entrou, seu papel, a data de entrada e os códigos de convite gerados.',
         'Segurança: tentativas de código de convite inválido e registros de ações como fundar, entrar e sair de Legiões, trocar código e editar o perfil. Esses registros não guardam códigos, nomes nem senhas.',
         'No aparelho: a sessão de acesso fica no armazenamento seguro do celular (ou no navegador, na versão Web), e treinos registrados sem internet ficam guardados até o envio.',
@@ -95,6 +96,7 @@ export const PRIVACY_POLICY: LegalDocument = {
         'Ver seus dados: o Perfil, o Início e a Arena mostram o que guardamos sobre você.',
         'Corrigir: Perfil › Editar nome e emblema.',
         'Excluir: Perfil › Excluir conta e dados, quando quiser.',
+        'Desconectar o relógio: retire a permissão do EuroTreino no Health Connect, a qualquer momento.',
         `Pedir uma cópia dos seus dados ou mais informações sobre o tratamento: escreva para ${CONTACT_EMAIL}. Respondemos em até 15 dias.`,
         'Você também pode reclamar à Autoridade Nacional de Proteção de Dados (ANPD).',
       ],
@@ -115,7 +117,7 @@ export const PRIVACY_POLICY: LegalDocument = {
         'Você pode desligar a qualquer momento. Ao desligar, apagamos na mesma hora todas as frequências cardíacas já guardadas nos seus treinos — o treino continua no histórico, sem a medida.',
       ],
       items: [
-        'A medida é digitada por você, olhando o relógio: o app não lê sensor nenhum.',
+        'A medida é digitada por você ou lida do relógio que você conectou, e só com o consentimento ligado: o app não lê sensor do celular.',
         'Ela serve só para o seu próprio histórico.',
         'Nunca aparece para a sua Legião, não entra na Arena, não conta na Glória e não vai no texto de compartilhar.',
         'Sem o consentimento ligado, o servidor recusa o envio — não é o app que decide isso.',
