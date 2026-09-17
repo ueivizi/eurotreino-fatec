@@ -239,17 +239,21 @@ select tests.assert_equal('e my_honor devolve vazio', (select count(*)::integer 
 select tests.clear_authentication();
 
 -- caso: Honra não entra na Arena
+-- O esperado é a soma dos pontos gravados nos treinos, não um número fixo: os treinos deste arquivo são
+-- lançados em horários relativos a now(), e o teto diário e o bônus de constância mudam conforme a hora
+-- em que a suíte roda. O que o caso prova não muda: a Arena soma Glória e deixa a Honra de fora.
 select tests.create_legion('ginasio', 'Ginásio', array['tania', 'vitor']);
+select tests.remember('gloria_tania', (select coalesce(sum(w.points), 0)::text from public.workouts as w where w.user_id = tests.user_id('tania')));
+select tests.remember('honra_tania', (select coalesce(sum(h.points), 0)::text from public.honor as h where h.user_id = tests.user_id('tania')));
+select tests.assert_true('Tânia acumulou Honra e Glória', tests.recall('honra_tania')::integer > 0 and tests.recall('gloria_tania')::integer > 0);
 select tests.authenticate_as('vitor');
 select tests.assert_equal(
-  'a Arena mostra Glória, não Honra',
+  'a Arena mostra só a Glória dos treinos, sem a Honra',
   (
     select string_agg(format('%s=%s', a.display_name, a.total_glory), ', ' order by a.display_name)
     from public.group_weekly_ranking(tests.recall('ginasio')::uuid, 0) as a
   ),
-  -- Tânia: 20 + 13 + 16 + 14 de força, 13 + 16 de corrida e +10 de constância = 102 de Glória.
-  -- Nenhum ponto de Honra (13 no supino, 13 na corrida) entrou nessa conta.
-  'Tânia=102, Vitor=0'
+  format('Tânia=%s, Vitor=0', tests.recall('gloria_tania'))
 );
 select tests.clear_authentication();
 
