@@ -200,3 +200,56 @@ select tests.clear_authentication();
 select tests.authenticate_as_anon();
 select tests.assert_raises('anon não lê recordes', $$select * from public.my_records()$$, 'permission denied for function my_records');
 select tests.clear_authentication();
+
+-- caso: my_progress devolve os detalhes do último treino, para "Repetir último" recomeçar completo
+select tests.create_member('repetidor', 'Repetidor', 'aguia');
+select tests.log_detailed('repetidor', '2026-09-14 07:00Z', 'corrida', 40, 'leve', 6000);
+select tests.log_detailed('repetidor', '2026-09-15 07:00Z', 'musculacao', 55, 'intenso', null, 18, 62.5);
+select tests.authenticate_as('repetidor');
+select tests.assert_equal(
+  'último treino com os detalhes da família certa',
+  (
+    select format(
+      '%s %s min %s · distância %s · séries %s · carga %s',
+      p.last_workout_type, p.last_duration_min, p.last_intensity,
+      coalesce(p.last_distance_m::text, '—'),
+      coalesce(p.last_sets_count::text, '—'),
+      coalesce(p.last_load_kg::text, '—')
+    )
+    from public.my_progress() as p
+  ),
+  'musculacao 55 min intenso · distância — · séries 18 · carga 62.5'
+);
+select tests.clear_authentication();
+
+select tests.create_member('repetidora', 'Repetidora', 'loba');
+select tests.log_detailed('repetidora', '2026-09-15 07:00Z', 'corrida', 45, 'moderado', 8100);
+select tests.authenticate_as('repetidora');
+select tests.assert_equal(
+  'último treino de resistência traz a distância e nada de força',
+  (
+    select format(
+      '%s · distância %s · séries %s · carga %s',
+      p.last_workout_type,
+      coalesce(p.last_distance_m::text, '—'),
+      coalesce(p.last_sets_count::text, '—'),
+      coalesce(p.last_load_kg::text, '—')
+    )
+    from public.my_progress() as p
+  ),
+  'corrida · distância 8100 · séries — · carga —'
+);
+select tests.clear_authentication();
+
+-- caso: a frequência cardíaca fica fora de propósito -- medida não se repete, e dado sensível
+-- que a tela não usa não sai do banco.
+select tests.assert_equal(
+  'my_progress não devolve medida de saúde',
+  (
+    select position('heart' in pg_get_function_result(p.oid))::integer
+    from pg_proc as p
+    join pg_namespace as n on n.oid = p.pronamespace
+    where n.nspname = 'public' and p.proname = 'my_progress'
+  ),
+  0
+);

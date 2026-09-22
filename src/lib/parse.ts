@@ -29,6 +29,18 @@ export function isNonEmptyText(value: unknown, maxLength = 200): value is string
 }
 
 /** Lista em que todos os itens precisam ser válidos. */
+/**
+ * Número opcional vindo do banco: `null` quando a coluna está vazia e `undefined` quando o valor
+ * não serve (para quem chama decidir se descarta o campo ou a resposta inteira).
+ */
+export function optionalNumber(value: unknown): number | null | undefined {
+  if (value === null || value === undefined) return null;
+  // O banco devolve numeric como texto no PostgREST; os dois formatos são aceitos.
+  const parsed = typeof value === 'string' ? Number(value) : value;
+  if (typeof parsed !== 'number' || !Number.isFinite(parsed) || parsed < 0) return undefined;
+  return parsed;
+}
+
 export function parseList<T>(value: unknown, parseItem: (item: unknown) => T | null): T[] | null {
   if (!Array.isArray(value)) return null;
   const items: T[] = [];

@@ -1,4 +1,4 @@
-import { isNonNegativeInteger, isRow, parseList } from '@/lib/parse';
+import { isNonNegativeInteger, isRow, optionalNumber, parseList } from '@/lib/parse';
 import { toApiError, unexpectedResponse } from '@/lib/rpc-errors';
 import { getSupabase } from '@/lib/supabase';
 
@@ -22,14 +22,6 @@ export type ModalityRecord = {
   bestLoadKg: number | null;
   bestSetsCount: number | null;
 };
-
-function optionalNumber(value: unknown): number | null | undefined {
-  if (value === null || value === undefined) return null;
-  // O banco devolve numeric como texto no PostgREST; os dois formatos são aceitos.
-  const parsed = typeof value === 'string' ? Number(value) : value;
-  if (typeof parsed !== 'number' || !Number.isFinite(parsed) || parsed < 0) return undefined;
-  return parsed;
-}
 
 function parseRecord(item: unknown): ModalityRecord | null {
   if (!isRow(item)) return null;
