@@ -112,13 +112,50 @@ describe('progresso e registro de treino', () => {
     last_workout_type: 'corrida',
     last_duration_min: 30,
     last_intensity: 'moderado',
+    last_distance_m: 8100,
+    last_sets_count: null,
+    last_load_kg: null,
   };
 
   it('converte o progresso com e sem último treino', () => {
-    expect(parseMyProgress([progress])?.lastWorkout).toEqual({ type: 'corrida', durationMin: 30, intensity: 'moderado' });
+    expect(parseMyProgress([progress])?.lastWorkout).toEqual({
+      type: 'corrida',
+      durationMin: 30,
+      intensity: 'moderado',
+      distanceM: 8100,
+      setsCount: null,
+      loadKg: null,
+    });
     expect(
       parseMyProgress([{ ...progress, last_workout_type: null, last_duration_min: null, last_intensity: null }])?.lastWorkout,
     ).toBeNull();
+  });
+
+  it('traz séries e carga do treino de força, inclusive numeric em texto', () => {
+    const forca = { ...progress, last_workout_type: 'musculacao', last_distance_m: null, last_sets_count: 18, last_load_kg: '62.5' };
+    expect(parseMyProgress([forca])?.lastWorkout).toEqual({
+      type: 'musculacao',
+      durationMin: 30,
+      intensity: 'moderado',
+      distanceM: null,
+      setsCount: 18,
+      loadKg: 62.5,
+    });
+  });
+
+  /* Detalhe fora dos limites do app é descartado sozinho: melhor o campo vazio, que a pessoa
+     digita, que uma tela de progresso em branco por causa de um valor que não serve. */
+  it('descarta detalhe fora dos limites sem derrubar o progresso', () => {
+    const fora = parseMyProgress([{ ...progress, last_distance_m: 9, last_sets_count: 999, last_load_kg: 'muita' }]);
+    expect(fora?.totalGlory).toBe(93);
+    expect(fora?.lastWorkout).toEqual({
+      type: 'corrida',
+      durationMin: 30,
+      intensity: 'moderado',
+      distanceM: null,
+      setsCount: null,
+      loadKg: null,
+    });
   });
 
   it('ignora só a sugestão quando o tipo do último treino deixou de existir', () => {

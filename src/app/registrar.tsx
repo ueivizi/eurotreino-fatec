@@ -47,13 +47,20 @@ import {
   type WorkoutTypeId,
 } from '@/features/workouts/workout-types';
 import { fetchMyProgress, logWorkout } from '@/features/workouts/workouts-api';
-import type { LoggedWorkout } from '@/features/workouts/workouts-parsers';
+import type { LastWorkout, LoggedWorkout } from '@/features/workouts/workouts-parsers';
 import { queryKeys } from '@/lib/query-client';
 import { ApiError, errorMessage } from '@/lib/rpc-errors';
 import { useTheme } from '@/theme/theme';
 import { radius, space, touchTarget } from '@/theme/tokens';
 
-const FALLBACK = { type: 'musculacao' as WorkoutTypeId, durationMin: 45, intensity: 'moderado' as IntensityId };
+const FALLBACK: LastWorkout = {
+  type: 'musculacao',
+  durationMin: 45,
+  intensity: 'moderado',
+  distanceM: null,
+  setsCount: null,
+  loadKg: null,
+};
 
 type Draft = {
   type: WorkoutTypeId;
@@ -361,10 +368,13 @@ export default function RegisterWorkoutScreen() {
   const [intensity, setIntensity] = useState<IntensityId>(initial.intensity);
   const [performedAt, setPerformedAt] = useState<Date | null>(null);
   const [choosingTime, setChoosingTime] = useState(false);
-  const [distanceM, setDistanceM] = useState<number | null>(null);
+  // Os detalhes também repetem o último treino; o `draft` só envia os da família do tipo escolhido.
+  const [distanceM, setDistanceM] = useState<number | null>(initial.distanceM);
+  // A frequência começa vazia de propósito: é medida, não preferência, e repetir a anterior
+  // gravaria uma medição que não aconteceu. Quem tem a medida de verdade é o relógio.
   const [avgHeartRate, setAvgHeartRate] = useState<number | null>(null);
-  const [setsCount, setSetsCount] = useState<number | null>(null);
-  const [loadKg, setLoadKg] = useState<number | null>(null);
+  const [setsCount, setSetsCount] = useState<number | null>(initial.setsCount);
+  const [loadKg, setLoadKg] = useState<number | null>(initial.loadKg);
   const [now, setNow] = useState(() => new Date());
   // Um identificador por registro: reenviar depois de uma falha de rede não pontua duas vezes.
   const [requestId, setRequestId] = useState(() => randomUUID());

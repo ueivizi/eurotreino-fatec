@@ -714,8 +714,11 @@ export type Database = {
       my_progress: {
         Args: never
         Returns: {
+          last_distance_m: number
           last_duration_min: number
           last_intensity: string
+          last_load_kg: number
+          last_sets_count: number
           last_workout_type: string
           total_glory: number
           total_workouts: number

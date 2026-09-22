@@ -1,8 +1,39 @@
-import { isIsoDate, isNonNegativeInteger, isUuid, singleRow } from '@/lib/parse';
+import { isIsoDate, isNonNegativeInteger, isUuid, optionalNumber, singleRow } from '@/lib/parse';
 
-import { DURATION, isIntensityId, isWorkoutTypeId, type IntensityId, type WorkoutTypeId } from './workout-types';
+import {
+  DISTANCE,
+  DURATION,
+  LOAD,
+  SETS,
+  isIntensityId,
+  isWorkoutTypeId,
+  type IntensityId,
+  type WorkoutTypeId,
+} from './workout-types';
 
-export type LastWorkout = { type: WorkoutTypeId; durationMin: number; intensity: IntensityId };
+/**
+ * O último treino, para "Repetir último" recomeçar do mesmo lugar. Os detalhes vêm da família da
+ * modalidade: distância na resistência, séries e carga na força. Frequência cardíaca não vem, e é
+ * de propósito — medida não se repete (ver a migração 20260922120000).
+ */
+export type LastWorkout = {
+  type: WorkoutTypeId;
+  durationMin: number;
+  intensity: IntensityId;
+  distanceM: number | null;
+  setsCount: number | null;
+  loadKg: number | null;
+};
+
+/**
+ * Detalhe fora dos limites do app é descartado, não derruba a resposta: prefere-se o campo vazio
+ * (a pessoa digita) a uma tela de progresso em branco por causa de um valor que não serve.
+ */
+function detailInRange(value: unknown, limits: { min: number; max: number }): number | null {
+  const parsed = optionalNumber(value);
+  if (typeof parsed !== 'number') return null;
+  return parsed >= limits.min && parsed <= limits.max ? parsed : null;
+}
 
 export type MyProgress = {
   totalGlory: number;
@@ -44,7 +75,14 @@ export function parseMyProgress(value: unknown): MyProgress | null {
     const durationOk = isNonNegativeInteger(durationMin) && durationMin >= DURATION.min && durationMin <= DURATION.max;
     // Tipo desativado ou desconhecido não impede a tela: só não sugere "Repetir último".
     if (isWorkoutTypeId(type) && durationOk && isIntensityId(intensity)) {
-      lastWorkout = { type, durationMin, intensity };
+      lastWorkout = {
+        type,
+        durationMin,
+        intensity,
+        distanceM: detailInRange(row.last_distance_m, DISTANCE),
+        setsCount: detailInRange(row.last_sets_count, SETS),
+        loadKg: detailInRange(row.last_load_kg, LOAD),
+      };
     } else if (!(typeof type === 'string' && durationOk && isIntensityId(intensity))) {
       return null;
     }

@@ -24,6 +24,7 @@ import { fetchMyLegions } from '@/features/legions/legions-api';
 import { takePendingInvite } from '@/features/legions/pending-invite';
 import { takeFirstSteps } from '@/features/onboarding/first-steps';
 import { rankFromGlory } from '@/features/ranks/tiers';
+import { formatDistance, formatLoad } from '@/features/workouts/metrics';
 import { useOfflineQueue } from '@/features/workouts/offline-queue-provider';
 import { intensityLabel, workoutTypeLabel } from '@/features/workouts/workout-types';
 import { fetchMyProgress } from '@/features/workouts/workouts-api';
@@ -91,7 +92,17 @@ export default function HomeScreen() {
   const me = ranking.data?.entries.find((entry) => entry.isMe) ?? null;
   const leader = ranking.data?.entries[0] ?? null;
   const last = progress.data?.lastWorkout ?? null;
-  const lastLabel = last ? `${workoutTypeLabel(last.type)} · ${last.durationMin} min · ${intensityLabel(last.intensity)}` : null;
+  // O rótulo mostra o que vai ser repetido, detalhes da modalidade incluídos.
+  const lastLabel = last
+    ? [
+        `${workoutTypeLabel(last.type)} · ${last.durationMin} min · ${intensityLabel(last.intensity)}`,
+        last.distanceM === null ? null : formatDistance(last.distanceM),
+        last.setsCount === null ? null : `${last.setsCount} séries`,
+        last.loadKg === null ? null : `${formatLoad(last.loadKg)} kg`,
+      ]
+        .filter(Boolean)
+        .join(' · ')
+    : null;
 
   const refreshing = progress.isRefetching || legions.isRefetching || ranking.isRefetching;
 
