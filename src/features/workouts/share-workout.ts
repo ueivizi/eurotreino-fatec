@@ -1,7 +1,7 @@
 import { rankFromGlory } from '@/features/ranks/tiers';
 import type { LoggedWorkout } from '@/features/workouts/workouts-parsers';
 
-import { formatDistance, formatPerformance, paceModality } from './metrics';
+import { formatDistance, performanceFor } from './metrics';
 import { intensityLabel, type IntensityId, type WorkoutTypeId } from './workout-types';
 
 /**
@@ -52,7 +52,7 @@ export function workoutShareMessage({ type, durationMin, intensity, result, dist
     `${flavor.mark} ${flavor.verb} ${durationMin} min (${intensityLabel(intensity).toLowerCase()}) no EuroTreino.`,
   ];
   if (distanceM) {
-    const performance = formatPerformance(paceModality(type), distanceM, durationMin);
+    const performance = performanceFor(type, distanceM, durationMin);
     lines.push(`${formatDistance(distanceM)}${performance ? ` · ${performance}` : ''}${result.isDistanceRecord ? ' · recorde pessoal 🏆' : ''}`);
   }
   if (result.isScored && result.points > 0) lines.push(`+${result.points} de Glória · ${rank.label}`);

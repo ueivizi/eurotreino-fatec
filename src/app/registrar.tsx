@@ -9,6 +9,7 @@ import { Card } from '@/components/ui/card';
 import { Icon, type IconName } from '@/components/ui/icon';
 import { Notice } from '@/components/ui/notice';
 import { AppText } from '@/components/ui/text';
+import { TextField } from '@/components/ui/text-field';
 import { fetchWeeklyRanking } from '@/features/arena/arena-api';
 import { useProfile } from '@/features/auth/session';
 import type { WeeklyRanking } from '@/features/arena/arena-parsers';
@@ -31,12 +32,13 @@ import {
   withDayOffset,
 } from '@/features/workouts/performed-at';
 import { workoutShareMessage } from '@/features/workouts/share-workout';
-import { formatDistance, formatLoad, formatPerformance, paceModality } from '@/features/workouts/metrics';
+import { formatDistance, formatLoad, performanceFor } from '@/features/workouts/metrics';
 import {
   DISTANCE,
   DURATION,
   INTENSITIES,
   LOAD,
+  NOTE_MAX_LENGTH,
   SETS,
   WORKOUT_TYPES,
   intensityLabel,
@@ -60,6 +62,7 @@ const FALLBACK: LastWorkout = {
   distanceM: null,
   setsCount: null,
   loadKg: null,
+  note: null,
 };
 
 type Draft = {
@@ -69,6 +72,8 @@ type Draft = {
   performedAt: Date | null;
   /** Detalhes da modalidade, sempre opcionais. */
   distanceM: number | null;
+  /** O que foi o treino, só na família "outro". Vazio quando não se aplica. */
+  note: string;
   setsCount: number | null;
   loadKg: number | null;
   /** Medida de saúde: só existe com consentimento ligado no Perfil. */
@@ -227,9 +232,10 @@ function DetailRow({
 
 function workoutSummary(draft: Draft, now: Date): string {
   const parts = [workoutTypeLabel(draft.type), `${draft.durationMin} min`, intensityLabel(draft.intensity)];
+  if (draft.note !== '') parts.splice(1, 0, draft.note);
   if (draft.distanceM !== null) {
     parts.push(formatDistance(draft.distanceM));
-    const performance = formatPerformance(paceModality(draft.type), draft.distanceM, draft.durationMin);
+    const performance = performanceFor(draft.type, draft.distanceM, draft.durationMin);
     if (performance) parts.push(performance);
   }
   if (draft.setsCount !== null) parts.push(`${draft.setsCount} ${draft.setsCount === 1 ? 'série' : 'séries'}`);
@@ -241,9 +247,10 @@ function workoutSummary(draft: Draft, now: Date): string {
 /** Destaque dos detalhes da modalidade no resultado, ex.: "7,0 km · 4:17 /km". */
 function detailLine(draft: Draft): string | null {
   const parts: string[] = [];
+  if (draft.note !== '') parts.push(draft.note);
   if (draft.distanceM !== null) {
     parts.push(formatDistance(draft.distanceM));
-    const performance = formatPerformance(paceModality(draft.type), draft.distanceM, draft.durationMin);
+    const performance = performanceFor(draft.type, draft.distanceM, draft.durationMin);
     if (performance) parts.push(performance);
   }
   if (draft.setsCount !== null) parts.push(`${draft.setsCount} ${draft.setsCount === 1 ? 'série' : 'séries'}`);
@@ -375,6 +382,7 @@ export default function RegisterWorkoutScreen() {
   const [avgHeartRate, setAvgHeartRate] = useState<number | null>(null);
   const [setsCount, setSetsCount] = useState<number | null>(initial.setsCount);
   const [loadKg, setLoadKg] = useState<number | null>(initial.loadKg);
+  const [note, setNote] = useState(initial.note ?? '');
   const [now, setNow] = useState(() => new Date());
   // Um identificador por registro: reenviar depois de uma falha de rede não pontua duas vezes.
   const [requestId, setRequestId] = useState(() => randomUUID());
@@ -390,9 +398,11 @@ export default function RegisterWorkoutScreen() {
     durationMin: minutes,
     intensity,
     performedAt,
-    distanceM: module === 'resistencia' ? distanceM : null,
+    // A distância vale em qualquer modalidade desde 22/09; séries e carga seguem só na força.
+    distanceM,
     setsCount: module === 'forca' ? setsCount : null,
     loadKg: module === 'forca' ? loadKg : null,
+    note: module === 'outro' ? note.trim() : '',
     avgHeartRate: healthConsent ? avgHeartRate : null,
   };
 
@@ -416,6 +426,7 @@ export default function RegisterWorkoutScreen() {
           ...(draft.distanceM === null ? {} : { distanceM: draft.distanceM }),
           ...(draft.setsCount === null ? {} : { setsCount: draft.setsCount }),
           ...(draft.loadKg === null ? {} : { loadKg: draft.loadKg }),
+          ...(draft.note === '' ? {} : { note: draft.note }),
           ...(draft.avgHeartRate === null ? {} : { avgHeartRate: draft.avgHeartRate }),
         });
       } catch (error) {
@@ -582,19 +593,34 @@ export default function RegisterWorkoutScreen() {
             <Segmented label="Intensidade" options={INTENSITIES} value={intensity} onChange={(id) => change(() => setIntensity(id))} disabled={disabled} />
           </View>
 
-          {module === 'resistencia' ? (
-            <DetailRow
-              label="Distância"
-              hint="Não muda a Glória; entra no seu histórico e nos recordes"
-              value={distanceM}
-              format={formatDistance}
-              step={DISTANCE.step}
-              min={DISTANCE.step}
-              max={DISTANCE.max}
-              start={5000}
-              disabled={disabled}
-              onChange={(value) => change(() => setDistanceM(value))}
-            />
+          <DetailRow
+            label="Distância"
+            hint="Não muda a Glória; entra no seu histórico e nos recordes"
+            value={distanceM}
+            format={formatDistance}
+            step={DISTANCE.step}
+            min={DISTANCE.step}
+            max={DISTANCE.max}
+            start={5000}
+            disabled={disabled}
+            onChange={(value) => change(() => setDistanceM(value))}
+          />
+
+          {/* "Outro" não diz o que foi o treino; o campo livre diz, e fica só com a pessoa. */}
+          {module === 'outro' ? (
+            <View style={styles.group}>
+              <TextField
+                label="O que foi?"
+                hint="Opcional. Ex.: futebol, pilates, escalada."
+                value={note}
+                onChangeText={(text) => change(() => setNote(text))}
+                placeholder="futebol"
+                maxLength={NOTE_MAX_LENGTH}
+                autoCapitalize="sentences"
+                editable={!disabled}
+                returnKeyType="done"
+              />
+            </View>
           ) : null}
 
           {healthConsent ? (

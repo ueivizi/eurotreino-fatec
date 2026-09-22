@@ -484,6 +484,7 @@ export type Database = {
           local_date: string
           logged_at: string
           max_heart_rate: number | null
+          note: string | null
           performed_at: string
           points: number | null
           presence_points: number
@@ -508,6 +509,7 @@ export type Database = {
           local_date: string
           logged_at?: string
           max_heart_rate?: number | null
+          note?: string | null
           performed_at: string
           points?: number | null
           presence_points: number
@@ -532,6 +534,7 @@ export type Database = {
           local_date?: string
           logged_at?: string
           max_heart_rate?: number | null
+          note?: string | null
           performed_at?: string
           points?: number | null
           presence_points?: number
@@ -667,6 +670,7 @@ export type Database = {
           p_intensity: string
           p_load_kg?: number
           p_max_heart_rate?: number
+          p_note?: string
           p_performed_at?: string
           p_sets_count?: number
           p_workout_type: string
@@ -718,6 +722,7 @@ export type Database = {
           last_duration_min: number
           last_intensity: string
           last_load_kg: number
+          last_note: string
           last_sets_count: number
           last_workout_type: string
           total_glory: number

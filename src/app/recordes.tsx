@@ -52,11 +52,11 @@ function ModalityCard({ record, index }: { record: ModalityRecord; index: number
           </View>
         </View>
 
-        {record.module === 'resistencia' && record.bestDistanceM !== null ? (
+        {record.bestDistanceM !== null ? (
           <View style={styles.stats}>
             <Stat label="Maior distância" value={formatDistance(record.bestDistanceM)} />
             <Stat label="Distância somada" value={formatDistance(record.totalDistanceM)} />
-            {record.bestPaceSecondsPerKm !== null ? (
+            {record.module === 'resistencia' && record.bestPaceSecondsPerKm !== null ? (
               <Stat
                 label={paceModality(record.type) === 'velocidade' ? 'Melhor velocidade' : 'Melhor ritmo'}
                 value={

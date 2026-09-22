@@ -2,7 +2,8 @@ import type { IconName } from '@/components/ui/icon';
 
 /**
  * Família da modalidade (espelha workout_types.module no banco, conferido pelo teste de sincronia):
- * resistência aceita distância; força aceita séries e carga; "outro" não aceita detalhe nenhum.
+ * força aceita séries e carga; "outro" aceita o campo livre que diz o que foi o treino. Distância
+ * vale em qualquer família desde 22/09 -- mas ritmo e velocidade, só na resistência.
  * Nenhum desses detalhes muda a Glória — a regra v1 vale igual para todas as modalidades.
  */
 export const MODULES = ['resistencia', 'forca', 'outro'] as const;
@@ -43,6 +44,9 @@ export const DURATION = { min: 1, max: 300, step: 5 } as const;
 export const DISTANCE = { min: 10, max: 200000, step: 100 } as const;
 export const SETS = { min: 1, max: 60, step: 1 } as const;
 export const LOAD = { min: 0.5, max: 500, step: 2.5 } as const;
+
+/** Campo livre da família "outro": um rótulo curto ("futebol"), com o limite do banco. */
+export const NOTE_MAX_LENGTH = 40;
 
 export function stepDuration(current: number, direction: 1 | -1): number {
   const safe = Number.isInteger(current) ? current : DURATION.min;

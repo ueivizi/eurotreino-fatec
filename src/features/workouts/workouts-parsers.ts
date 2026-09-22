@@ -1,9 +1,10 @@
-import { isIsoDate, isNonNegativeInteger, isUuid, optionalNumber, singleRow } from '@/lib/parse';
+import { isIsoDate, isNonEmptyText, isNonNegativeInteger, isUuid, optionalNumber, singleRow } from '@/lib/parse';
 
 import {
   DISTANCE,
   DURATION,
   LOAD,
+  NOTE_MAX_LENGTH,
   SETS,
   isIntensityId,
   isWorkoutTypeId,
@@ -23,6 +24,8 @@ export type LastWorkout = {
   distanceM: number | null;
   setsCount: number | null;
   loadKg: number | null;
+  /** O que foi o treino, quando a modalidade é da família "outro". */
+  note: string | null;
 };
 
 /**
@@ -82,6 +85,7 @@ export function parseMyProgress(value: unknown): MyProgress | null {
         distanceM: detailInRange(row.last_distance_m, DISTANCE),
         setsCount: detailInRange(row.last_sets_count, SETS),
         loadKg: detailInRange(row.last_load_kg, LOAD),
+        note: isNonEmptyText(row.last_note, NOTE_MAX_LENGTH) ? row.last_note : null,
       };
     } else if (!(typeof type === 'string' && durationOk && isIntensityId(intensity))) {
       return null;

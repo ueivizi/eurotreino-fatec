@@ -5,6 +5,8 @@
  * registro em registro. A conversão para quilômetro acontece só na hora de mostrar.
  */
 
+import { workoutModule, type WorkoutTypeId } from './workout-types';
+
 /** "800 m" abaixo de 1 km; "7,5 km" acima, com uma casa; sem casa quando é redondo. */
 export function formatDistance(meters: number): string {
   if (!Number.isFinite(meters) || meters <= 0) return '—';
@@ -52,6 +54,16 @@ export function formatPerformance(type: 'ritmo' | 'velocidade', meters: number, 
   }
   const pace = paceSecondsPerKm(meters, durationMin);
   return pace === null ? null : formatPace(pace);
+}
+
+/**
+ * Ritmo e velocidade só existem na resistência. A distância passou a valer em qualquer modalidade
+ * (migração 20260922180000), mas "12:00 /km de musculação" não quer dizer nada: quem pergunta pelo
+ * desempenho de um treino de outra família recebe `null`.
+ */
+export function performanceFor(type: WorkoutTypeId, meters: number, durationMin: number): string | null {
+  if (workoutModule(type) !== 'resistencia') return null;
+  return formatPerformance(paceModality(type), meters, durationMin);
 }
 
 /** Bike se lê em velocidade; corrida, caminhada e natação, em ritmo — como nos apps de cada esporte. */

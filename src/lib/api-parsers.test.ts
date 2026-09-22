@@ -125,6 +125,7 @@ describe('progresso e registro de treino', () => {
       distanceM: 8100,
       setsCount: null,
       loadKg: null,
+      note: null,
     });
     expect(
       parseMyProgress([{ ...progress, last_workout_type: null, last_duration_min: null, last_intensity: null }])?.lastWorkout,
@@ -140,7 +141,16 @@ describe('progresso e registro de treino', () => {
       distanceM: null,
       setsCount: 18,
       loadKg: 62.5,
+      note: null,
     });
+  });
+
+  it('traz o campo livre do "outro" e descarta nota vazia ou gigante', () => {
+    const base = { ...progress, last_workout_type: 'outro', last_distance_m: null };
+    expect(parseMyProgress([{ ...base, last_note: 'futebol de sábado' }])?.lastWorkout?.note).toBe('futebol de sábado');
+    expect(parseMyProgress([{ ...base, last_note: '' }])?.lastWorkout?.note).toBeNull();
+    expect(parseMyProgress([{ ...base, last_note: 'a'.repeat(41) }])?.lastWorkout?.note).toBeNull();
+    expect(parseMyProgress([{ ...base, last_note: 42 }])?.lastWorkout?.note).toBeNull();
   });
 
   /* Detalhe fora dos limites do app é descartado sozinho: melhor o campo vazio, que a pessoa
@@ -155,6 +165,7 @@ describe('progresso e registro de treino', () => {
       distanceM: null,
       setsCount: null,
       loadKg: null,
+      note: null,
     });
   });
 
