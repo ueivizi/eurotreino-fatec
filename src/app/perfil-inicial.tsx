@@ -1,9 +1,13 @@
+import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { EmblemPicker } from '@/components/emblem-picker';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Icon } from '@/components/ui/icon';
+import { LinkRow } from '@/components/ui/link-row';
 import { Notice } from '@/components/ui/notice';
 import { AppText } from '@/components/ui/text';
 import { TextField } from '@/components/ui/text-field';
@@ -21,6 +25,7 @@ const NAME_RULE = 'Use de 2 a 32 caracteres: letras, números, espaço, ponto, a
 /** Primeiro acesso (RF002): nome de exibição e emblema, sem foto. */
 export default function InitialProfileScreen() {
   const { colors } = useTheme();
+  const router = useRouter();
   const insets = useSafeAreaInsets();
   const { state, profileSaved, signOut } = useSession();
 
@@ -71,6 +76,20 @@ export default function InitialProfileScreen() {
           <AppText variant="motto" tone="gold">É assim que sua Legião vai te ver.</AppText>
         </View>
 
+        {/* Primeiro acesso: antes de pedir qualquer coisa, o app diz o que não vai pedir. Era o
+            aviso que faltava no teste de 20/09 -- existia, mas embaixo de tudo, como rodapé. */}
+        <Card style={styles.privacy}>
+          <View style={styles.privacyTitle}>
+            <Icon name="escudo" size={18} color={colors.gold} />
+            <AppText variant="bodyMedium">Antes de começar</AppText>
+          </View>
+          <AppText variant="label" tone="secondary">
+            Não pedimos foto, peso, medidas nem localização. Seu nome e seu emblema aparecem só para
+            quem está nas suas Legiões, e os detalhes dos seus treinos ficam só com você.
+          </AppText>
+          <LinkRow label="Política de Privacidade" icon="pergaminho" onPress={() => router.push('/privacidade')} />
+        </Card>
+
         <TextField
           label="Nome de exibição"
           value={name}
@@ -96,7 +115,7 @@ export default function InitialProfileScreen() {
           onChangeColor={setEmblemColor}
         />
 
-        <Notice message="Sem foto: seu emblema representa você na Arena. Seu nome e seu emblema aparecem só para quem está nas suas Legiões, e os detalhes dos seus treinos ficam só com você." />
+        <Notice message="Sem foto: seu emblema representa você na Arena." />
 
         <View style={styles.actions}>
           <Button label={busy ? 'Salvando…' : 'Continuar'} onPress={() => void submit()} disabled={busy} />
@@ -114,6 +133,14 @@ export default function InitialProfileScreen() {
 }
 
 const styles = StyleSheet.create({
+  privacy: {
+    gap: space.sm,
+  },
+  privacyTitle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.sm,
+  },
   content: {
     paddingHorizontal: space.xl,
     gap: space.xl,

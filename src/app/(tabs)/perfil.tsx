@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
@@ -8,23 +8,19 @@ import { EmblemAvatar } from '@/components/rank/emblem-avatar';
 import { RankMedallion } from '@/components/rank/rank-medallion';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Icon } from '@/components/ui/icon';
 import { LinkRow } from '@/components/ui/link-row';
 import { Notice } from '@/components/ui/notice';
 import { ProgressBar } from '@/components/ui/progress-bar';
-import { SegmentedControl } from '@/components/ui/segmented-control';
 import { AppText } from '@/components/ui/text';
-import { setHealthConsent } from '@/features/account/account-api';
 import { useSession } from '@/features/auth/session';
 import { fetchMyLegions } from '@/features/legions/legions-api';
 import { rankFromGlory } from '@/features/ranks/tiers';
-import { useOfflineQueue } from '@/features/workouts/offline-queue-provider';
 import { fetchMyProgress } from '@/features/workouts/workouts-api';
 import { profileShareMessage } from '@/features/workouts/share-workout';
 import { queryKeys } from '@/lib/query-client';
 import { errorMessage } from '@/lib/rpc-errors';
 import { SHARE_FEEDBACK, shareText } from '@/lib/share';
-import { THEME_OPTIONS, useTheme } from '@/theme/theme';
+import { useTheme } from '@/theme/theme';
 import { space } from '@/theme/tokens';
 
 function workoutCount(total: number): string {
@@ -34,23 +30,11 @@ function workoutCount(total: number): string {
 
 /** Meu perfil: rank, Legiões, privacidade e conta (sair e excluir). */
 export default function ProfileScreen() {
-  const { colors, preference, setPreference } = useTheme();
+  const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { state, signOut, retry: refreshProfile } = useSession();
-  const queryClient = useQueryClient();
-  const queue = useOfflineQueue();
-  const [confirmSignOut, setConfirmSignOut] = useState(false);
+  const { state } = useSession();
   const [shareNote, setShareNote] = useState<string | null>(null);
-
-  const consent = useMutation({
-    mutationFn: (granted: boolean) => setHealthConsent(granted),
-    onSuccess: async () => {
-      // O perfil guarda o consentimento: recarrega para a tela refletir na hora.
-      refreshProfile();
-      void queryClient.invalidateQueries({ queryKey: queryKeys.progress });
-    },
-  });
 
   async function share(message: string) {
     setShareNote(SHARE_FEEDBACK[await shareText(message)]);
@@ -62,15 +46,6 @@ export default function ProfileScreen() {
   if (state.status !== 'ready') return null;
   const { profile, email } = state;
   const rank = progress.data ? rankFromGlory(progress.data.totalGlory) : null;
-
-  async function leave() {
-    if (queue.pending.length > 0 && !confirmSignOut) {
-      setConfirmSignOut(true);
-      return;
-    }
-    await queue.discardMine();
-    await signOut();
-  }
 
   return (
     <ScrollView
@@ -140,7 +115,6 @@ export default function ProfileScreen() {
           <Button label="Ver todos os ranks" variant="ghost" onPress={() => router.push('/ranks')} />
           <Button label="Meus recordes" variant="ghost" onPress={() => router.push('/recordes')} />
           <Button label="Minha Honra" variant="ghost" onPress={() => router.push('/honra')} />
-          <Button label="Relógios e GPX" icon="relogio" variant="ghost" onPress={() => router.push('/dispositivos')} />
           <Button label="Como conquistar Glória" variant="ghost" onPress={() => router.push('/gloria')} />
         </View>
       </Card>
@@ -166,70 +140,14 @@ export default function ProfileScreen() {
         <Button label="Fundar ou entrar em outra Legião" variant="ghost" icon="mais" onPress={() => router.navigate('/legiao')} />
       </View>
 
-      <View style={styles.section}>
-        <AppText variant="overline" tone="muted">Aparência</AppText>
-        <SegmentedControl
-          options={THEME_OPTIONS}
-          value={preference}
-          onChange={setPreference}
-          accessibilityLabel="Tema do app"
-        />
-        <AppText variant="caption" tone="muted">
-          {preference === 'sistema'
-            ? 'Segue o tema claro ou escuro do seu aparelho.'
-            : preference === 'marmore'
-              ? 'Mármore: tema claro, para luz forte.'
-              : 'Ônix: tema escuro, o padrão do EuroTreino.'}
-        </AppText>
-      </View>
+      {/* Perfil é quem você é; o que o app faz fica em Configurações, um toque à frente. */}
+      <LinkRow
+        label="Configurações"
+        icon="escudo"
+        description="Aparência, privacidade, relógios e conta"
+        onPress={() => router.push('/configuracoes')}
+      />
 
-      <View style={styles.section}>
-        <AppText variant="overline" tone="muted">Privacidade</AppText>
-        <View style={styles.privacy}>
-          <Icon name="escudo" size={18} color={colors.gold} />
-          <AppText variant="label" tone="secondary" style={styles.flex}>
-            Seu perfil só aparece para membros das suas Legiões. Seus treinos ficam só com você.
-          </AppText>
-        </View>
-        <View style={styles.consent}>
-          <View style={styles.flex}>
-            <AppText variant="bodyMedium">Registrar frequência cardíaca</AppText>
-            <AppText variant="caption" tone="muted">
-              {profile.healthConsentAt
-                ? 'Ligado: o campo aparece ao registrar treino. Desligar apaga as medidas já guardadas.'
-                : 'Desligado. Frequência cardíaca é dado sensível de saúde: só registramos com seu consentimento.'}
-            </AppText>
-          </View>
-        </View>
-        <Button
-          label={consent.isPending ? 'Salvando…' : profile.healthConsentAt ? 'Desligar e apagar medidas' : 'Ligar o registro'}
-          variant="secondary"
-          icon={profile.healthConsentAt ? 'excluir' : 'check'}
-          onPress={() => consent.mutate(!profile.healthConsentAt)}
-          disabled={consent.isPending}
-        />
-        {consent.isError ? <Notice tone="danger" message={errorMessage(consent.error)} /> : null}
-        <LinkRow label="Política de Privacidade" icon="pergaminho" onPress={() => router.push('/privacidade')} />
-        <LinkRow label="Termos de Uso" icon="pergaminho" onPress={() => router.push('/termos')} />
-      </View>
-
-      <View style={styles.section}>
-        <AppText variant="overline" tone="muted">Conta</AppText>
-        {confirmSignOut ? (
-          <Notice
-            message={`Você tem ${queue.pending.length} ${queue.pending.length === 1 ? 'treino guardado' : 'treinos guardados'} neste aparelho, ainda sem envio. Ao sair, eles são descartados e não rendem Glória.`}
-          />
-        ) : null}
-        <Button label={confirmSignOut ? 'Sair mesmo assim' : 'Sair'} icon="sair" variant="secondary" onPress={() => void leave()} />
-        {confirmSignOut ? <Button label="Cancelar" variant="ghost" onPress={() => setConfirmSignOut(false)} /> : null}
-        <LinkRow
-          label="Excluir conta e dados"
-          icon="excluir"
-          tone="danger"
-          description="Apaga seu perfil, seus treinos e sua Glória"
-          onPress={() => router.push('/excluir-conta')}
-        />
-      </View>
     </ScrollView>
   );
 }
