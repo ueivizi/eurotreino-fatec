@@ -14,6 +14,8 @@ export type Palette = {
   textSecondary: string;
   textMuted: string;
   gold: string;
+  /** Ouro para texto: no Mármore o ouro de preenchimento não alcança 4,5:1 sobre o fundo claro. */
+  goldText: string;
   goldHighlight: string;
   goldDeep: string;
   onGold: string;
@@ -39,6 +41,7 @@ export const palettes: Record<ThemeName, Palette> = {
     textSecondary: '#CFC5B2',
     textMuted: '#8F8676',
     gold: '#C9A24A',
+    goldText: '#C9A24A',
     goldHighlight: '#E6C878',
     goldDeep: '#8A6A24',
     onGold: '#0B0A08',
@@ -62,6 +65,7 @@ export const palettes: Record<ThemeName, Palette> = {
     textSecondary: '#5A5044',
     textMuted: '#5A5044',
     gold: '#B8913A',
+    goldText: '#7A5A17',
     goldHighlight: '#7A5A17',
     goldDeep: '#7A5A17',
     onGold: '#1B1712',

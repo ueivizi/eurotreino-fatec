@@ -19,11 +19,11 @@ export type TextVariant =
 
 export type TextTone = 'primary' | 'secondary' | 'muted' | 'gold' | 'goldHighlight' | 'onGold' | 'success' | 'danger';
 
-const TONE_TO_COLOR: Record<TextTone, keyof Palette> = {
+export const TONE_TO_COLOR: Record<TextTone, keyof Palette> = {
   primary: 'text',
   secondary: 'textSecondary',
   muted: 'textMuted',
-  gold: 'gold',
+  gold: 'goldText',
   goldHighlight: 'goldHighlight',
   onGold: 'onGold',
   success: 'success',

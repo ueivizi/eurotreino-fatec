@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { randomUUID } from 'expo-crypto';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { PressableScale } from '@/components/motion/pressable-scale';
@@ -15,6 +15,8 @@ import { Notice } from '@/components/ui/notice';
 import { SegmentedControl } from '@/components/ui/segmented-control';
 import { AppText } from '@/components/ui/text';
 import { useProfile } from '@/features/auth/session';
+import { healthConnect } from '@/features/devices/health-connect';
+import { matchingWorkout } from '@/features/devices/imported-workout';
 import { requestExercise, takePickedExercise } from '@/features/training/exercise-picker';
 import { fetchExerciseCatalog } from '@/features/training/exercises-api';
 import { fetchMyRoutines } from '@/features/training/routines-api';
@@ -154,6 +156,32 @@ export default function LiveSessionScreen() {
       void queryClient.invalidateQueries({ queryKey: queryKeys.rankings });
       void queryClient.invalidateQueries({ queryKey: queryKeys.honor });
       void queryClient.invalidateQueries({ queryKey: queryKeys.records });
+    },
+  });
+
+  // Integração com o relógio: acha no Health Connect o treino que cobre o tempo cronometrado aqui e
+  // preenche distância e frequência cardíaca. A pessoa ainda pode ajustar antes de registrar.
+  const fromWatch = useMutation({
+    mutationFn: async (): Promise<'filled' | 'unavailable' | 'not_connected' | 'no_match'> => {
+      if (!current) return 'no_match';
+      if ((await healthConnect.status()) !== 'available') return 'unavailable';
+      if (!(await healthConnect.granted()).exercise) return 'not_connected';
+      const end = new Date();
+      const start = new Date(end.getTime() - elapsedMs(current, end));
+      const list = await healthConnect.readWorkouts({
+        since: new Date(start.getTime() - 3 * 3600_000),
+        until: new Date(end.getTime() + 30 * 60_000),
+        heartRate: healthConsent,
+      });
+      const match = matchingWorkout(list, start, end);
+      if (!match) return 'no_match';
+      if (match.distanceM !== null && match.distanceM >= DISTANCE.min) {
+        setDistanceM(Math.min(DISTANCE.max, Math.round(match.distanceM)));
+      }
+      if (healthConsent && match.avgHeartRate !== null && match.avgHeartRate >= 30 && match.avgHeartRate <= 240) {
+        setAvgHeartRate(Math.round(match.avgHeartRate));
+      }
+      return 'filled';
     },
   });
 
@@ -430,6 +458,25 @@ export default function LiveSessionScreen() {
 
           {isEndurance ? (
             <>
+              {Platform.OS === 'android' ? (
+                <>
+                  <Button
+                    label={fromWatch.isPending ? 'Buscando no relógio…' : 'Preencher com o relógio'}
+                    icon="relogio"
+                    variant="secondary"
+                    onPress={() => fromWatch.mutate()}
+                    disabled={fromWatch.isPending}
+                  />
+                  {fromWatch.data === 'filled' ? <Notice message="Distância e frequência cardíaca vieram do relógio. Confira antes de registrar." /> : null}
+                  {fromWatch.data === 'unavailable' || fromWatch.data === 'not_connected' ? (
+                    <Notice message="Conecte o relógio em Perfil › Relógios e GPX para trazer os dados." />
+                  ) : null}
+                  {fromWatch.data === 'no_match' ? (
+                    <Notice message="O treino ainda não chegou ao Health Connect. Sincronize o relógio no app da marca e tente de novo." />
+                  ) : null}
+                  {fromWatch.isError ? <Notice tone="danger" message="Não foi possível ler o Health Connect agora." /> : null}
+                </>
+              ) : null}
               <View style={styles.exerciseHeader}>
                 <View style={styles.flex}>
                   <AppText variant="bodyMedium">Distância</AppText>

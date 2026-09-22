@@ -162,7 +162,8 @@ site_url = "http://localhost:3000"
 # The public URL that Auth serves on. Defaults to the API external URL with `/auth/v1` appended.
 # external_url = ""
 # A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
-additional_redirect_urls = []
+# eurotreino://excluir-conta não é aberto por ninguém: só marca, no modelo do código, o pedido de exclusão.
+additional_redirect_urls = ["eurotreino://excluir-conta"]
 # How long tokens are valid for, in seconds. Defaults to 3600 (1 hour), maximum 604,800 (1 week).
 jwt_expiry = 3600
 # JWT issuer URL. If not set, defaults to auth.external_url.
@@ -215,9 +216,9 @@ anonymous_users = 30
 # Number of sessions that can be refreshed in a 5 minute interval per IP address.
 token_refresh = 150
 # Number of sign up and sign-in requests that can be made in a 5 minute interval per IP address (excludes anonymous users).
-sign_in_sign_ups = 30
+sign_in_sign_ups = 100
 # Number of OTP / Magic link verifications that can be made in a 5 minute interval per IP address.
-token_verifications = 30
+token_verifications = 100
 # Number of Web3 logins that can be made in a 5 minute interval per IP address.
 web3 = 30
 
@@ -262,7 +263,7 @@ otp_expiry = 3600
 # EuroTreino: os três modelos enviam só o código, sem link (RF001). "Magic Link" é a entrada sem
 # senha de quem já tem conta; "Confirm signup" confirma o cadastro; "Reset Password" troca a senha.
 [auth.email.template.magic_link]
-subject = "Seu código de acesso ao EuroTreino"
+subject = "Seu código do EuroTreino"
 content_path = "./supabase/templates/codigo-de-acesso.html"
 
 [auth.email.template.confirmation]

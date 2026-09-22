@@ -140,6 +140,7 @@ export default function ProfileScreen() {
           <Button label="Ver todos os ranks" variant="ghost" onPress={() => router.push('/ranks')} />
           <Button label="Meus recordes" variant="ghost" onPress={() => router.push('/recordes')} />
           <Button label="Minha Honra" variant="ghost" onPress={() => router.push('/honra')} />
+          <Button label="Relógios e GPX" icon="relogio" variant="ghost" onPress={() => router.push('/dispositivos')} />
           <Button label="Como conquistar Glória" variant="ghost" onPress={() => router.push('/gloria')} />
         </View>
       </Card>

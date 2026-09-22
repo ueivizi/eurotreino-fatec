@@ -50,6 +50,12 @@ jobs:
   secrets:
     name: Segredos no histórico
     runs-on: ubuntu-latest
+    # Em pull request o gitleaks lista os commits do PR pela API; com só `contents: read` a
+    # chamada volta 403 e o job falha antes de varrer nada. Permissão de job, não do fluxo:
+    # os outros dois jobs continuam sem enxergar pull requests.
+    permissions:
+      contents: read
+      pull-requests: read
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:

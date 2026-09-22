@@ -108,6 +108,7 @@ function RootNavigator() {
         <Stack.Screen name="ranks" />
         <Stack.Screen name="recordes" />
         <Stack.Screen name="honra" />
+        <Stack.Screen name="dispositivos" />
         <Stack.Screen name="fichas" />
         <Stack.Screen name="fichas/[id]" />
         <Stack.Screen name="exercicios" />

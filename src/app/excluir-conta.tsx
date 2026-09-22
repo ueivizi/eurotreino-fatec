@@ -11,7 +11,7 @@ import { Icon } from '@/components/ui/icon';
 import { Notice } from '@/components/ui/notice';
 import { AppText } from '@/components/ui/text';
 import { TextField } from '@/components/ui/text-field';
-import { deleteAccount, type DeleteAccountResult } from '@/features/account/account-api';
+import { ACCOUNT_DELETION_REDIRECT, deleteAccount, type DeleteAccountResult } from '@/features/account/account-api';
 import { markAccountDeleted } from '@/features/account/deletion-notice';
 import { AUTH_MESSAGES, authErrorMessage } from '@/features/auth/auth-errors';
 import { OTP_LENGTH, RESEND_COOLDOWN_SECONDS, isValidOtp, normalizeOtp } from '@/features/auth/credentials';
@@ -79,7 +79,11 @@ export default function DeleteAccountScreen() {
     setBusy(true);
     setError(null);
     try {
-      const { error: requestError } = await getSupabase().auth.signInWithOtp({ email, options: { shouldCreateUser: false } });
+      // O endereço de retorno só marca o pedido: o e-mail chega como confirmação de exclusão, não de entrada.
+      const { error: requestError } = await getSupabase().auth.signInWithOtp({
+        email,
+        options: { shouldCreateUser: false, emailRedirectTo: ACCOUNT_DELETION_REDIRECT },
+      });
       if (requestError) {
         setError(authErrorMessage(requestError));
       } else {
@@ -112,7 +116,7 @@ export default function DeleteAccountScreen() {
       }
       const result = await deleteAccount();
       if (!result.ok) {
-        setError(FAILURES[result.reason]);
+        setError(`${FAILURES[result.reason]} Referência: ${result.reference}.`);
         return;
       }
       markAccountDeleted();
@@ -120,8 +124,9 @@ export default function DeleteAccountScreen() {
       queryClient.clear();
       // A conta já não existe no servidor: basta encerrar a sessão neste aparelho.
       await getSupabase().auth.signOut({ scope: 'local' });
-    } catch {
-      setError(RPC_MESSAGES.generic);
+    } catch (caught) {
+      const name = caught instanceof Error && /^\w{1,40}$/.test(caught.name) ? caught.name : 'erro';
+      setError(`${RPC_MESSAGES.generic} Referência: app ${name}.`);
     } finally {
       setBusy(false);
     }
