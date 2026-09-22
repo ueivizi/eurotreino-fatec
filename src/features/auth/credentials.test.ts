@@ -1,6 +1,8 @@
 import {
+  OTP_LENGTH,
   PASSWORD_MAX_BYTES,
   PASSWORD_MIN_LENGTH,
+  digitsForCode,
   isValidEmail,
   isValidOtp,
   normalizeEmail,
@@ -42,6 +44,41 @@ describe('código de acesso', () => {
     for (const code of ['12345', '12345678901', '12345a', '１２３４５６', '']) {
       expect(isValidOtp(code)).toBe(false);
     }
+  });
+});
+
+describe('um dígito por quadrado', () => {
+  it('guarda só dígitos', () => {
+    expect(digitsForCode('4a8b2c', OTP_LENGTH)).toBe('482');
+  });
+
+  it('aceita o código colado com espaço e hífen', () => {
+    expect(digitsForCode('482 915-77', OTP_LENGTH)).toBe('48291577');
+  });
+
+  it('aproveita o código no meio do texto do e-mail', () => {
+    expect(digitsForCode('Seu código é 48291577, válido por 1 hora', OTP_LENGTH)).toBe('48291577');
+  });
+
+  it('não passa do tamanho do campo', () => {
+    expect(digitsForCode('1234567890123', OTP_LENGTH)).toBe('12345678');
+  });
+
+  it('acompanha um tamanho menor, se o Supabase mudar', () => {
+    expect(digitsForCode('123456789', 6)).toBe('123456');
+  });
+
+  it('devolve vazio quando não há dígito', () => {
+    expect(digitsForCode('', OTP_LENGTH)).toBe('');
+    expect(digitsForCode('colei o e-mail inteiro sem número', OTP_LENGTH)).toBe('');
+  });
+
+  /* O campo desenha OTP_LENGTH quadrados, mas a validação aceita de 6 a 10 dígitos: um código mais
+     curto tem de continuar passando, senão uma mudança no Supabase trancaria a entrada. */
+  it('deixa passar código mais curto que o campo', () => {
+    const codigo = digitsForCode('482915', OTP_LENGTH);
+    expect(codigo).toBe('482915');
+    expect(isValidOtp(codigo)).toBe(true);
   });
 });
 

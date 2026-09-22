@@ -7,6 +7,7 @@ import Svg, { Defs, Path, Pattern, Rect } from 'react-native-svg';
 
 import { Monogram } from '@/components/brand/monogram';
 import { Button } from '@/components/ui/button';
+import { CodeField } from '@/components/ui/code-field';
 import { Icon } from '@/components/ui/icon';
 import { Notice } from '@/components/ui/notice';
 import { PasswordField } from '@/components/ui/password-field';
@@ -233,19 +234,13 @@ export default function SignInScreen() {
   );
 
   const codeField = (
-    <TextField
+    <CodeField
       label="Código"
       value={code}
       onChangeText={(text) => {
         setCode(text);
         setCodeError(null);
       }}
-      placeholder={'0'.repeat(OTP_LENGTH)}
-      keyboardType="number-pad"
-      inputMode="numeric"
-      autoComplete="one-time-code"
-      textContentType="oneTimeCode"
-      maxLength={12}
       autoFocus
       returnKeyType="done"
       onSubmitEditing={step.kind === 'confirmar' ? submitConfirmation : submitCode}

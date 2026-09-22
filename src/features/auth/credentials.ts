@@ -18,6 +18,15 @@ export function normalizeOtp(input: string): string {
 /** Tamanho do código no projeto (`otp_length` em supabase/config.toml). Usado só como dica na tela. */
 export const OTP_LENGTH = 8;
 
+/**
+ * O que pode ficar no campo de um quadrado por dígito: só dígitos, no máximo o tamanho esperado.
+ * Colar o trecho do e-mail ("Seu código é 48291577, válido por 1 hora") aproveita os dígitos na
+ * ordem em que aparecem, então o código entra inteiro de uma vez.
+ */
+export function digitsForCode(input: string, length: number): string {
+  return input.replace(/\D/g, '').slice(0, length);
+}
+
 /** A validação aceita de 6 a 10 dígitos, para não quebrar se o tamanho mudar no Supabase. */
 export function isValidOtp(code: string): boolean {
   return /^\d{6,10}$/.test(code);
