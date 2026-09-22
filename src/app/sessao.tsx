@@ -4,8 +4,10 @@ import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 
 import { PressableScale } from '@/components/motion/pressable-scale';
+import { useReducedMotionPreference } from '@/components/motion/reduced-motion';
 import { RollingNumber } from '@/components/motion/rolling-number';
 import { ScreenHeader } from '@/components/screen-header';
 import { Button, tapFeedback } from '@/components/ui/button';
@@ -14,6 +16,7 @@ import { Icon, type IconName } from '@/components/ui/icon';
 import { Notice } from '@/components/ui/notice';
 import { SegmentedControl } from '@/components/ui/segmented-control';
 import { AppText } from '@/components/ui/text';
+import { TextField } from '@/components/ui/text-field';
 import { useProfile } from '@/features/auth/session';
 import { healthConnect } from '@/features/devices/health-connect';
 import { matchingWorkout } from '@/features/devices/imported-workout';
@@ -45,8 +48,10 @@ import {
   type WorkoutTypeId,
 } from '@/features/workouts/workout-types';
 import { queryKeys } from '@/lib/query-client';
+import { toRoman } from '@/lib/week';
 import { errorMessage } from '@/lib/rpc-errors';
 import { useTheme } from '@/theme/theme';
+import { duration as motionDuration, easing } from '@/theme/motion';
 import { radius, space, touchTarget } from '@/theme/tokens';
 
 const REPS = { min: 1, max: 100, step: 1 } as const;
@@ -79,6 +84,37 @@ function StepButton({ icon, label, onPress, disabled }: { icon: IconName; label:
  * fechar o app, trancar a tela ou ficar sem bateria não perde o treino. Só ao finalizar é que o
  * registro vai para o servidor — e lá a Glória continua vindo da regra v1 de sempre.
  */
+/**
+ * Exercício concluído: a ficha previa N séries e elas saíram. Um selo de ouro cobre o cartão por
+ * um instante antes de passar para o próximo -- é a cerimônia miúda que o treino de força não
+ * tinha, e é ela que diz "pode virar a página" sem exigir um toque.
+ */
+function ExerciseDone({ name, sets }: { name: string; sets: number }) {
+  const { colors } = useTheme();
+  const reduced = useReducedMotionPreference();
+  const scale = useSharedValue(reduced ? 1 : 0.86);
+  const opacity = useSharedValue(reduced ? 1 : 0);
+
+  useEffect(() => {
+    if (reduced) return;
+    opacity.set(withTiming(1, { duration: motionDuration.fast, easing: easing.standard }));
+    scale.set(withTiming(1, { duration: motionDuration.base, easing: easing.standard }));
+  }, [opacity, scale, reduced]);
+
+  const style = useAnimatedStyle(() => ({ opacity: opacity.get(), transform: [{ scale: scale.get() }] }));
+
+  return (
+    <Animated.View
+      accessibilityLiveRegion="polite"
+      accessibilityLabel={`${name} concluído: ${sets} séries.`}
+      style={[styles.doneOverlay, { backgroundColor: colors.surfaceRaised, borderColor: colors.gold }, style]}>
+      <Icon name="check" size={34} color={colors.goldHighlight} strokeWidth={2} />
+      <AppText variant="subheading" tone="goldHighlight">Exercício concluído</AppText>
+      <AppText variant="caption" tone="secondary" numberOfLines={2}>{`${name} · ${toRoman(sets)} séries`}</AppText>
+    </Animated.View>
+  );
+}
+
 export default function LiveSessionScreen() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
@@ -101,9 +137,26 @@ export default function LiveSessionScreen() {
   const [loads, setLoads] = useState<Record<string, number>>({});
   const [extra, setExtra] = useState<string[]>([]);
   const [finishing, setFinishing] = useState(false);
+  /* Um exercício por vez, na ordem da ficha: a lista inteira na tela fazia perder o lugar entre
+     uma série e outra (achado do teste de 22/09). */
+  const [focusIndex, setFocusIndex] = useState(0);
+  /** Exercício que acabou de fechar o previsto, e para qual índice ir depois do selo. */
+  const [doneExercise, setDoneExercise] = useState<{ id: string; next: number } | null>(null);
+  const [typing, setTyping] = useState<'reps' | 'carga' | null>(null);
   const [outcome, setOutcome] = useState<StrengthOutcome | null>(null);
 
   const current = session.current;
+
+  // O selo de exercício concluído fica um instante e passa a vez ao próximo da ficha.
+  useEffect(() => {
+    if (!doneExercise) return;
+    const { next } = doneExercise;
+    const timer = setTimeout(() => {
+      setDoneExercise(null);
+      if (next >= 0) setFocusIndex(next);
+    }, 1400);
+    return () => clearTimeout(timer);
+  }, [doneExercise]);
 
   // Um tique por segundo só enquanto a sessão está correndo.
   useEffect(() => {
@@ -315,6 +368,13 @@ export default function LiveSessionScreen() {
   const exerciseIds = isEndurance ? [] : [...plannedIds, ...extra.filter((id) => !plannedIds.includes(id))];
   const totalSets = current.sets.length;
 
+  const plannedFor = (exerciseId: string) => routine?.items.find((item) => item.exerciseId === exerciseId) ?? null;
+  const completed = (exerciseId: string) => {
+    const planned = plannedFor(exerciseId);
+    return planned !== null && setsOf(current, exerciseId).length >= planned.targetSets;
+  };
+  const focusId = exerciseIds[Math.min(focusIndex, Math.max(exerciseIds.length - 1, 0))] ?? null;
+
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: colors.background }}
@@ -373,73 +433,222 @@ export default function LiveSessionScreen() {
         </>
       ) : null}
 
-      {exerciseIds.map((exerciseId) => {
-        const planned = routine?.items.find((item) => item.exerciseId === exerciseId) ?? null;
-        const done = setsOf(current, exerciseId);
-        const repsValue = reps[exerciseId] ?? planned?.targetReps ?? 10;
-        const loadValue = loads[exerciseId] ?? planned?.targetLoadKg ?? 0;
+      {focusId ? (
+        (() => {
+          const planned = plannedFor(focusId);
+          const done = setsOf(current, focusId);
+          const repsValue = reps[focusId] ?? planned?.targetReps ?? 10;
+          const loadValue = loads[focusId] ?? planned?.targetLoadKg ?? 0;
+          const target = planned?.targetSets ?? Math.max(done.length + 1, 1);
 
-        return (
-          <Card key={exerciseId} style={styles.exercise}>
-            <View style={styles.exerciseHeader}>
-              <View style={styles.flex}>
-                <AppText variant="bodyMedium" numberOfLines={2}>{nameOf(exerciseId)}</AppText>
-                <AppText variant="caption" tone="muted">
-                  {planned
-                    ? `Previsto: ${planned.targetSets}x${planned.targetReps}${planned.targetLoadKg ? ` · ${formatLoad(planned.targetLoadKg)}` : ''}`
-                    : 'Fora da ficha'}
+          return (
+            <>
+              <View style={styles.focusHeader}>
+                <AppText variant="overline" tone="muted">
+                  {`Exercício ${toRoman(focusIndex + 1)} de ${toRoman(exerciseIds.length)}`}
                 </AppText>
-              </View>
-              <RollingNumber
-                value={done.length}
-                suffix={planned ? `/${planned.targetSets}` : ''}
-                variant="heading"
-                tone={planned && done.length >= planned.targetSets ? 'goldHighlight' : 'secondary'}
-              />
-            </View>
-
-            {done.length > 0 ? (
-              <AppText variant="caption" tone="secondary">
-                {done.map((set) => `${set.reps}${set.loadKg ? `×${formatLoad(set.loadKg)}` : ''}`).join(' · ')}
-              </AppText>
-            ) : null}
-
-            <View style={styles.controls}>
-              <View style={styles.control}>
-                <AppText variant="caption" tone="muted">Repetições</AppText>
-                <View style={styles.stepper}>
-                  <StepButton icon="menos" label="Menos repetições" disabled={repsValue <= REPS.min} onPress={() => setReps({ ...reps, [exerciseId]: repsValue - 1 })} />
-                  <AppText variant="bodyMedium" style={styles.stepperValue}>{String(repsValue)}</AppText>
-                  <StepButton icon="mais" label="Mais repetições" disabled={repsValue >= REPS.max} onPress={() => setReps({ ...reps, [exerciseId]: repsValue + 1 })} />
+                <View style={styles.pills} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+                  {exerciseIds.map((id, index) => (
+                    <View
+                      key={id}
+                      style={[
+                        styles.pill,
+                        {
+                          backgroundColor: completed(id)
+                            ? colors.success
+                            : index === focusIndex
+                              ? colors.goldHighlight
+                              : colors.track,
+                        },
+                      ]}
+                    />
+                  ))}
                 </View>
               </View>
-              <View style={styles.control}>
-                <AppText variant="caption" tone="muted">Carga</AppText>
-                <View style={styles.stepper}>
-                  <StepButton icon="menos" label="Menos carga" disabled={loadValue <= 0} onPress={() => setLoads({ ...loads, [exerciseId]: Math.max(0, loadValue - LOAD.step) })} />
-                  <AppText variant="bodyMedium" style={styles.stepperValue}>{loadValue > 0 ? formatLoad(loadValue) : 'Livre'}</AppText>
-                  <StepButton icon="mais" label="Mais carga" disabled={loadValue >= LOAD.max} onPress={() => setLoads({ ...loads, [exerciseId]: Math.min(LOAD.max, loadValue + LOAD.step) })} />
-                </View>
-              </View>
-            </View>
 
-            <View style={styles.setActions}>
-              <PressableScale
-                accessibilityRole="button"
-                accessibilityLabel={`Marcar série de ${nameOf(exerciseId)}`}
-                haptic="tap"
-                onPress={() => void session.addSet({ exerciseId, reps: repsValue, loadKg: loadValue > 0 ? loadValue : null })}
-                style={[styles.setButton, { backgroundColor: colors.selectedFill, borderColor: colors.gold }]}>
-                <Icon name="check" size={20} color={colors.goldHighlight} />
-                <AppText variant="button" tone="goldHighlight">Série feita</AppText>
-              </PressableScale>
-              {done.length > 0 ? (
-                <Button label="Desfazer" variant="ghost" onPress={() => void session.removeLastSet(exerciseId)} />
+              <Card style={styles.exercise}>
+                <View style={styles.exerciseHeader}>
+                  <View style={styles.flex}>
+                    <AppText variant="subheading" numberOfLines={2}>{nameOf(focusId)}</AppText>
+                    <AppText variant="caption" tone="muted">
+                      {planned
+                        ? `Previsto: ${planned.targetSets} × ${planned.targetReps}${planned.targetLoadKg ? ` · ${formatLoad(planned.targetLoadKg)}` : ''}`
+                        : 'Fora da ficha'}
+                    </AppText>
+                  </View>
+                  <RollingNumber
+                    value={done.length}
+                    suffix={planned ? `/${planned.targetSets}` : ''}
+                    variant="heading"
+                    tone={planned && done.length >= planned.targetSets ? 'goldHighlight' : 'secondary'}
+                  />
+                </View>
+
+                {/* As séries em numeral romano: o mesmo alfabeto das divisões de rank. */}
+                <View style={styles.series} accessibilityLabel={`${done.length} de ${target} séries feitas`}>
+                  {Array.from({ length: Math.max(target, done.length) }, (_, index) => {
+                    const set = done[index];
+                    return (
+                      <View
+                        key={index}
+                        style={[
+                          styles.serie,
+                          {
+                            borderColor: set ? colors.gold : colors.hairlineSoft,
+                            backgroundColor: set ? colors.selectedFill : 'transparent',
+                          },
+                        ]}>
+                        <AppText variant="label" tone={set ? 'goldHighlight' : 'muted'}>{toRoman(index + 1)}</AppText>
+                      </View>
+                    );
+                  })}
+                </View>
+
+                {done.length > 0 ? (
+                  <AppText variant="caption" tone="secondary">
+                    {done.map((set) => `${set.reps}${set.loadKg ? `×${formatLoad(set.loadKg)}` : ''}`).join(' · ')}
+                  </AppText>
+                ) : null}
+
+                {typing === 'reps' ? (
+                  <TextField
+                    label="Repetições"
+                    value={String(repsValue)}
+                    onChangeText={(text) => {
+                      const digits = Number(text.replace(/[^0-9]/g, ''));
+                      setReps({ ...reps, [focusId]: Math.min(REPS.max, Math.max(REPS.min, digits || REPS.min)) });
+                    }}
+                    keyboardType="number-pad"
+                    autoFocus
+                    returnKeyType="done"
+                    onBlur={() => setTyping(null)}
+                    onSubmitEditing={() => setTyping(null)}
+                    hint="Toque em concluído para voltar aos botões"
+                  />
+                ) : typing === 'carga' ? (
+                  <TextField
+                    label="Carga (kg)"
+                    value={loadValue > 0 ? String(loadValue) : ''}
+                    onChangeText={(text) => {
+                      const clean = Number(text.replace(',', '.').replace(/[^0-9.]/g, ''));
+                      setLoads({ ...loads, [focusId]: Number.isFinite(clean) ? Math.min(LOAD.max, Math.max(0, clean)) : 0 });
+                    }}
+                    keyboardType="decimal-pad"
+                    autoFocus
+                    returnKeyType="done"
+                    onBlur={() => setTyping(null)}
+                    onSubmitEditing={() => setTyping(null)}
+                    hint="Vazio quer dizer peso livre"
+                  />
+                ) : (
+                  <View style={styles.controls}>
+                    <View style={styles.control}>
+                      <AppText variant="caption" tone="muted">Repetições</AppText>
+                      <View style={styles.stepper}>
+                        <StepButton icon="menos" label="Menos repetições" disabled={repsValue <= REPS.min} onPress={() => setReps({ ...reps, [focusId]: repsValue - 1 })} />
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel={`${repsValue} repetições. Toque para digitar.`}
+                          onPress={() => {
+                            tapFeedback();
+                            setTyping('reps');
+                          }}
+                          style={styles.typed}>
+                          <AppText variant="bodyMedium" style={styles.stepperValue}>{String(repsValue)}</AppText>
+                        </Pressable>
+                        <StepButton icon="mais" label="Mais repetições" disabled={repsValue >= REPS.max} onPress={() => setReps({ ...reps, [focusId]: repsValue + 1 })} />
+                      </View>
+                    </View>
+                    <View style={styles.control}>
+                      <AppText variant="caption" tone="muted">Carga</AppText>
+                      <View style={styles.stepper}>
+                        <StepButton icon="menos" label="Menos carga" disabled={loadValue <= 0} onPress={() => setLoads({ ...loads, [focusId]: Math.max(0, loadValue - LOAD.step) })} />
+                        <Pressable
+                          accessibilityRole="button"
+                          accessibilityLabel={`${loadValue > 0 ? `${loadValue} quilos` : 'Peso livre'}. Toque para digitar.`}
+                          onPress={() => {
+                            tapFeedback();
+                            setTyping('carga');
+                          }}
+                          style={styles.typed}>
+                          <AppText variant="bodyMedium" style={styles.stepperValue}>{loadValue > 0 ? formatLoad(loadValue) : 'Livre'}</AppText>
+                        </Pressable>
+                        <StepButton icon="mais" label="Mais carga" disabled={loadValue >= LOAD.max} onPress={() => setLoads({ ...loads, [focusId]: Math.min(LOAD.max, loadValue + LOAD.step) })} />
+                      </View>
+                    </View>
+                  </View>
+                )}
+
+                <View style={styles.setActions}>
+                  <PressableScale
+                    accessibilityRole="button"
+                    accessibilityLabel={`Marcar série de ${nameOf(focusId)}`}
+                    haptic="tap"
+                    onPress={() => {
+                      void session.addSet({ exerciseId: focusId, reps: repsValue, loadKg: loadValue > 0 ? loadValue : null });
+                      // A ficha manda: fechou o previsto, o exercício se dá por concluído e a vez
+                      // passa para o próximo que ainda falta.
+                      if (planned && done.length + 1 >= planned.targetSets) {
+                        const next = exerciseIds.findIndex((id, index) => index > focusIndex && !completed(id));
+                        setDoneExercise({ id: focusId, next });
+                      }
+                    }}
+                    style={[styles.setButton, { backgroundColor: colors.selectedFill, borderColor: colors.gold }]}>
+                    <Icon name="check" size={20} color={colors.goldHighlight} />
+                    <AppText variant="button" tone="goldHighlight">Série feita</AppText>
+                  </PressableScale>
+                </View>
+
+                <View style={styles.controls}>
+                  <Button label="Anterior" icon="chevronLeft" variant="ghost" onPress={() => setFocusIndex((index) => Math.max(0, index - 1))} />
+                  {done.length > 0 ? <Button label="Desfazer série" variant="ghost" onPress={() => void session.removeLastSet(focusId)} /> : null}
+                  <Button
+                    label={focusIndex + 1 >= exerciseIds.length ? 'Fim da ficha' : 'Próximo'}
+                    icon="chevronRight"
+                    variant="ghost"
+                    onPress={() => setFocusIndex((index) => Math.min(exerciseIds.length - 1, index + 1))}
+                  />
+                </View>
+
+                {/* Último filho do cartão: assim o selo pinta por cima de tudo, em qualquer plataforma. */}
+                {doneExercise?.id === focusId ? <ExerciseDone name={nameOf(focusId)} sets={done.length} /> : null}
+              </Card>
+
+              {exerciseIds.length > 1 ? (
+                <Card style={styles.exercise}>
+                  <AppText variant="overline" tone="muted">A ficha inteira</AppText>
+                  {exerciseIds.map((id, index) => {
+                    const item = plannedFor(id);
+                    const sets = setsOf(current, id).length;
+                    return (
+                      <Pressable
+                        key={id}
+                        accessibilityRole="button"
+                        accessibilityLabel={`${nameOf(id)}, ${sets} séries feitas`}
+                        onPress={() => {
+                          tapFeedback();
+                          setFocusIndex(index);
+                        }}
+                        style={[styles.lapRow, { borderBottomColor: colors.hairlineSoft }]}>
+                        <AppText
+                          variant="label"
+                          tone={index === focusIndex ? 'goldHighlight' : completed(id) ? 'success' : 'secondary'}
+                          numberOfLines={1}
+                          style={styles.flex}>
+                          {`${toRoman(index + 1)}. ${nameOf(id)}`}
+                        </AppText>
+                        <AppText variant="label" tone="muted" style={styles.tabular}>
+                          {item ? `${sets}/${item.targetSets}` : String(sets)}
+                        </AppText>
+                      </Pressable>
+                    );
+                  })}
+                </Card>
               ) : null}
-            </View>
-          </Card>
-        );
-      })}
+            </>
+          );
+        })()
+      ) : null}
 
       <Button
         label="Adicionar exercício"
@@ -652,6 +861,55 @@ const styles = StyleSheet.create({
   },
   setActions: {
     gap: space.xs,
+  },
+  doneOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 2,
+    borderWidth: 1.5,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: space.xs,
+    paddingHorizontal: space.lg,
+  },
+  focusHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.sm,
+  },
+  pills: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: space.xs,
+    flex: 1,
+  },
+  pill: {
+    height: 6,
+    flexGrow: 1,
+    flexBasis: 10,
+    borderRadius: 3,
+  },
+  series: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: space.sm,
+    alignItems: 'center',
+  },
+  serie: {
+    minWidth: 34,
+    height: 34,
+    paddingHorizontal: space.xs,
+    borderRadius: radius.md,
+    borderWidth: 1.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  typed: {
+    flex: 1,
   },
   setButton: {
     minHeight: touchTarget,
