@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ScreenHeader } from '@/components/screen-header';
 import { Button } from '@/components/ui/button';
+import { CodeField } from '@/components/ui/code-field';
 import { Notice } from '@/components/ui/notice';
 import { PasswordField } from '@/components/ui/password-field';
 import { AppText } from '@/components/ui/text';
@@ -149,19 +150,13 @@ export default function SignUpScreen() {
             {/* Sem isto a pessoa fica esperando um código que nunca vem: quando o e-mail já tem
                 conta, o Supabase não envia nada (e não avisa, para não revelar quem é cadastrado). */}
             <Notice message="Não chegou nada? Pode ser que este e-mail já tenha conta — nesse caso não enviamos código. Entre com sua senha ou use “Esqueci minha senha”." />
-            <TextField
+            <CodeField
               label="Código"
               value={code}
               onChangeText={(text) => {
                 setCode(text);
                 setCodeError(null);
               }}
-              placeholder={'0'.repeat(OTP_LENGTH)}
-              keyboardType="number-pad"
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              textContentType="oneTimeCode"
-              maxLength={12}
               autoFocus
               returnKeyType="done"
               onSubmitEditing={submitCode}

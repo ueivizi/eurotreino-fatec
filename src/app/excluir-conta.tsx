@@ -7,10 +7,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScreenHeader } from '@/components/screen-header';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { CodeField } from '@/components/ui/code-field';
 import { Icon } from '@/components/ui/icon';
 import { Notice } from '@/components/ui/notice';
 import { AppText } from '@/components/ui/text';
-import { TextField } from '@/components/ui/text-field';
 import { ACCOUNT_DELETION_REDIRECT, deleteAccount, type DeleteAccountResult } from '@/features/account/account-api';
 import { markAccountDeleted } from '@/features/account/deletion-notice';
 import { AUTH_MESSAGES, authErrorMessage } from '@/features/auth/auth-errors';
@@ -170,19 +170,13 @@ export default function DeleteAccountScreen() {
           </View>
         ) : (
           <View style={styles.actions}>
-            <TextField
+            <CodeField
               label="Código de confirmação"
               value={code}
               onChangeText={(text) => {
                 setCode(text);
                 setError(null);
               }}
-              placeholder={'0'.repeat(OTP_LENGTH)}
-              keyboardType="number-pad"
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              textContentType="oneTimeCode"
-              maxLength={12}
               hint={`Enviamos um código de ${OTP_LENGTH} dígitos para ${email ?? 'seu e-mail'}. Confira também a caixa de spam.`}
             />
             <Button
