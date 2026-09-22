@@ -830,11 +830,6 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
     gap: space.xs,
   },
-  separator: {
-    height: 1,
-    backgroundColor: 'rgba(201,162,74,0.22)',
-    marginVertical: space.xs,
-  },
   resultLine: {
     flexDirection: 'row',
     justifyContent: 'space-between',

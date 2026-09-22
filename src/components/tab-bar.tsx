@@ -56,7 +56,7 @@ function TabButton({ isFocused, label, icon, onPress, ...props }: TabButtonProps
       <Animated.View style={iconStyle}>
         <Icon name={icon} size={24} color={color} />
       </Animated.View>
-      <AppText variant="caption" style={{ color, fontSize: 11 }}>
+      <AppText variant="tab" style={{ color }}>
         {label}
       </AppText>
     </Pressable>
@@ -86,7 +86,7 @@ function RegisterButton() {
           <Icon name="registrar" size={26} color={colors.onGold} strokeWidth={1.8} />
         </View>
       </View>
-      <AppText variant="caption" tone="gold" style={{ fontSize: 11 }}>
+      <AppText variant="tab" tone="gold">
         Registrar
       </AppText>
     </PressableScale>

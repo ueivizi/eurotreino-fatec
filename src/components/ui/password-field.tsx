@@ -3,10 +3,13 @@ import { Pressable, StyleSheet, TextInput, View, type TextInputProps } from 'rea
 
 import { useTheme } from '@/theme/theme';
 import { PASSWORD_MAX_BYTES } from '@/features/auth/credentials';
-import { fonts, radius, space, touchTarget } from '@/theme/tokens';
+import { radius, space, touchTarget } from '@/theme/tokens';
 
 import { Icon } from './icon';
-import { AppText } from './text';
+import { AppText, textVariantStyle } from './text';
+
+/* Mesma regra do campo de texto: a escala manda na família e no tamanho, sem a altura de linha. */
+const { fontFamily, fontSize } = textVariantStyle('input');
 
 type Props = Omit<TextInputProps, 'style' | 'placeholderTextColor' | 'secureTextEntry'> & {
   label: string;
@@ -79,8 +82,8 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     paddingLeft: space.lg,
     paddingRight: touchTarget + space.sm,
-    fontFamily: fonts.body,
-    fontSize: 16,
+    fontFamily,
+    fontSize,
   },
   toggle: {
     position: 'absolute',

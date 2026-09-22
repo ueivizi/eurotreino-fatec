@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, Path, Pattern, Rect } from 'react-native-svg';
 
@@ -11,6 +11,7 @@ import { CodeField } from '@/components/ui/code-field';
 import { Icon } from '@/components/ui/icon';
 import { Notice } from '@/components/ui/notice';
 import { PasswordField } from '@/components/ui/password-field';
+import { Separator } from '@/components/ui/separator';
 import { AppText } from '@/components/ui/text';
 import { TextField } from '@/components/ui/text-field';
 import { takeAccountDeleted } from '@/features/account/deletion-notice';
@@ -62,6 +63,10 @@ export default function SignInScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
 
+  const { height } = useWindowDimensions();
+  /* Em tela curta (os 360x640 da vida real) o brasão encolhe e o lema sai: a entrada tem de
+     caber sem rolagem, porque rolar para achar o campo de senha é o primeiro atrito do app. */
+  const compact = height < 700;
   const providers = useQuery({ queryKey: ['auth-providers'], queryFn: fetchAuthProviders, staleTime: 5 * 60_000 });
   const enabledProviders = SOCIAL_PROVIDERS.filter((provider) => providers.data?.[provider] === true);
 
@@ -264,12 +269,16 @@ export default function SignInScreen() {
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: colors.background }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={[styles.content, { paddingTop: insets.top + space.xxl, paddingBottom: insets.bottom + space.xxl }]}>
+        contentContainerStyle={[
+          styles.content,
+          compact && styles.contentCompact,
+          { paddingTop: insets.top + (compact ? space.lg : space.xxl), paddingBottom: insets.bottom + space.xxl },
+        ]}>
         <View style={styles.hero}>
-          <Monogram size={step.kind === 'senha' ? 112 : 88} />
+          <Monogram size={step.kind === 'senha' ? (compact ? 76 : 112) : compact ? 60 : 88} />
           <AppText variant="title" tone="goldHighlight" style={styles.brand}>EUROTREINO</AppText>
           <Meander />
-          {step.kind === 'senha' ? (
+          {step.kind === 'senha' && !compact ? (
             <View style={styles.motto}>
               <AppText variant="motto" style={styles.center}>Mens sana in corpore sano</AppText>
               <AppText variant="label" tone="muted" style={styles.center}>Mente sã em corpo são</AppText>
@@ -311,9 +320,9 @@ export default function SignInScreen() {
             ) : enabledProviders.length > 0 ? (
               <View style={styles.social}>
                 <View style={styles.dividerRow}>
-                  <View style={[styles.divider, { backgroundColor: colors.hairlineSoft }]} />
+                  <Separator style={styles.divider} />
                   <AppText variant="caption" tone="muted">ou</AppText>
-                  <View style={[styles.divider, { backgroundColor: colors.hairlineSoft }]} />
+                  <Separator style={styles.divider} />
                 </View>
                 {enabledProviders.map((provider) => (
                   <Button
@@ -395,6 +404,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.xl,
     gap: space.xl,
   },
+  contentCompact: {
+    gap: space.md,
+  },
   hero: {
     alignItems: 'center',
     gap: space.md,
@@ -427,7 +439,6 @@ const styles = StyleSheet.create({
   },
   divider: {
     flex: 1,
-    height: 1,
   },
   footer: {
     marginTop: 'auto',

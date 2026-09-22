@@ -22,7 +22,7 @@ import { isUuid } from '@/lib/parse';
 import { queryKeys } from '@/lib/query-client';
 import { errorMessage } from '@/lib/rpc-errors';
 import { useTheme } from '@/theme/theme';
-import { fonts, space } from '@/theme/tokens';
+import { space } from '@/theme/tokens';
 
 const expiryFormat = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 
@@ -147,7 +147,8 @@ export default function LegionDetailScreen() {
         ) : code ? (
           <>
             <AppText
-              style={[styles.code, { color: colors.goldHighlight }]}
+              variant="code"
+              style={{ color: colors.goldHighlight }}
               accessibilityLabel={`Código de convite: ${code.split('').join(' ')}`}
               selectable>
               {formatInviteCode(code)}
@@ -270,13 +271,6 @@ const styles = StyleSheet.create({
   },
   inviteCard: {
     gap: space.sm,
-  },
-  code: {
-    fontFamily: fonts.bodySemibold,
-    fontSize: 34,
-    lineHeight: 42,
-    letterSpacing: 3,
-    fontVariant: ['tabular-nums'],
   },
   inviteActions: {
     gap: space.sm,
