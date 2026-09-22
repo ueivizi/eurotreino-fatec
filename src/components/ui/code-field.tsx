@@ -7,48 +7,59 @@ import { fonts, radius, space } from '@/theme/tokens';
 
 import { AppText } from './text';
 
-/** Um quadrado por dígito, como no canvas: 56 pt de altura e 7 pt entre eles. */
+/** Um quadrado por símbolo, como no canvas: 56 pt de altura e 7 pt entre eles. */
 const BOX_HEIGHT = 56;
 const BOX_GAP = 7;
 
 type Props = Omit<
   TextInputProps,
-  'style' | 'placeholderTextColor' | 'value' | 'onChangeText' | 'maxLength' | 'keyboardType' | 'inputMode' | 'secureTextEntry' | 'multiline'
+  'style' | 'placeholderTextColor' | 'value' | 'onChangeText' | 'maxLength' | 'inputMode' | 'secureTextEntry' | 'multiline'
 > & {
   label: string;
   value: string;
   onChangeText: (value: string) => void;
   /** Quantos quadrados desenhar. O código pode ser mais curto: a tela é que valida o tamanho. */
   length?: number;
+  /** Como limpar o que a pessoa digita ou cola. O padrão guarda só dígitos (código do e-mail). */
+  sanitize?: (text: string, length: number) => string;
+  /** Desenha um traço depois deste quadrado, como no código da Legião (XXXX-XXXX). */
+  separatorAfter?: number;
   hint?: string;
   error?: string | null;
 };
 
 /**
- * Campo de código com um quadrado por dígito (`CodigoDigitos` no canvas de design).
+ * Campo de código com um quadrado por símbolo (`CodigoDigitos` no canvas de design).
  *
  * O desenho é decoração: quem recebe o que se digita é um único campo de texto invisível esticado
  * sobre os quadrados. É isso que mantém o preenchimento automático do código do e-mail, a colagem
  * e o leitor de tela funcionando — oito campos separados anunciariam oito coisas e quebrariam os
  * dois. O cursor fica preso no fim do valor, senão um toque no meio da faixa invisível apagaria
- * um dígito do meio sem a pessoa ver onde está.
+ * um símbolo do meio sem a pessoa ver onde está.
+ *
+ * O campo fica invisível por `opacity`, não por cor transparente: no Android o texto aparecia por
+ * cima dos quadrados mesmo com `color: 'transparent'` (achado no teste em aparelho de 22/09).
  */
 export function CodeField({
   label,
   value,
   onChangeText,
   length = OTP_LENGTH,
+  sanitize = digitsForCode,
+  separatorAfter,
   hint,
   error,
   onFocus,
   onBlur,
+  keyboardType = 'number-pad',
   ...rest
 }: Props) {
   const { colors } = useTheme();
   const [focused, setFocused] = useState(false);
   const input = useRef<TextInput>(null);
 
-  const digits = Array.from({ length }, (_, index) => value[index] ?? '');
+  const numerico = keyboardType === 'number-pad';
+  const symbols = Array.from({ length }, (_, index) => value[index] ?? '');
   const caret = focused && value.length < length ? value.length : -1;
 
   return (
@@ -58,8 +69,8 @@ export function CodeField({
       <Pressable accessible={false} onPress={() => input.current?.focus()}>
         {/* Só o campo invisível fala com o leitor de tela; os quadrados são desenho. */}
         <View style={styles.row} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-          {digits.map((digit, index) => {
-            const filled = digit !== '';
+          {symbols.map((symbol, index) => {
+            const filled = symbol !== '';
             const borderColor = error
               ? colors.danger
               : index === caret
@@ -71,27 +82,34 @@ export function CodeField({
               <View
                 // A posição é a identidade do quadrado: o de número 3 continua sendo o terceiro.
                 key={index}
-                style={[styles.box, { borderColor, backgroundColor: filled ? colors.surface : 'transparent' }]}>
-                {/* O quadrado não pode crescer, então o dígito cresce menos que o resto do texto. */}
-                <AppText style={[styles.digit, { color: colors.text }]} maxFontSizeMultiplier={1.3}>{digit}</AppText>
+                style={styles.slot}>
+                <View style={[styles.box, { borderColor, backgroundColor: filled ? colors.surface : 'transparent' }]}>
+                  {/* O quadrado não pode crescer, então o símbolo cresce menos que o resto do texto. */}
+                  <AppText style={[styles.symbol, { color: colors.text }]} maxFontSizeMultiplier={1.3}>{symbol}</AppText>
+                </View>
+                {separatorAfter === index + 1 ? (
+                  <View style={[styles.separator, { backgroundColor: colors.hairlineStrong }]} />
+                ) : null}
               </View>
             );
           })}
         </View>
 
+        {/* O preenchimento automático de código só vale para o do e-mail; o da Legião é digitado. */}
         <TextInput
           ref={input}
+          keyboardType={keyboardType}
+          autoComplete={numerico ? 'one-time-code' : 'off'}
+          textContentType={numerico ? 'oneTimeCode' : 'none'}
+          autoCapitalize={numerico ? 'none' : 'characters'}
+          autoCorrect={false}
+          importantForAutofill="yes"
           {...rest}
           value={value}
-          onChangeText={(text) => onChangeText(digitsForCode(text, length))}
+          onChangeText={(text) => onChangeText(sanitize(text, length))}
           selection={{ start: value.length, end: value.length }}
           accessibilityLabel={label}
-          accessibilityHint={error ?? hint ?? `Código de ${length} dígitos.`}
-          keyboardType="number-pad"
-          inputMode="numeric"
-          autoComplete="one-time-code"
-          textContentType="oneTimeCode"
-          importantForAutofill="yes"
+          accessibilityHint={error ?? hint ?? `Código de ${length} símbolos.`}
           maxLength={length}
           caretHidden
           onFocus={(event) => {
@@ -102,7 +120,7 @@ export function CodeField({
             setFocused(false);
             onBlur?.(event);
           }}
-          style={[styles.input, { color: 'transparent' }]}
+          style={styles.input}
         />
       </Pressable>
 
@@ -111,7 +129,7 @@ export function CodeField({
       ) : hint ? (
         <AppText variant="caption" tone="muted">{hint}</AppText>
       ) : (
-        <AppText variant="caption" tone="muted">Um dígito por quadrado. Colar preenche tudo de uma vez.</AppText>
+        <AppText variant="caption" tone="muted">Um símbolo por quadrado. Colar preenche tudo de uma vez.</AppText>
       )}
     </View>
   );
@@ -125,6 +143,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: BOX_GAP,
   },
+  slot: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   box: {
     flex: 1,
     height: BOX_HEIGHT,
@@ -133,7 +156,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  digit: {
+  separator: {
+    width: BOX_GAP,
+    height: 1.5,
+    marginLeft: BOX_GAP,
+  },
+  symbol: {
     fontFamily: fonts.displayBold,
     fontSize: 22,
     lineHeight: 28,
@@ -144,7 +172,8 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    // O texto de verdade fica transparente: os dígitos visíveis são os dos quadrados.
+    // Invisível de verdade: no Android o texto atravessava os quadrados com `color: 'transparent'`.
+    opacity: 0,
     fontSize: 22,
     textAlign: 'center',
   },

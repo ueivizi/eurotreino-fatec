@@ -64,7 +64,7 @@ function parseItem(value: unknown): PendingWorkout | null {
   if (!isIsoDate(performedAt) || !isIsoDate(queuedAt)) return null;
 
   const module = workoutModule(type);
-  const distanceM = detail(value.distanceM, DISTANCE.min, DISTANCE.max, true, true);
+  const distanceM = detail(value.distanceM, DISTANCE.min, DISTANCE.max, module !== 'forca', true);
   const setsCount = detail(value.setsCount, SETS.min, SETS.max, module === 'forca', true);
   const loadKg = detail(value.loadKg, LOAD.min, LOAD.max, module === 'forca', false);
   // Detalhe corrompido ou fora da família derruba o item inteiro: o servidor o recusaria de todo

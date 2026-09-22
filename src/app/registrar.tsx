@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { randomUUID } from 'expo-crypto';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
@@ -368,14 +368,19 @@ export default function RegisterWorkoutScreen() {
   const progress = useQuery({ queryKey: queryKeys.progress, queryFn: fetchMyProgress });
   const legions = useQuery({ queryKey: queryKeys.legions, queryFn: fetchMyLegions });
 
-  // Os padrões repetem o último treino já conhecido: o fluxo comum é tocar no tipo e em "Concluí".
-  const [initial] = useState(() => progress.data?.lastWorkout ?? FALLBACK);
+  /*
+   * Registrar e repetir são coisas diferentes, e misturá-las confundiu quem testou: um treino
+   * novo começa limpo, e só "Repetir último" traz o treino anterior inteiro -- tipo, duração,
+   * intensidade e os detalhes da modalidade.
+   */
+  const repeating = useLocalSearchParams<{ repetir?: string }>().repetir === '1';
+  const [initial] = useState(() => (repeating ? (progress.data?.lastWorkout ?? FALLBACK) : FALLBACK));
   const [type, setType] = useState<WorkoutTypeId>(initial.type);
   const [minutes, setMinutes] = useState<number>(initial.durationMin);
   const [intensity, setIntensity] = useState<IntensityId>(initial.intensity);
   const [performedAt, setPerformedAt] = useState<Date | null>(null);
   const [choosingTime, setChoosingTime] = useState(false);
-  // Os detalhes também repetem o último treino; o `draft` só envia os da família do tipo escolhido.
+  // O `draft` só envia os detalhes da família do tipo escolhido.
   const [distanceM, setDistanceM] = useState<number | null>(initial.distanceM);
   // A frequência começa vazia de propósito: é medida, não preferência, e repetir a anterior
   // gravaria uma medição que não aconteceu. Quem tem a medida de verdade é o relógio.
@@ -398,8 +403,8 @@ export default function RegisterWorkoutScreen() {
     durationMin: minutes,
     intensity,
     performedAt,
-    // A distância vale em qualquer modalidade desde 22/09; séries e carga seguem só na força.
-    distanceM,
+    // Distância em tudo menos na força; séries e carga, só nela.
+    distanceM: module === 'forca' ? null : distanceM,
     setsCount: module === 'forca' ? setsCount : null,
     loadKg: module === 'forca' ? loadKg : null,
     note: module === 'outro' ? note.trim() : '',
@@ -568,7 +573,7 @@ export default function RegisterWorkoutScreen() {
             <View style={styles.headerText}>
               <AppText variant="bodyMedium">Duração</AppText>
               <AppText variant="caption" tone="muted">
-                {progress.data?.lastWorkout ? 'Igual ao último treino' : 'Ajuste se precisar'}
+                {repeating && progress.data?.lastWorkout ? 'Igual ao último treino' : 'Ajuste se precisar'}
               </AppText>
             </View>
             <View style={styles.stepper}>
@@ -593,6 +598,8 @@ export default function RegisterWorkoutScreen() {
             <Segmented label="Intensidade" options={INTENSITIES} value={intensity} onChange={(id) => change(() => setIntensity(id))} disabled={disabled} />
           </View>
 
+          {/* Distância não existe na força: ninguém percorre quilômetro levantando peso. */}
+          {module === 'forca' ? null : (
           <DetailRow
             label="Distância"
             hint="Não muda a Glória; entra no seu histórico e nos recordes"
@@ -605,6 +612,7 @@ export default function RegisterWorkoutScreen() {
             disabled={disabled}
             onChange={(value) => change(() => setDistanceM(value))}
           />
+          )}
 
           {/* "Outro" não diz o que foi o treino; o campo livre diz, e fica só com a pessoa. */}
           {module === 'outro' ? (

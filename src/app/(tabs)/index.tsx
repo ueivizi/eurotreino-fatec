@@ -302,7 +302,7 @@ export default function HomeScreen() {
           <PressableScale
             accessibilityRole="button"
             accessibilityLabel={`Repetir último treino: ${lastLabel}`}
-            onPress={() => router.push('/registrar')}
+            onPress={() => router.push({ pathname: '/registrar', params: { repetir: '1' } })}
             style={[styles.repeat, { borderColor: colors.hairline }]}>
             <Icon name="repetir" size={22} color={colors.gold} />
             <View style={styles.repeatText}>

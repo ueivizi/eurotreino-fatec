@@ -77,3 +77,6 @@ export function isDeviceBrand(value: unknown): value is DeviceBrand {
 }
 
 export const DEVICE_BRAND_STORAGE_KEY = 'eurotreino.relogio';
+
+/** Qual dos aparelhos encontrados é o da pessoa (pacote do app que gravou o treino). */
+export const DEVICE_ORIGIN_STORAGE_KEY = 'eurotreino.relogio.origem';
