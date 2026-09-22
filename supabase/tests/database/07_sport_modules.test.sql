@@ -13,7 +13,8 @@ create function tests.log_detailed(
   p_intensity text,
   p_distance_m integer default null,
   p_sets_count integer default null,
-  p_load_kg numeric default null
+  p_load_kg numeric default null,
+  p_note text default null
 )
 returns table (
   workout_id uuid,
@@ -32,7 +33,7 @@ language sql
 as $$
   select * from private.log_workout_for(
     tests.user_id(p_user), p_now, gen_random_uuid(), p_type, p_duration, p_intensity, null,
-    p_distance_m, p_sets_count, p_load_kg
+    p_distance_m, p_sets_count, p_load_kg, p_note
   );
 $$;
 
@@ -81,12 +82,26 @@ select tests.assert_equal(
   'f|f'
 );
 
--- caso: detalhe fora da família da modalidade é recusado
-select tests.assert_raises(
-  'distância em musculação',
-  $$select * from tests.log_detailed('forte', '2026-09-15 12:00Z', 'musculacao', 60, 'intenso', 5000)$$,
-  'distance_not_allowed'
+-- caso: distância vale em qualquer modalidade, e o ritmo continua só na resistência
+select tests.create_member('polivalente', 'Polivalente', 'aguia');
+select tests.log_detailed('polivalente', '2026-09-15 12:00Z', 'musculacao', 60, 'intenso', 5000);
+select tests.log_detailed('polivalente', '2026-09-15 14:00Z', 'esporte', 50, 'moderado', 4200);
+select tests.authenticate_as('polivalente');
+select tests.assert_equal(
+  'distância fora da resistência é gravada, sem virar ritmo',
+  (
+    select string_agg(
+      format('%s %s m ritmo %s', r.workout_type, r.best_distance_m, coalesce(r.best_pace_s_per_km::text, '—')),
+      ', ' order by r.workout_type
+    )
+    from public.my_records() as r
+    where r.best_distance_m is not null
+  ),
+  'esporte 4200 m ritmo —, musculacao 5000 m ritmo —'
 );
+select tests.clear_authentication();
+
+-- caso: detalhe fora da família da modalidade é recusado
 select tests.assert_raises(
   'séries em corrida',
   $$select * from tests.log_detailed('forte', '2026-09-15 12:00Z', 'corrida', 60, 'intenso', null, 4)$$,
@@ -252,4 +267,40 @@ select tests.assert_equal(
     where n.nspname = 'public' and p.proname = 'my_progress'
   ),
   0
+);
+
+-- caso: o campo livre nomeia o que a modalidade não diz, e só existe na família "outro"
+select tests.create_member('nomeador', 'Nomeador', 'loba');
+select tests.log_detailed('nomeador', '2026-09-15 12:00Z', 'outro', 50, 'moderado', null, null, null, '  futebol de sábado  ');
+select tests.authenticate_as('nomeador');
+select tests.assert_equal(
+  'a nota é aparada e volta com o último treino',
+  (select format('%s: %s', p.last_workout_type, coalesce(p.last_note, '—')) from public.my_progress() as p),
+  'outro: futebol de sábado'
+);
+select tests.clear_authentication();
+
+select tests.assert_raises(
+  'nota em modalidade que já se explica',
+  $$select * from tests.log_detailed('nomeador', '2026-09-15 13:00Z', 'corrida', 30, 'leve', null, null, null, 'futebol')$$,
+  'note_not_allowed'
+);
+select tests.assert_raises(
+  'nota de 41 caracteres',
+  $$select * from tests.log_detailed('nomeador', '2026-09-15 13:00Z', 'outro', 30, 'leve', null, null, null, repeat('a', 41))$$,
+  'invalid_note'
+);
+select tests.log_detailed('nomeador', '2026-09-15 15:00Z', 'yoga', 30, 'leve', null, null, null, '   ');
+select tests.assert_equal(
+  'nota só de espaços vira nenhuma nota',
+  (
+    select coalesce(w.note, '—') from public.workouts as w
+    where w.user_id = tests.user_id('nomeador') and w.workout_type = 'yoga'
+  ),
+  '—'
+);
+select tests.assert_equal(
+  'a nota não passou de dois treinos do Nomeador',
+  (select count(*)::integer from public.workouts where user_id = tests.user_id('nomeador')),
+  2
 );

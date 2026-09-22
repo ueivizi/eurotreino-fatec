@@ -108,7 +108,8 @@ export default function HomeScreen() {
   // O rótulo mostra o que vai ser repetido, detalhes da modalidade incluídos.
   const lastLabel = last
     ? [
-        `${workoutTypeLabel(last.type)} · ${last.durationMin} min · ${intensityLabel(last.intensity)}`,
+        last.note ?? workoutTypeLabel(last.type),
+        `${last.durationMin} min · ${intensityLabel(last.intensity)}`,
         last.distanceM === null ? null : formatDistance(last.distanceM),
         last.setsCount === null ? null : `${last.setsCount} séries`,
         last.loadKg === null ? null : `${formatLoad(last.loadKg)} kg`,

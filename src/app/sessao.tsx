@@ -32,7 +32,7 @@ import {
 } from '@/features/training/session';
 import { useTrainingSession } from '@/features/training/session-provider';
 import { logStrengthWorkout, type StrengthOutcome } from '@/features/training/strength-api';
-import { formatDistance, formatLoad, formatPerformance, paceModality } from '@/features/workouts/metrics';
+import { formatDistance, formatLoad, performanceFor } from '@/features/workouts/metrics';
 import { logWorkout } from '@/features/workouts/workouts-api';
 import {
   DISTANCE,
@@ -483,7 +483,7 @@ export default function LiveSessionScreen() {
                   <AppText variant="caption" tone="muted">
                     {distanceM === null
                       ? 'Opcional. Não muda a Glória; entra no histórico e nos recordes.'
-                      : formatPerformance(paceModality(current.workoutType), distanceM, durationMinutes(current, now)) ?? 'Menos de 1 km: sem ritmo.'}
+                      : performanceFor(current.workoutType, distanceM, durationMinutes(current, now)) ?? 'Não muda a Glória; entra no histórico e nos recordes.'}
                   </AppText>
                 </View>
                 <View style={styles.stepper}>

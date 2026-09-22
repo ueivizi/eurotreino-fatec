@@ -33,6 +33,8 @@ export type PendingWorkout = {
   distanceM?: number;
   setsCount?: number;
   loadKg?: number;
+  /** O que foi o treino, só na família "outro". */
+  note?: string;
 };
 
 export const MAX_PENDING_PER_USER = 20;
@@ -62,7 +64,7 @@ function parseItem(value: unknown): PendingWorkout | null {
   if (!isIsoDate(performedAt) || !isIsoDate(queuedAt)) return null;
 
   const module = workoutModule(type);
-  const distanceM = detail(value.distanceM, DISTANCE.min, DISTANCE.max, module === 'resistencia', true);
+  const distanceM = detail(value.distanceM, DISTANCE.min, DISTANCE.max, true, true);
   const setsCount = detail(value.setsCount, SETS.min, SETS.max, module === 'forca', true);
   const loadKg = detail(value.loadKg, LOAD.min, LOAD.max, module === 'forca', false);
   // Detalhe corrompido ou fora da família derruba o item inteiro: o servidor o recusaria de todo

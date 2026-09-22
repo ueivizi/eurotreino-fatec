@@ -25,6 +25,8 @@ export type WorkoutInput = {
   distanceM?: number;
   setsCount?: number;
   loadKg?: number;
+  /** O que foi o treino, só na família "outro" -- é lá que o nome da atividade falta. */
+  note?: string;
   /** Frequência cardíaca média e máxima; o servidor recusa sem consentimento. */
   avgHeartRate?: number;
   maxHeartRate?: number;
@@ -41,6 +43,7 @@ export async function logWorkout(input: WorkoutInput): Promise<LoggedWorkout> {
     ...(input.distanceM === undefined ? {} : { p_distance_m: input.distanceM }),
     ...(input.setsCount === undefined ? {} : { p_sets_count: input.setsCount }),
     ...(input.loadKg === undefined ? {} : { p_load_kg: input.loadKg }),
+    ...(input.note === undefined ? {} : { p_note: input.note }),
     ...(input.avgHeartRate === undefined ? {} : { p_avg_heart_rate: input.avgHeartRate }),
     ...(input.maxHeartRate === undefined ? {} : { p_max_heart_rate: input.maxHeartRate }),
   });
