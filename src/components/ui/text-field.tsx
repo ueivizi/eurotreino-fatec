@@ -2,9 +2,13 @@ import { useState, type Ref } from 'react';
 import { StyleSheet, TextInput, View, type TextInputProps } from 'react-native';
 
 import { useTheme } from '@/theme/theme';
-import { fonts, radius, space, touchTarget } from '@/theme/tokens';
+import { radius, space, touchTarget } from '@/theme/tokens';
 
-import { AppText } from './text';
+import { AppText, textVariantStyle } from './text';
+
+/* O texto que se digita vem da escala (`input`), sem a altura de linha: em campo de uma linha o
+   Android corta o que passa dela. */
+const { fontFamily, fontSize } = textVariantStyle('input');
 
 type Props = Omit<TextInputProps, 'style' | 'placeholderTextColor'> & {
   label: string;
@@ -56,7 +60,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: radius.md,
     paddingHorizontal: space.lg,
-    fontFamily: fonts.body,
-    fontSize: 16,
+    fontFamily,
+    fontSize,
   },
 });

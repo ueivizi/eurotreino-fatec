@@ -12,7 +12,7 @@ import { SCORING } from '@/features/ranks/scoring';
 import { TIERS } from '@/features/ranks/tiers';
 import { toRoman } from '@/lib/week';
 import { useTheme } from '@/theme/theme';
-import { fonts, space } from '@/theme/tokens';
+import { space } from '@/theme/tokens';
 
 const RULES = [
   { value: `+${SCORING.presence}`, title: 'Presença', description: 'A cada treino registrado' },
@@ -66,7 +66,7 @@ export default function GloryScreen() {
       <View style={styles.rules}>
         {RULES.map((rule) => (
           <Card key={rule.title} style={styles.rule} accessible accessibilityLabel={`${rule.title}: ${rule.value}. ${rule.description}.`}>
-            <AppText style={[styles.ruleValue, { color: colors.goldHighlight }]}>{rule.value}</AppText>
+            <AppText variant="heading" style={[styles.ruleValue, { color: colors.goldHighlight }]}>{rule.value}</AppText>
             <View style={styles.ruleText}>
               <AppText variant="bodyMedium">{rule.title}</AppText>
               <AppText variant="caption" tone="secondary">{rule.description}</AppText>
@@ -126,9 +126,6 @@ const styles = StyleSheet.create({
     paddingVertical: space.md,
   },
   ruleValue: {
-    fontFamily: fonts.displayBold,
-    fontSize: 24,
-    lineHeight: 30,
     minWidth: 52,
     textAlign: 'center',
   },

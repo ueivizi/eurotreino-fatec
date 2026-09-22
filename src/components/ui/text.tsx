@@ -15,7 +15,10 @@ export type TextVariant =
   | 'caption'
   | 'overline'
   | 'motto'
-  | 'stat';
+  | 'stat'
+  | 'input'
+  | 'tab'
+  | 'code';
 
 export type TextTone = 'primary' | 'secondary' | 'muted' | 'gold' | 'goldHighlight' | 'onGold' | 'success' | 'danger';
 
@@ -64,4 +67,11 @@ const styles: Record<TextVariant, TextStyle> = StyleSheet.create({
   overline: { fontFamily: fonts.bodyMedium, fontSize: 12, lineHeight: 16, letterSpacing: 1, textTransform: 'uppercase' },
   motto: { fontFamily: fonts.motto, fontSize: 21, lineHeight: 28 },
   stat: { fontFamily: fonts.bodySemibold, fontSize: 32, lineHeight: 38, fontVariant: ['tabular-nums'] },
+  /* Papéis que só aparecem em um tipo de peça, mas em várias telas: sem eles, cada uma
+     reinventava o tamanho na mão. `input` é o texto que se digita (16 pt é o mínimo que o iOS
+     não dá zoom); `tab` é o rótulo da barra de abas; `code` é o código da Legião e o do e-mail,
+     que o design system mostra grande e espaçado para ser lido em voz alta. */
+  input: { fontFamily: fonts.body, fontSize: 16, lineHeight: 22 },
+  tab: { fontFamily: fonts.bodyMedium, fontSize: 11, lineHeight: 15 },
+  code: { fontFamily: fonts.bodySemibold, fontSize: 34, lineHeight: 42, letterSpacing: 3, fontVariant: ['tabular-nums'] },
 });
