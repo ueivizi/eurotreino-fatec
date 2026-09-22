@@ -17,6 +17,7 @@ import {
   BRAND_INFO,
   DEVICE_BRANDS,
   DEVICE_BRAND_STORAGE_KEY,
+  DEVICE_ORIGIN_STORAGE_KEY,
   IOS_PENDING_MESSAGE,
   isDeviceBrand,
   type DeviceBrand,
@@ -33,7 +34,7 @@ import {
   toWorkoutInput,
   type ImportedWorkout,
 } from '@/features/devices/imported-workout';
-import { recognizedOrigin } from '@/features/devices/origins';
+import { originsFound, type OriginFound } from '@/features/devices/origins';
 import { fetchRecentWorkouts } from '@/features/devices/recent-workouts-api';
 import { formatDistance } from '@/features/workouts/metrics';
 import { LATE_LOG_WINDOW_MS, describePerformedAt } from '@/features/workouts/performed-at';
@@ -196,7 +197,9 @@ export default function DevicesScreen() {
   const profile = useProfile();
   const healthConsent = profile?.healthConsentAt !== null && profile?.healthConsentAt !== undefined;
   const [manualBrand, setManualBrand] = useState<DeviceBrand | null>(null);
+  const [chosenId, setChosenId] = useState<string | null>(null);
   const [showBrands, setShowBrands] = useState(false);
+  const [showWorkouts, setShowWorkouts] = useState(false);
   const [files, setFiles] = useState<ImportedWorkout[]>([]);
   const [fileError, setFileError] = useState<string | null>(null);
 
@@ -205,7 +208,17 @@ export default function DevicesScreen() {
       .getItem(DEVICE_BRAND_STORAGE_KEY)
       .then((value) => setManualBrand(isDeviceBrand(value) ? value : null))
       .catch(() => setManualBrand(null));
+    deviceStorage
+      .getItem(DEVICE_ORIGIN_STORAGE_KEY)
+      .then((value) => setChosenId(typeof value === 'string' && value !== '' ? value : null))
+      .catch(() => setChosenId(null));
   }, []);
+
+  function chooseDevice(origin: OriginFound) {
+    setChosenId(origin.id);
+    setShowBrands(false);
+    deviceStorage.setItem(DEVICE_ORIGIN_STORAGE_KEY, origin.id).catch(() => undefined);
+  }
 
   function chooseBrand(next: DeviceBrand) {
     setManualBrand(next);
@@ -240,11 +253,15 @@ export default function DevicesScreen() {
     },
   });
 
-  /**
-   * Quem gravou o treino manda: a marca escolhida à mão só entra quando não há treino para
-   * reconhecer. Era a escolha à mão que fazia um Amazfit aparecer como Apple Watch.
+  /*
+   * O aparelho vem dos treinos lidos, não de uma lista de marcas: é o app que gravou o treino que
+   * diz qual relógio é. Um celular costuma ter mais de um app escrevendo no Health Connect, então
+   * a tela mostra todos os encontrados e a pessoa aponta o dela -- essa escolha fica guardada e
+   * manda, inclusive na hora de filtrar os treinos que aparecem para importar.
    */
-  const recognized = recognizedOrigin(workouts.data ?? []);
+  const found = originsFound(workouts.data ?? []);
+  const recognized = found.find((item) => item.id === chosenId) ?? found[0] ?? null;
+  const importable = (workouts.data ?? []).filter((item) => !recognized || item.origin === recognized.id);
   const brand = recognized?.brand ?? manualBrand;
   const info = brand ? BRAND_INFO[brand] : null;
   const platform = Platform.OS === 'android' ? 'android' : Platform.OS === 'ios' ? 'ios' : null;
@@ -286,7 +303,7 @@ export default function DevicesScreen() {
 
             <AppText variant="caption" tone="muted">
               {`Última leitura: ${describePerformedAt(new Date(workouts.dataUpdatedAt), new Date())} · ${
-                workouts.data?.length === 1 ? '1 treino encontrado' : `${workouts.data?.length ?? 0} treinos encontrados`
+                recognized.count === 1 ? '1 treino deste aparelho' : `${recognized.count} treinos deste aparelho`
               }`}
             </AppText>
 
@@ -314,7 +331,19 @@ export default function DevicesScreen() {
               onPress={() => void workouts.refetch()}
               disabled={workouts.isFetching}
             />
-            <Button label="Trocar de relógio" variant="secondary" onPress={() => setShowBrands((open) => !open)} />
+            {importable.length > 0 ? (
+              <Button
+                label={showWorkouts ? 'Esconder treinos' : `Ver ${importable.length === 1 ? 'o treino' : `os ${importable.length} treinos`}`}
+                icon={showWorkouts ? 'chevronDown' : 'chevronRight'}
+                variant="secondary"
+                onPress={() => setShowWorkouts((open) => !open)}
+              />
+            ) : null}
+            <Button
+              label={found.length > 1 ? `Trocar de relógio (${found.length} encontrados)` : 'Trocar de relógio'}
+              variant="secondary"
+              onPress={() => setShowBrands((open) => !open)}
+            />
             <Button label="Abrir o Health Connect" variant="ghost" onPress={healthConnect.openSettings} />
             <AppText variant="caption" tone="muted">
               Desconectar é retirar a permissão no Health Connect: o app avisa e para de ler na hora.
@@ -323,9 +352,45 @@ export default function DevicesScreen() {
         </View>
       ) : null}
 
+      {brandsOpen && found.length > 0 ? (
+        <View style={styles.block} accessibilityRole="radiogroup" accessibilityLabel="Aparelho que gravou os treinos">
+          <AppText variant="overline" tone="muted">Aparelhos encontrados</AppText>
+          <AppText variant="caption" tone="muted">
+            Estes apps gravaram treino no Health Connect nas últimas 48 horas. Aponte o seu: os outros
+            somem da lista de importação.
+          </AppText>
+          {found.map((item) => {
+            const selected = item.id === recognized?.id;
+            return (
+              <Pressable
+                key={item.id}
+                accessibilityRole="radio"
+                accessibilityState={{ selected }}
+                accessibilityLabel={item.brand ? BRAND_INFO[item.brand].label : item.appLabel}
+                onPress={() => chooseDevice(item)}
+                style={[
+                  styles.brand,
+                  { borderColor: selected ? colors.gold : colors.hairline, backgroundColor: selected ? colors.selectedFill : colors.surface },
+                ]}>
+                <Icon name="relogio" size={20} color={selected ? colors.gold : colors.textSecondary} />
+                <View style={styles.flex}>
+                  <AppText variant="bodyMedium">{item.brand ? BRAND_INFO[item.brand].label : item.appLabel}</AppText>
+                  <AppText variant="caption" tone="muted">
+                    {`${item.brand ? `App ${item.appLabel}` : item.known ? 'App' : 'App desconhecido'} · ${
+                      item.count === 1 ? '1 treino' : `${item.count} treinos`
+                    } · ${describePerformedAt(item.lastAt, new Date())}`}
+                  </AppText>
+                </View>
+                {selected ? <Icon name="check" size={18} color={colors.gold} /> : null}
+              </Pressable>
+            );
+          })}
+        </View>
+      ) : null}
+
       {brandsOpen ? (
         <View style={styles.block} accessibilityRole="radiogroup" accessibilityLabel="Marca do relógio">
-          <AppText variant="overline" tone="muted">{recognized ? 'Trocar de relógio' : 'Sua marca'}</AppText>
+          <AppText variant="overline" tone="muted">{found.length > 0 ? 'Outras marcas' : 'Sua marca'}</AppText>
           {DEVICE_BRANDS.map((item) => (
             <BrandOption key={item} brand={item} selected={brand === item} onPress={() => chooseBrand(item)} />
           ))}
@@ -389,7 +454,7 @@ export default function DevicesScreen() {
         </View>
       ) : null}
 
-      {available && grant.data?.exercise ? (
+      {available && grant.data?.exercise && (showWorkouts || !recognized) ? (
         <View style={styles.block}>
           <AppText variant="overline" tone="muted">Treinos das últimas 48 horas</AppText>
           {workouts.isPending ? (
@@ -399,10 +464,10 @@ export default function DevicesScreen() {
               <Notice tone="danger" message="Não foi possível ler o Health Connect agora." />
               <Button label="Tentar de novo" variant="secondary" onPress={() => void workouts.refetch()} />
             </>
-          ) : workouts.data.length === 0 ? (
+          ) : importable.length === 0 ? (
             <Notice message={`Nenhum treino nas últimas 48 horas. Confira se o ${info?.companionApp ?? 'app do relógio'} já sincronizou.`} />
           ) : (
-            workouts.data.map((item) => <ImportCard key={item.sourceId} workout={item} healthConsent={healthConsent} />)
+            importable.map((item) => <ImportCard key={item.sourceId} workout={item} healthConsent={healthConsent} />)
           )}
           {/* Com o relógio reconhecido, quem busca de novo é o botão do cartão. */}
           {recognized ? null : <Button label="Atualizar lista" variant="ghost" onPress={() => void workouts.refetch()} />}

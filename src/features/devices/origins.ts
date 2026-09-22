@@ -64,6 +64,37 @@ export function describeOrigin(origin: string | null | undefined): WorkoutOrigin
   return { id, brand: null, appLabel: id, known: false };
 }
 
+export type OriginFound = WorkoutOrigin & {
+  /** Quantos treinos lidos vieram deste app. */
+  count: number;
+  /** O treino mais recente deste app. */
+  lastAt: Date;
+};
+
+/**
+ * Todos os aparelhos que apareceram nos treinos lidos, do mais recente para o mais antigo.
+ * A tela mostra essa lista porque um celular costuma ter mais de um app escrevendo no Health
+ * Connect -- no teste de 22/09 apareceu um Galaxy Watch junto do Amazfit -- e só quem está com o
+ * relógio no pulso sabe qual é o dele.
+ */
+export function originsFound(
+  workouts: readonly { origin: string | null; startedAt: Date }[],
+): OriginFound[] {
+  const found = new Map<string, OriginFound>();
+  for (const workout of workouts) {
+    const origin = describeOrigin(workout.origin);
+    if (!origin) continue;
+    const existing = found.get(origin.id);
+    if (existing) {
+      existing.count += 1;
+      if (workout.startedAt > existing.lastAt) existing.lastAt = workout.startedAt;
+    } else {
+      found.set(origin.id, { ...origin, count: 1, lastAt: workout.startedAt });
+    }
+  }
+  return [...found.values()].sort((a, b) => b.lastAt.getTime() - a.lastAt.getTime());
+}
+
 /**
  * O aparelho da vez: o treino mais recente que informou origem. Um app que sincronizou ontem não
  * pode roubar o lugar do relógio que gravou o treino de hoje.

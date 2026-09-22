@@ -12,7 +12,7 @@ import {
   uuidFromHex,
   type ImportedWorkout,
 } from './imported-workout';
-import { KNOWN_BRAND_PACKAGES, describeOrigin, recognizedOrigin } from './origins';
+import { KNOWN_BRAND_PACKAGES, describeOrigin, originsFound, recognizedOrigin } from './origins';
 
 const NOW = new Date('2026-09-17T12:00:00Z');
 
@@ -266,5 +266,24 @@ describe('quem gravou o treino', () => {
       const algum = KNOWN_BRAND_PACKAGES.some((id) => describeOrigin(id)?.brand === brand);
       expect(algum).toBe(true);
     }
+  });
+});
+
+describe('aparelhos encontrados', () => {
+  /* No teste de 22/09 apareceu um Galaxy Watch junto do Amazfit: a tela precisa mostrar os dois,
+     com quantos treinos vieram de cada um, para a pessoa dizer qual é o dela. */
+  it('agrupa por app, conta os treinos e ordena pelo mais recente', () => {
+    const lista = originsFound([
+      workout({ origin: 'com.huami.midong', startedAt: new Date('2026-09-17T09:00:00Z') }),
+      workout({ origin: 'com.sec.android.app.shealth', startedAt: new Date('2026-09-16T09:00:00Z') }),
+      workout({ origin: 'com.huami.midong', startedAt: new Date('2026-09-18T09:00:00Z') }),
+      workout({ origin: null, startedAt: new Date('2026-09-19T09:00:00Z') }),
+    ]);
+    expect(lista.map((item) => `${item.brand ?? item.appLabel} ${item.count}`)).toEqual(['amazfit 2', 'galaxy 1']);
+    expect(lista[0]?.lastAt.toISOString()).toBe('2026-09-18T09:00:00.000Z');
+  });
+
+  it('sem origem nenhuma, a lista é vazia', () => {
+    expect(originsFound([workout({ origin: null })])).toEqual([]);
   });
 });

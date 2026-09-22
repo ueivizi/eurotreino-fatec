@@ -10,9 +10,9 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Notice } from '@/components/ui/notice';
 import { AppText } from '@/components/ui/text';
-import { TextField } from '@/components/ui/text-field';
+import { CodeField } from '@/components/ui/code-field';
 import {
-  formatInviteCode,
+  INVITE_CODE_LENGTH,
   inviteCodeFromLink,
   isValidInviteCode,
   normalizeInviteCode,
@@ -51,7 +51,8 @@ export default function JoinLegionScreen() {
   const params = useLocalSearchParams<{ codigo?: string }>();
   const linkCode = inviteCodeFromLink(params.codigo);
 
-  const [code, setCode] = useState(linkCode ? formatInviteCode(linkCode) : '');
+  // O valor é o código limpo; o traço de XXXX-XXXX é desenho do campo.
+  const [code, setCode] = useState(linkCode ? normalizeInviteCode(linkCode) : '');
   const [fieldError, setFieldError] = useState<string | null>(null);
   const normalized = normalizeInviteCode(code);
 
@@ -99,20 +100,20 @@ export default function JoinLegionScreen() {
         contentContainerStyle={[styles.content, { paddingTop: insets.top + space.md, paddingBottom: insets.bottom + space.xxxl }]}>
         <ScreenHeader title="Entrar com código" subtitle="Peça o código a quem fundou a Legião" />
 
-        <TextField
+        <CodeField
           label="Código de convite"
           value={code}
           onChangeText={(text) => {
-            setCode(formatInviteCode(text));
+            setCode(text);
             setFieldError(null);
             preview.reset();
             join.reset();
           }}
-          placeholder="ABCD-2345"
-          autoCapitalize="characters"
-          autoCorrect={false}
-          autoComplete="off"
-          maxLength={9}
+          length={INVITE_CODE_LENGTH}
+          sanitize={(text, length) => normalizeInviteCode(text).slice(0, length)}
+          separatorAfter={4}
+          keyboardType="default"
+          hint="Oito símbolos, sem os parecidos: nada de 0, O, 1 nem I."
           returnKeyType="search"
           onSubmitEditing={showPreview}
           error={fieldError}

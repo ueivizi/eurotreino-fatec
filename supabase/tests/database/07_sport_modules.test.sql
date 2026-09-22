@@ -82,13 +82,12 @@ select tests.assert_equal(
   'f|f'
 );
 
--- caso: distância vale em qualquer modalidade, e o ritmo continua só na resistência
+-- caso: distância vale fora da resistência, menos na força, e o ritmo continua só na resistência
 select tests.create_member('polivalente', 'Polivalente', 'aguia');
-select tests.log_detailed('polivalente', '2026-09-15 12:00Z', 'musculacao', 60, 'intenso', 5000);
 select tests.log_detailed('polivalente', '2026-09-15 14:00Z', 'esporte', 50, 'moderado', 4200);
 select tests.authenticate_as('polivalente');
 select tests.assert_equal(
-  'distância fora da resistência é gravada, sem virar ritmo',
+  'distância no esporte é gravada, sem virar ritmo',
   (
     select string_agg(
       format('%s %s m ritmo %s', r.workout_type, r.best_distance_m, coalesce(r.best_pace_s_per_km::text, '—')),
@@ -97,9 +96,26 @@ select tests.assert_equal(
     from public.my_records() as r
     where r.best_distance_m is not null
   ),
-  'esporte 4200 m ritmo —, musculacao 5000 m ritmo —'
+  'esporte 4200 m ritmo —'
 );
 select tests.clear_authentication();
+
+-- Quem levanta peso não percorre quilômetro: a força recusa distância (achado do teste de 22/09).
+select tests.assert_raises(
+  'distância em musculação',
+  $$select * from tests.log_detailed('polivalente', '2026-09-15 12:00Z', 'musculacao', 60, 'intenso', 5000)$$,
+  'distance_not_allowed'
+);
+select tests.assert_raises(
+  'distância em funcional',
+  $$select * from tests.log_detailed('polivalente', '2026-09-15 12:30Z', 'funcional', 40, 'intenso', 3000)$$,
+  'distance_not_allowed'
+);
+select tests.assert_equal(
+  'a recusa não gravou nada a mais',
+  (select count(*)::integer from public.workouts where user_id = tests.user_id('polivalente')),
+  1
+);
 
 -- caso: detalhe fora da família da modalidade é recusado
 select tests.assert_raises(
