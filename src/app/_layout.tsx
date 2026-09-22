@@ -7,7 +7,9 @@ import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, type ReactNode } from 'react';
+import { Platform } from 'react-native';
 
+import { useReducedMotionPreference } from '@/components/motion/reduced-motion';
 import { LoadingScreen, StatusScreen } from '@/components/status-screen';
 import { SessionProvider, useSession } from '@/features/auth/session';
 import { TrainingSessionProvider } from '@/features/training/session-provider';
@@ -15,6 +17,7 @@ import { OfflineQueueProvider } from '@/features/workouts/offline-queue-provider
 import { queryClient } from '@/lib/query-client';
 import type { SupabaseConfigProblem } from '@/lib/supabase-config';
 import { supabaseConfig } from '@/lib/supabase';
+import { duration } from '@/theme/motion';
 import { AppThemeProvider, useTheme } from '@/theme/theme';
 import { palettes, type ThemeName } from '@/theme/tokens';
 
@@ -58,6 +61,7 @@ function useHideSplash(ready: boolean) {
 function RootNavigator() {
   const { state, retry, signOut } = useSession();
   const { colors } = useTheme();
+  const reduced = useReducedMotionPreference();
   useHideSplash(state.status !== 'loading');
 
   if (state.status === 'loading') return <LoadingScreen />;
@@ -77,7 +81,20 @@ function RootNavigator() {
   }
 
   return (
-    <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }}>
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        contentStyle: { backgroundColor: colors.background },
+        /*
+         * Abrir uma tela é movimento também. O Android não tinha transição nenhuma — a tela
+         * trocava seca —, então ganha a entrada pela direita, no mesmo tempo do resto do kit
+         * (`duration.base`). O iPhone mantém a sua: a transição nativa é que carrega o gesto de
+         * voltar arrastando da borda, e trocá-la custaria mais do que ganharia.
+         * Com "reduzir movimento" ligado no sistema, nada desliza: as telas se cruzam.
+         */
+        animation: reduced ? 'fade' : Platform.OS === 'ios' ? 'default' : 'slide_from_right',
+        animationDuration: duration.base,
+      }}>
       <Stack.Protected guard={state.status === 'signed-out'}>
         <Stack.Screen name="entrar" />
         <Stack.Screen name="criar-conta" />
