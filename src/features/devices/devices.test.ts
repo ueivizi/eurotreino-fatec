@@ -12,6 +12,7 @@ import {
   uuidFromHex,
   type ImportedWorkout,
 } from './imported-workout';
+import { KNOWN_BRAND_PACKAGES, describeOrigin, recognizedOrigin } from './origins';
 
 const NOW = new Date('2026-09-17T12:00:00Z');
 
@@ -215,5 +216,55 @@ describe('leitor de GPX', () => {
   it('distância entre dois pontos conhecidos', () => {
     // ~111,2 km por grau de latitude.
     expect(Math.round(haversineMeters({ lat: 0, lon: 0 }, { lat: 1, lon: 0 }) / 100)).toBe(1112);
+  });
+});
+
+describe('quem gravou o treino', () => {
+  it('reconhece a marca pelo app que gravou', () => {
+    expect(describeOrigin('com.garmin.android.apps.connectmobile')).toEqual({
+      id: 'com.garmin.android.apps.connectmobile',
+      brand: 'garmin',
+      appLabel: 'Garmin Connect',
+      known: true,
+    });
+    expect(describeOrigin('com.huami.midong')?.brand).toBe('amazfit');
+    expect(describeOrigin('com.sec.android.app.shealth')?.brand).toBe('galaxy');
+  });
+
+  it('nomeia app conhecido que não é relógio, sem inventar marca', () => {
+    const origin = describeOrigin('com.strava');
+    expect(origin).toEqual({ id: 'com.strava', brand: null, appLabel: 'Strava', known: true });
+  });
+
+  it('admite que não conhece o pacote em vez de chutar uma marca', () => {
+    const origin = describeOrigin('com.marca.desconhecida');
+    expect(origin).toEqual({ id: 'com.marca.desconhecida', brand: null, appLabel: 'com.marca.desconhecida', known: false });
+  });
+
+  it('sem origem não há aparelho reconhecido (caso do GPX)', () => {
+    expect(describeOrigin(null)).toBeNull();
+    expect(describeOrigin('   ')).toBeNull();
+    expect(recognizedOrigin([workout({ source: 'gpx', origin: null })])).toBeNull();
+    expect(recognizedOrigin([])).toBeNull();
+  });
+
+  /* O defeito que isto conserta: a tela mostrava a marca escolhida à mão, e um Amazfit apareceu
+     como Apple Watch. Agora vale o app que gravou o treino mais recente. */
+  it('vale o treino mais recente, não a ordem da lista', () => {
+    const recognized = recognizedOrigin([
+      workout({ origin: 'com.strava', startedAt: new Date('2026-09-16T09:00:00Z') }),
+      workout({ origin: 'com.huami.midong', startedAt: new Date('2026-09-17T09:00:00Z') }),
+      workout({ origin: null, startedAt: new Date('2026-09-17T11:00:00Z') }),
+    ]);
+    expect(recognized?.brand).toBe('amazfit');
+  });
+
+  it('toda marca do app tem pelo menos um pacote que a reconhece, menos o Apple Watch', () => {
+    // O Apple Watch escreve na Apple Saúde, que não passa pelo Health Connect.
+    const reconhecidas = new Set(DEVICE_BRANDS.filter((brand) => brand !== 'apple'));
+    for (const brand of reconhecidas) {
+      const algum = KNOWN_BRAND_PACKAGES.some((id) => describeOrigin(id)?.brand === brand);
+      expect(algum).toBe(true);
+    }
   });
 });
