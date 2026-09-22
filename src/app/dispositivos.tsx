@@ -33,6 +33,7 @@ import {
   toWorkoutInput,
   type ImportedWorkout,
 } from '@/features/devices/imported-workout';
+import { recognizedOrigin } from '@/features/devices/origins';
 import { fetchRecentWorkouts } from '@/features/devices/recent-workouts-api';
 import { formatDistance } from '@/features/workouts/metrics';
 import { LATE_LOG_WINDOW_MS, describePerformedAt } from '@/features/workouts/performed-at';
@@ -65,6 +66,19 @@ function BrandOption({ brand, selected, onPress }: { brand: DeviceBrand; selecte
       </View>
       {selected ? <Icon name="check" size={18} color={colors.gold} /> : null}
     </Pressable>
+  );
+}
+
+/** Uma permissão do Health Connect, lida ou não. */
+function PermissionRow({ label, granted, note }: { label: string; granted: boolean; note?: string }) {
+  const { colors } = useTheme();
+  return (
+    <View style={styles.row} accessibilityLabel={`${label}: ${granted ? 'lido' : 'não lido'}`}>
+      <Icon name={granted ? 'check' : 'fechar'} size={16} color={granted ? colors.success : colors.textMuted} />
+      <AppText variant="label" tone={granted ? 'secondary' : 'muted'} style={styles.flex}>
+        {note ? `${label} · ${note}` : label}
+      </AppText>
+    </View>
   );
 }
 
@@ -181,19 +195,21 @@ export default function DevicesScreen() {
   const insets = useSafeAreaInsets();
   const profile = useProfile();
   const healthConsent = profile?.healthConsentAt !== null && profile?.healthConsentAt !== undefined;
-  const [brand, setBrand] = useState<DeviceBrand | null>(null);
+  const [manualBrand, setManualBrand] = useState<DeviceBrand | null>(null);
+  const [showBrands, setShowBrands] = useState(false);
   const [files, setFiles] = useState<ImportedWorkout[]>([]);
   const [fileError, setFileError] = useState<string | null>(null);
 
   useEffect(() => {
     deviceStorage
       .getItem(DEVICE_BRAND_STORAGE_KEY)
-      .then((value) => setBrand(isDeviceBrand(value) ? value : null))
-      .catch(() => setBrand(null));
+      .then((value) => setManualBrand(isDeviceBrand(value) ? value : null))
+      .catch(() => setManualBrand(null));
   }, []);
 
   function chooseBrand(next: DeviceBrand) {
-    setBrand(next);
+    setManualBrand(next);
+    setShowBrands(false);
     // Preferência deste aparelho; sem conseguir guardar, vale nesta abertura do app.
     deviceStorage.setItem(DEVICE_BRAND_STORAGE_KEY, next).catch(() => undefined);
   }
@@ -224,10 +240,19 @@ export default function DevicesScreen() {
     },
   });
 
+  /**
+   * Quem gravou o treino manda: a marca escolhida à mão só entra quando não há treino para
+   * reconhecer. Era a escolha à mão que fazia um Amazfit aparecer como Apple Watch.
+   */
+  const recognized = recognizedOrigin(workouts.data ?? []);
+  const brand = recognized?.brand ?? manualBrand;
   const info = brand ? BRAND_INFO[brand] : null;
   const platform = Platform.OS === 'android' ? 'android' : Platform.OS === 'ios' ? 'ios' : null;
   const steps = info && platform ? info.setup[platform] : null;
   const unsupported = info && platform ? info.unsupported?.[platform] : undefined;
+  const connected = available && grant.data?.exercise === true;
+  // A lista de marcas serve para instalar e para nomear aparelho desconhecido: fica atrás do botão.
+  const brandsOpen = showBrands || (!recognized && !manualBrand);
 
   return (
     <ScrollView
@@ -235,14 +260,79 @@ export default function DevicesScreen() {
       contentContainerStyle={[styles.content, { paddingTop: insets.top + space.md, paddingBottom: insets.bottom + space.xxxl }]}>
       <ScreenHeader title="Relógios" subtitle="Traga os treinos do seu relógio" />
 
-      <View style={styles.block} accessibilityRole="radiogroup" accessibilityLabel="Marca do relógio">
-        <AppText variant="overline" tone="muted">Sua marca</AppText>
-        {DEVICE_BRANDS.map((item) => (
-          <BrandOption key={item} brand={item} selected={brand === item} onPress={() => chooseBrand(item)} />
-        ))}
-      </View>
+      {recognized ? (
+        <View style={styles.block}>
+          <AppText variant="overline" tone="muted">Seu relógio</AppText>
+          <Card style={styles.card}>
+            <View style={styles.row}>
+              <Icon name="relogio" size={22} color={colors.gold} />
+              <View style={styles.flex}>
+                <AppText variant="subheading">
+                  {recognized.brand ? BRAND_INFO[recognized.brand].label : recognized.appLabel}
+                </AppText>
+                <AppText variant="caption" tone="muted">
+                  {recognized.brand
+                    ? `Reconhecido pelo ${recognized.appLabel}, via Health Connect`
+                    : 'Foi este app que gravou o treino, via Health Connect'}
+                </AppText>
+              </View>
+              {connected ? (
+                <View style={styles.state}>
+                  <Icon name="check" size={16} color={colors.success} />
+                  <AppText variant="label" tone="success">Conectado</AppText>
+                </View>
+              ) : null}
+            </View>
 
-      {info ? (
+            <AppText variant="caption" tone="muted">
+              {`Última leitura: ${describePerformedAt(new Date(workouts.dataUpdatedAt), new Date())} · ${
+                workouts.data?.length === 1 ? '1 treino encontrado' : `${workouts.data?.length ?? 0} treinos encontrados`
+              }`}
+            </AppText>
+
+            <View style={styles.permissions}>
+              <PermissionRow label="Exercícios" granted={grant.data?.exercise === true} />
+              <PermissionRow label="Distância" granted={grant.data?.distance === true} />
+              <PermissionRow
+                label="Frequência cardíaca"
+                granted={grant.data?.heartRate === true}
+                note={healthConsent ? undefined : 'desligada no Perfil'}
+              />
+              {/* O trajeto existe no Health Connect, mas o app não pede: mapa de rota é outra história. */}
+              <PermissionRow label="Trajeto" granted={false} note="não lido" />
+            </View>
+
+            {!recognized.known ? (
+              <Notice
+                message={`Este treino veio do app ${recognized.id}, que não está na nossa lista de relógios. Se for o seu, escolha a marca em "Trocar de relógio" para ver os passos certos.`}
+              />
+            ) : null}
+
+            <Button
+              label={workouts.isFetching ? 'Buscando…' : 'Buscar treinos'}
+              icon="repetir"
+              onPress={() => void workouts.refetch()}
+              disabled={workouts.isFetching}
+            />
+            <Button label="Trocar de relógio" variant="secondary" onPress={() => setShowBrands((open) => !open)} />
+            <Button label="Abrir o Health Connect" variant="ghost" onPress={healthConnect.openSettings} />
+            <AppText variant="caption" tone="muted">
+              Desconectar é retirar a permissão no Health Connect: o app avisa e para de ler na hora.
+            </AppText>
+          </Card>
+        </View>
+      ) : null}
+
+      {brandsOpen ? (
+        <View style={styles.block} accessibilityRole="radiogroup" accessibilityLabel="Marca do relógio">
+          <AppText variant="overline" tone="muted">{recognized ? 'Trocar de relógio' : 'Sua marca'}</AppText>
+          {DEVICE_BRANDS.map((item) => (
+            <BrandOption key={item} brand={item} selected={brand === item} onPress={() => chooseBrand(item)} />
+          ))}
+        </View>
+      ) : null}
+
+      {info && (brandsOpen || !recognized) ? (
         <View style={styles.block}>
           <AppText variant="overline" tone="muted">Como ligar</AppText>
           {unsupported ? <Notice message={unsupported} /> : null}
@@ -264,7 +354,7 @@ export default function DevicesScreen() {
         </View>
       ) : null}
 
-      {platform === 'android' && info && !unsupported ? (
+      {platform === 'android' && info && !unsupported && !recognized ? (
         <View style={styles.block}>
           <AppText variant="overline" tone="muted">Health Connect</AppText>
           {status.isPending ? (
@@ -314,7 +404,8 @@ export default function DevicesScreen() {
           ) : (
             workouts.data.map((item) => <ImportCard key={item.sourceId} workout={item} healthConsent={healthConsent} />)
           )}
-          <Button label="Atualizar lista" variant="ghost" onPress={() => void workouts.refetch()} />
+          {/* Com o relógio reconhecido, quem busca de novo é o botão do cartão. */}
+          {recognized ? null : <Button label="Atualizar lista" variant="ghost" onPress={() => void workouts.refetch()} />}
         </View>
       ) : null}
 
@@ -357,6 +448,14 @@ const styles = StyleSheet.create({
   },
   flex: {
     flex: 1,
+  },
+  state: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.xs,
+  },
+  permissions: {
+    gap: space.sm,
   },
   brand: {
     minHeight: touchTarget + 8,
