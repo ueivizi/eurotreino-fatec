@@ -20,9 +20,11 @@ import { ProgressBar } from '@/components/ui/progress-bar';
 import { AppText } from '@/components/ui/text';
 import { fetchWeeklyRanking } from '@/features/arena/arena-api';
 import { useProfile } from '@/features/auth/session';
+import { WEEK_RESTART_MOTTO } from '@/features/celebrations/mottos';
 import { fetchMyLegions } from '@/features/legions/legions-api';
 import { takePendingInvite } from '@/features/legions/pending-invite';
 import { takeFirstSteps } from '@/features/onboarding/first-steps';
+import { SCORING } from '@/features/ranks/scoring';
 import { rankFromGlory } from '@/features/ranks/tiers';
 import { formatDistance, formatLoad } from '@/features/workouts/metrics';
 import { useOfflineQueue } from '@/features/workouts/offline-queue-provider';
@@ -38,6 +40,9 @@ const MEDALLION = 148;
 /** O disco da moeda ocupa 124 de 168 unidades do desenho do medalhão. */
 const COIN = Math.round((MEDALLION * 124) / 168);
 const HALO = 300;
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+const WEEK_MS = 7 * DAY_MS;
 
 /** Forma do Início enquanto os dados chegam: a pessoa já vê onde cada coisa vai ficar. */
 function HomeSkeleton() {
@@ -88,6 +93,14 @@ export default function HomeScreen() {
   if (!profile) return null;
 
   const week = weekInfo(new Date());
+  // A Arena zera toda segunda: quem já treinou antes vê a semana recomeçando, não um monte de zeros.
+  const weekRestarted =
+    progress.data !== undefined &&
+    progress.data.totalWorkouts > 0 &&
+    progress.data.weekGlory === 0 &&
+    progress.data.weekScoredWorkouts === 0;
+  const startedToday = WEEK_MS - week.remainingMs < DAY_MS;
+  const constancy = (progress.data?.weekScoredWorkouts ?? 0) >= SCORING.weeklyBonusAt;
   const rank = progress.data ? rankFromGlory(progress.data.totalGlory) : null;
   const me = ranking.data?.entries.find((entry) => entry.isMe) ?? null;
   const leader = ranking.data?.entries[0] ?? null;
@@ -124,7 +137,9 @@ export default function HomeScreen() {
       <Reveal style={styles.header}>
         <View style={styles.headerText}>
           <AppText variant="overline" tone="muted">
-            {`Semana ${toRoman(week.number)} · termina em ${formatRemaining(week.remainingMs)}`}
+            {`Semana ${toRoman(week.number)} · ${
+              weekRestarted && startedToday ? 'começou hoje' : `termina em ${formatRemaining(week.remainingMs)}`
+            }`}
           </AppText>
           <AppText variant="title" numberOfLines={1}>{`Ave, ${profile.displayName}`}</AppText>
         </View>
@@ -169,63 +184,84 @@ export default function HomeScreen() {
               accessibilityLabel={rank.next ? `Progresso até ${rank.next.label}` : 'Rank máximo alcançado'}
             />
             <View style={styles.progressLabels}>
-              <AppText variant="caption" tone="muted" style={styles.tabular}>{`${rank.label} · ${rank.currentMin}`}</AppText>
+              <AppText variant="caption" tone="muted" style={styles.tabular}>
+                {weekRestarted ? 'Sua Glória continua sua' : `${rank.label} · ${rank.currentMin}`}
+              </AppText>
               <AppText variant="caption" tone="secondary" style={styles.tabular}>
                 {rank.next ? `Faltam ${rank.next.remaining} para ${rank.next.label}` : 'Você chegou ao Olimpo'}
               </AppText>
             </View>
           </Reveal>
 
-          <View style={styles.stats}>
-            <Reveal index={3} style={styles.statColumn}>
-              <Card style={styles.stat}>
-                <AppText variant="caption" tone="muted">Glória da semana</AppText>
-                <RollingNumber value={progress.data.weekGlory} variant="stat" tone="goldHighlight" />
-                <AppText variant="caption" tone="secondary">
-                  {`${progress.data.weekScoredWorkouts} ${progress.data.weekScoredWorkouts === 1 ? 'treino' : 'treinos'}`}
+          {weekRestarted ? (
+            <Reveal index={3}>
+              <Card style={styles.restart}>
+                <View style={styles.motto}>
+                  <AppText variant="motto" tone="goldHighlight">{WEEK_RESTART_MOTTO.latin}</AppText>
+                  <AppText variant="caption" tone="muted">{WEEK_RESTART_MOTTO.translation}</AppText>
+                </View>
+                <AppText variant="body" tone="secondary">
+                  {legion
+                    ? `A Arena recomeçou e todo mundo está no zero. Um treino já coloca você na disputa da ${legion.name}.`
+                    : 'A Arena recomeçou e todo mundo está no zero. Um treino já coloca você na disputa.'}
                 </AppText>
               </Card>
             </Reveal>
-            <Reveal index={4} style={styles.statColumn}>
-              <PressableScale
-                style={styles.statColumn}
-                accessibilityRole="button"
-                accessibilityLabel={legion ? `Arena da ${legion.name}` : 'Arena: funde ou entre em uma Legião'}
-                onPress={() => router.navigate(legion ? { pathname: '/arena', params: { legiao: legion.id } } : '/legiao')}>
+          ) : (
+            <View style={styles.stats}>
+              <Reveal index={3} style={styles.statColumn}>
                 <Card style={styles.stat}>
-                  {legion ? (
-                    <>
-                      <AppText variant="caption" tone="muted" numberOfLines={1}>{`Arena · ${legion.name}`}</AppText>
-                      {me ? (
-                        <RollingNumber value={me.place} suffix="º" variant="stat" accessibilityLabel={`${me.place}º lugar`} />
-                      ) : (
-                        <AppText variant="stat">—</AppText>
-                      )}
-                      {me && leader && !leader.isMe && leader.weekGlory > me.weekGlory ? (
-                        <AppText variant="caption" tone="secondary" style={styles.tabular} numberOfLines={1}>
-                          {`${leader.weekGlory - me.weekGlory} atrás de ${leader.displayName}`}
-                        </AppText>
-                      ) : me ? (
-                        <AppText variant="caption" tone="secondary">Na liderança</AppText>
-                      ) : null}
-                    </>
-                  ) : legions.isSuccess ? (
-                    <>
-                      <AppText variant="caption" tone="muted">Arena</AppText>
-                      <AppText variant="bodyMedium">Sem Legião ainda</AppText>
-                      <AppText variant="caption" tone="gold">Fundar ou entrar</AppText>
-                    </>
-                  ) : (
-                    <>
-                      <Skeleton width="60%" height={12} />
-                      <Skeleton width={56} height={32} />
-                      <Skeleton width="80%" height={12} />
-                    </>
-                  )}
+                  <AppText variant="caption" tone="muted">Glória da semana</AppText>
+                  <RollingNumber value={progress.data.weekGlory} variant="stat" tone="goldHighlight" />
+                  {/* Garantida a partir do 3º treino pontuado: o bônus da semana já está no bolso. */}
+                  <AppText variant="caption" tone={constancy ? 'success' : 'secondary'}>
+                    {constancy
+                      ? 'Constância garantida'
+                      : `${progress.data.weekScoredWorkouts} ${progress.data.weekScoredWorkouts === 1 ? 'treino' : 'treinos'}`}
+                  </AppText>
                 </Card>
-              </PressableScale>
-            </Reveal>
-          </View>
+              </Reveal>
+              <Reveal index={4} style={styles.statColumn}>
+                <PressableScale
+                  style={styles.statColumn}
+                  accessibilityRole="button"
+                  accessibilityLabel={legion ? `Arena da ${legion.name}` : 'Arena: funde ou entre em uma Legião'}
+                  onPress={() => router.navigate(legion ? { pathname: '/arena', params: { legiao: legion.id } } : '/legiao')}>
+                  <Card style={styles.stat}>
+                    {legion ? (
+                      <>
+                        <AppText variant="caption" tone="muted" numberOfLines={1}>{`Arena · ${legion.name}`}</AppText>
+                        {me ? (
+                          <RollingNumber value={me.place} suffix="º" variant="stat" accessibilityLabel={`${me.place}º lugar`} />
+                        ) : (
+                          <AppText variant="stat">—</AppText>
+                        )}
+                        {me && leader && !leader.isMe && leader.weekGlory > me.weekGlory ? (
+                          <AppText variant="caption" tone="secondary" style={styles.tabular} numberOfLines={1}>
+                            {`${leader.weekGlory - me.weekGlory} atrás de ${leader.displayName}`}
+                          </AppText>
+                        ) : me ? (
+                          <AppText variant="caption" tone="secondary">Na liderança</AppText>
+                        ) : null}
+                      </>
+                    ) : legions.isSuccess ? (
+                      <>
+                        <AppText variant="caption" tone="muted">Arena</AppText>
+                        <AppText variant="bodyMedium">Sem Legião ainda</AppText>
+                        <AppText variant="caption" tone="gold">Fundar ou entrar</AppText>
+                      </>
+                    ) : (
+                      <>
+                        <Skeleton width="60%" height={12} />
+                        <Skeleton width={56} height={32} />
+                        <Skeleton width="80%" height={12} />
+                      </>
+                    )}
+                  </Card>
+                </PressableScale>
+              </Reveal>
+            </View>
+          )}
         </>
       )}
 
@@ -334,6 +370,15 @@ const styles = StyleSheet.create({
   },
   statColumn: {
     flex: 1,
+  },
+  restart: {
+    gap: space.sm,
+  },
+  motto: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    flexWrap: 'wrap',
+    gap: space.sm,
   },
   stat: {
     flex: 1,
