@@ -20,6 +20,20 @@ export type SessionSet = {
   doneAt: string;
 };
 
+/**
+ * O que a sessão oferece agora: o exercício da vez e os números do próximo "Série feita".
+ *
+ * Mora na sessão, e não na tela, porque a notificação da tela bloqueada precisa saber o mesmo que
+ * a tela sabe — e ela não tem acesso ao estado do React.
+ */
+export type SessionFocus = {
+  exerciseId: string;
+  /** Nome já resolvido: a notificação não tem como consultar o catálogo. */
+  exerciseName: string;
+  reps: number;
+  loadKg: number | null;
+};
+
 export type Session = {
   userId: string;
   workoutType: WorkoutTypeId;
@@ -31,9 +45,13 @@ export type Session = {
   /** Tempo já acumulado antes da pausa atual, em milissegundos. */
   elapsedBeforePauseMs: number;
   routineId: string | null;
+  /** Nome da ficha, guardado junto: a notificação precisa dele sem consultar nada. */
+  routineName: string | null;
   sets: SessionSet[];
   /** Voltas marcadas na resistência: tempo decorrido, em ms, no momento de cada toque. */
   laps: number[];
+  /** Próxima série oferecida; nulo na resistência e antes de escolher exercício. */
+  focus: SessionFocus | null;
 };
 
 export const SESSION_STORAGE_KEY = 'eurotreino.sessao';
@@ -46,6 +64,7 @@ export function startSession(input: {
   workoutType: WorkoutTypeId;
   requestId: string;
   routineId?: string | null;
+  routineName?: string | null;
   now?: Date;
 }): Session {
   return {
@@ -56,9 +75,25 @@ export function startSession(input: {
     pausedAt: null,
     elapsedBeforePauseMs: 0,
     routineId: input.routineId ?? null,
+    routineName: input.routineName ?? null,
     sets: [],
     laps: [],
+    focus: null,
   };
+}
+
+/** Guarda o exercício e os números da vez, para a tela e a notificação falarem a mesma coisa. */
+export function setFocus(session: Session, focus: SessionFocus | null): Session {
+  if (
+    session.focus?.exerciseId === focus?.exerciseId &&
+    session.focus?.exerciseName === focus?.exerciseName &&
+    session.focus?.reps === focus?.reps &&
+    session.focus?.loadKg === focus?.loadKg
+  ) {
+    // Sem mudança de verdade não há por que gravar de novo nem repintar a notificação.
+    return session;
+  }
+  return { ...session, focus };
 }
 
 export function elapsedMs(session: Session, now: Date): number {
@@ -130,6 +165,17 @@ export function isTooLong(session: Session, now: Date): boolean {
   return elapsedMs(session, now) > MAX_SESSION_HOURS * 3600_000;
 }
 
+function parseFocus(value: unknown): SessionFocus | null {
+  if (!isRow(value)) return null;
+  const { exerciseId, exerciseName, reps, loadKg } = value;
+  if (!isNonEmptyText(exerciseId, 60) || !isNonEmptyText(exerciseName, 80)) return null;
+  if (typeof reps !== 'number' || !Number.isInteger(reps) || reps < 1 || reps > 200) return null;
+  if (loadKg !== null && loadKg !== undefined) {
+    if (typeof loadKg !== 'number' || !Number.isFinite(loadKg) || loadKg <= 0 || loadKg > 500) return null;
+  }
+  return { exerciseId, exerciseName, reps, loadKg: typeof loadKg === 'number' ? loadKg : null };
+}
+
 function parseSet(value: unknown): SessionSet | null {
   if (!isRow(value)) return null;
   const { exerciseId, reps, loadKg, doneAt } = value;
@@ -183,6 +229,10 @@ export function parseSession(raw: string | null): Session | null {
     parsedSets.push(parsed);
   }
 
+  // Sessão gravada antes de 22/09 não tem foco: entra como nulo, sem derrubar o que já existe.
+  const focus = value.focus === undefined || value.focus === null ? null : parseFocus(value.focus);
+  if (value.focus !== undefined && value.focus !== null && focus === null) return null;
+
   return {
     userId,
     workoutType,
@@ -191,8 +241,10 @@ export function parseSession(raw: string | null): Session | null {
     pausedAt: typeof pausedAt === 'string' ? pausedAt : null,
     elapsedBeforePauseMs,
     routineId: typeof routineId === 'string' ? routineId : null,
+    routineName: typeof value.routineName === 'string' && value.routineName.length <= 60 ? value.routineName : null,
     sets: parsedSets,
     laps: parsedLaps,
+    focus,
   };
 }
 
