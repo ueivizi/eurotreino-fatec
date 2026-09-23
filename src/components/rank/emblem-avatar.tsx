@@ -24,7 +24,7 @@ type Props = {
   /** Cor escolhida no perfil; sem valor, o tom neutro do tema. */
   color?: EmblemColor;
   size?: number;
-  /** Louros do pódio da Arena (1º, 2º e 3º lugares). */
+  /** Louros do pódio do Coliseu (1º, 2º e 3º lugares). */
   laurel?: Laurel;
   /** Os louros surgem folha a folha ("Coroar"), a partir deste atraso em ms. */
   crownDelay?: number;

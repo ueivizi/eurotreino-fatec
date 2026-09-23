@@ -93,7 +93,7 @@ export default function GloryScreen() {
       </View>
 
       <AppText variant="caption" tone="muted">
-        A Glória é calculada no servidor, com a mesma regra para todos. Na Arena, a disputa recomeça toda segunda-feira.
+        A Glória é calculada no servidor, com a mesma regra para todos. No Coliseu, a disputa recomeça toda segunda-feira.
       </AppText>
 
       {onboarding ? (

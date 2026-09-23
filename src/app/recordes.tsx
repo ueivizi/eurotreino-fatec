@@ -81,7 +81,7 @@ function ModalityCard({ record, index }: { record: ModalityRecord; index: number
 }
 
 /**
- * Recordes pessoais por modalidade. Números só seus: recorde não entra na Arena nem aparece para a
+ * Recordes pessoais por modalidade. Números só seus: recorde não entra no Coliseu nem aparece para a
  * Legião, porque a disputa semanal é de Glória, e ela não muda com distância nem com carga.
  */
 export default function RecordsScreen() {
@@ -112,7 +112,7 @@ export default function RecordsScreen() {
       )}
 
       <AppText variant="caption" tone="muted">
-        Distância, ritmo e carga ficam só com você: a Arena disputa Glória, que não muda com esses números.
+        Distância, ritmo e carga ficam só com você: o Coliseu disputa Glória, que não muda com esses números.
       </AppText>
     </ScrollView>
   );

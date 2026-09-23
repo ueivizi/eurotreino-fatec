@@ -87,7 +87,7 @@ function Pedestal({ height, color, numeral, delay }: { height: number; color: st
 
 function ArenaSkeleton() {
   return (
-    <View style={styles.block} accessibilityLabel="Carregando a Arena" accessibilityRole="progressbar">
+    <View style={styles.block} accessibilityLabel="Carregando o Coliseu" accessibilityRole="progressbar">
       <View style={styles.podium}>
         {PODIUM_SLOTS.map((slot) => (
           <View key={slot.index} style={[styles.podiumColumn, { gap: space.sm }]}>
@@ -150,7 +150,7 @@ export default function ArenaScreen() {
         />
       }>
       <View style={styles.header}>
-        <AppText variant="title">Arena</AppText>
+        <AppText variant="title">Coliseu</AppText>
         {weekOffset === 0 ? (
           <View style={styles.inline}>
             <Icon name="ampulheta" size={16} color={colors.gold} />
@@ -168,7 +168,7 @@ export default function ArenaScreen() {
         </View>
       ) : !legion ? (
         <Reveal style={styles.block}>
-          <Notice message="A Arena é a disputa semanal dentro de uma Legião. Funde a sua ou entre com um código para começar." />
+          <Notice message="O Coliseu é a disputa semanal dentro de uma Legião. Funde a sua ou entre com um código para começar." />
           <Button label="Ir para Legião" onPress={() => router.navigate('/legiao')} />
         </Reveal>
       ) : (
@@ -182,7 +182,7 @@ export default function ArenaScreen() {
                     key={item.id}
                     haptic="select"
                     accessibilityRole="button"
-                    accessibilityLabel={`Arena da ${item.name}`}
+                    accessibilityLabel={`Coliseu da ${item.name}`}
                     accessibilityState={{ selected }}
                     onPress={() => router.setParams({ legiao: item.id })}
                     style={[
@@ -280,7 +280,7 @@ export default function ArenaScreen() {
 
               {entries.length === 1 ? (
                 <Reveal delay={400}>
-                  <Notice message="Por enquanto só você está nesta Arena. Compartilhe o código da Legião para a disputa começar." />
+                  <Notice message="Por enquanto só você está neste Coliseu. Compartilhe o código da Legião para a disputa começar." />
                 </Reveal>
               ) : null}
             </>
@@ -288,7 +288,7 @@ export default function ArenaScreen() {
 
           <View style={[styles.inline, styles.privacy]}>
             <Icon name="escudo" size={14} color={colors.gold} />
-            <AppText variant="caption" tone="muted">{`Só membros da ${legion.name} veem esta Arena.`}</AppText>
+            <AppText variant="caption" tone="muted">{`Só membros da ${legion.name} veem este Coliseu.`}</AppText>
           </View>
         </>
       )}

@@ -1,5 +1,5 @@
 /**
- * Semana da Arena: de segunda 00:00 a domingo 23:59 no horário de Brasília.
+ * Semana do Coliseu: de segunda 00:00 a domingo 23:59 no horário de Brasília.
  *
  * O Brasil não tem horário de verão desde 2019, então Brasília é UTC−3 fixo.
  * Serve só para exibição (número da semana e contagem regressiva): a semana em

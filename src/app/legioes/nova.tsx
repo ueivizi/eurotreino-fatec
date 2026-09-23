@@ -68,7 +68,7 @@ export default function NewLegionScreen() {
 
         <EmblemPicker label="Estandarte" value={emblem} onChange={setEmblem} />
 
-        <Notice message="A Legião é fechada: só entra quem receber o código, e só os membros veem a Arena e os perfis." />
+        <Notice message="A Legião é fechada: só entra quem receber o código, e só os membros veem o Coliseu e os perfis." />
 
         <View style={styles.actions}>
           <Button

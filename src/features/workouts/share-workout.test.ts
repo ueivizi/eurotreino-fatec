@@ -73,7 +73,7 @@ describe('workoutShareMessage', () => {
 
   it('não vaza nome de Legião, de membro nem posição de terceiros', () => {
     const message = workoutShareMessage({ type: 'bike', durationMin: 60, intensity: 'intenso', result: RESULT });
-    expect(message).not.toMatch(/Legi[ãa]o|lugar|Arena/i);
+    expect(message).not.toMatch(/Legi[ãa]o|lugar|Coliseu/i);
   });
 });
 
@@ -82,7 +82,7 @@ describe('outras mensagens', () => {
     expect(ascensionShareMessage(3500)).toContain('Olimpiano');
   });
 
-  it('Arena trata o 1º lugar diferente do resto e não cita quem foi ultrapassado', () => {
+  it('o Coliseu trata o 1º lugar diferente do resto e não cita quem foi ultrapassado', () => {
     expect(arenaShareMessage(1, 78)).toContain('Assumi o 1º lugar');
     expect(arenaShareMessage(4, 40)).toContain('4º lugar');
     expect(arenaShareMessage(4, 40)).not.toMatch(/ultrapass|passei/i);

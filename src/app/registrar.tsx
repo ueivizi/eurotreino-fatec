@@ -259,17 +259,17 @@ function detailLine(draft: Draft): string | null {
   return parts.length > 0 ? parts.join(' · ') : null;
 }
 
-/** Frase da Arena quando a posição melhorou; `null` quando não houve ganho a comemorar. */
+/** Frase do Coliseu quando a posição melhorou; `null` quando não houve ganho a comemorar. */
 function arenaMessage(arena: ArenaChange | null): string | null {
   if (!arena || arena.before === null || arena.after >= arena.before) return null;
   return arena.after === 1
-    ? `Você assumiu o 1º lugar na Arena da ${arena.legionName}.`
-    : `Você subiu para o ${arena.after}º lugar na Arena da ${arena.legionName}.`;
+    ? `Você assumiu o 1º lugar no Coliseu da ${arena.legionName}.`
+    : `Você subiu para o ${arena.after}º lugar no Coliseu da ${arena.legionName}.`;
 }
 
 /**
  * Treino registrado e pontuado: a folha mostra a composição da Glória, e as cerimônias maiores
- * (Ascensão, nova divisão, Arena, constância) tocam sobre as abas quando a folha fecha.
+ * (Ascensão, nova divisão, Coliseu, constância) tocam sobre as abas quando a folha fecha.
  */
 function LoggedResult({
   outcome,
@@ -342,7 +342,7 @@ function QueuedResult({ draft, performedAt, onClose }: { draft: Draft; performed
         <AppText variant="caption" tone="gold">Aguardando envio</AppText>
       </Card>
       <AppText variant="caption" tone="muted" style={styles.center}>
-        A Glória é calculada quando o treino chega ao servidor, assim a Arena fica justa para todos.
+        A Glória é calculada quando o treino chega ao servidor, assim o Coliseu fica justo para todos.
       </AppText>
       {sent === true ? <Notice message="Enviado! Sua Glória já aparece no Início." /> : null}
       {sent === false ? <Notice tone="danger" message="Ainda sem conexão. O treino continua guardado e vai ser enviado depois." /> : null}
@@ -473,12 +473,12 @@ export default function RegisterWorkoutScreen() {
           });
           const me = ranking.entries.find((entry) => entry.isMe);
           if (me) arena = { legionId: legion.id, legionName: legion.name, before, after: me.place };
-          // Sem o ranking anterior em cache não há como saber quem foi ultrapassado: sem cena da Arena.
+          // Sem o ranking anterior em cache não há como saber quem foi ultrapassado: sem cena do Coliseu.
           if (beforeEntries) {
             snapshots.push({ legionId: legion.id, legionName: legion.name, before: beforeEntries, after: ranking.entries });
           }
         } catch {
-          // A posição na Arena é um extra do resultado; o treino já foi registrado.
+          // A posição no Coliseu é um extra do resultado; o treino já foi registrado.
         }
       }
       return { kind: 'logged', logged, arena, snapshots, previousTotalWorkouts };

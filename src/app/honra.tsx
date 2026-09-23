@@ -75,7 +75,7 @@ function HonorCard({ entry, index }: { entry: HonorEntry; index: number }) {
 }
 
 /**
- * Honra: progressão pessoal por exercício e por modalidade. Fica fora da Arena de propósito — lá a
+ * Honra: progressão pessoal por exercício e por modalidade. Fica fora do Coliseu de propósito — lá a
  * disputa é de Glória, com a mesma regra para todo mundo.
  */
 export default function HonorScreen() {
@@ -125,7 +125,7 @@ export default function HonorScreen() {
       )}
 
       <AppText variant="caption" tone="muted">
-        A Honra é só sua: não entra na Arena nem aparece para a Legião. A disputa semanal continua sendo de Glória.
+        A Honra é só sua: não entra no Coliseu nem aparece para a Legião. A disputa semanal continua sendo de Glória.
       </AppText>
     </ScrollView>
   );

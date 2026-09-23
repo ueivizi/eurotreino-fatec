@@ -143,7 +143,7 @@ export default function DeleteAccountScreen() {
           <AppText variant="subheading">O que é apagado</AppText>
           <Item text="Seu perfil: nome de exibição e emblema." />
           <Item text="Todos os seus treinos e toda a sua Glória." />
-          <Item text="Sua participação em todas as Legiões e Arenas." />
+          <Item text="Sua participação em todas as Legiões e Coliseus." />
           <Item text="Seu acesso: o e-mail deixa de entrar no EuroTreino." />
           {queue.pending.length > 0 ? (
             <Item text={`${queue.pending.length} ${queue.pending.length === 1 ? 'treino guardado' : 'treinos guardados'} neste aparelho, ainda sem envio.`} />

@@ -5,7 +5,7 @@ import { parseLoggedWorkout, type LoggedWorkout } from '@/features/workouts/work
 
 /**
  * Registro de treino de força e a Honra que ele rendeu. A Glória sai da mesma regra v1 de sempre —
- * carga e repetições não mudam ponto de Arena, só Honra e recorde pessoal.
+ * carga e repetições não mudam ponto do Coliseu, só Honra e recorde pessoal.
  */
 export type ExercisePersonalRecord = {
   exerciseId: string;

@@ -34,7 +34,7 @@ const HEART_RATE = { min: 30, max: 240 } as const;
 export type ImportEligibility = 'ok' | 'too_old' | 'too_short' | 'too_long' | 'in_future';
 
 export const ELIGIBILITY_MESSAGES: Record<Exclude<ImportEligibility, 'ok'>, string> = {
-  too_old: 'Passou de 48 horas: a regra da Arena não aceita mais o registro.',
+  too_old: 'Passou de 48 horas: a regra do Coliseu não aceita mais o registro.',
   too_short: 'Durou menos de 1 minuto.',
   too_long: 'Durou mais de 5 horas, acima do limite de um registro.',
   in_future: 'O horário está no futuro. Confira o relógio do aparelho.',

@@ -115,7 +115,7 @@ export default function InitialProfileScreen() {
           onChangeColor={setEmblemColor}
         />
 
-        <Notice message="Sem foto: seu emblema representa você na Arena." />
+        <Notice message="Sem foto: seu emblema representa você no Coliseu." />
 
         <View style={styles.actions}>
           <Button label={busy ? 'Salvando…' : 'Continuar'} onPress={() => void submit()} disabled={busy} />
