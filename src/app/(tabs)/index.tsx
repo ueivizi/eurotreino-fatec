@@ -22,6 +22,7 @@ import { AppText } from '@/components/ui/text';
 import { fetchWeeklyRanking } from '@/features/arena/arena-api';
 import { useProfile } from '@/features/auth/session';
 import { WEEK_RESTART_MOTTO } from '@/features/celebrations/mottos';
+import { fetchWeeklyGoal } from '@/features/goals/goal-api';
 import { fetchMyLegions } from '@/features/legions/legions-api';
 import { takePendingInvite } from '@/features/legions/pending-invite';
 import { takeFirstSteps } from '@/features/onboarding/first-steps';
@@ -71,6 +72,7 @@ export default function HomeScreen() {
   const queue = useOfflineQueue();
 
   const progress = useQuery({ queryKey: queryKeys.progress, queryFn: fetchMyProgress });
+  const goal = useQuery({ queryKey: queryKeys.weeklyGoal, queryFn: fetchWeeklyGoal });
   const legions = useQuery({ queryKey: queryKeys.legions, queryFn: fetchMyLegions });
   const legion = legions.data?.[0] ?? null;
   const ranking = useQuery({
@@ -119,7 +121,7 @@ export default function HomeScreen() {
         .join(' · ')
     : null;
 
-  const refreshing = progress.isRefetching || legions.isRefetching || ranking.isRefetching;
+  const refreshing = progress.isRefetching || goal.isRefetching || legions.isRefetching || ranking.isRefetching;
 
   return (
     <TabFade>
@@ -131,6 +133,7 @@ export default function HomeScreen() {
           refreshing={refreshing}
           onRefresh={() => {
             void progress.refetch();
+            void goal.refetch();
             void legions.refetch();
             if (legion) void ranking.refetch();
           }}
@@ -268,8 +271,57 @@ export default function HomeScreen() {
         </>
       )}
 
+      {/* Juramento da semana (RF016): o placar de quem treina sozinho, fora da Glória e do Coliseu. */}
+      {goal.data ? (
+        <Reveal index={5}>
+          <PressableScale
+            accessibilityRole="button"
+            accessibilityLabel={
+              goal.data.target === null
+                ? 'Juramento da semana: escolher uma meta'
+                : `Juramento da semana: ${goal.data.daysDone} de ${goal.data.target} dias`
+            }
+            onPress={() => router.push('/meta')}>
+            <Card style={styles.oath}>
+              <View style={styles.oathHead}>
+                <AppText variant="caption" tone="muted">Juramento da semana</AppText>
+                {goal.data.weeksInARow > 0 ? (
+                  <View style={styles.flame}>
+                    <Icon name="chama" size={14} color={colors.gold} />
+                    <AppText variant="caption" tone="gold" style={styles.tabular}>
+                      {`${goal.data.weeksInARow} ${goal.data.weeksInARow === 1 ? 'semana' : 'semanas'}`}
+                    </AppText>
+                  </View>
+                ) : null}
+              </View>
+              {goal.data.target === null ? (
+                <AppText variant="bodyMedium" tone="gold">Escolher minha meta</AppText>
+              ) : (
+                <>
+                  <AppText variant="bodyMedium" style={styles.tabular}>
+                    {`${goal.data.daysDone} de ${goal.data.target} ${goal.data.target === 1 ? 'dia' : 'dias'}`}
+                  </AppText>
+                  <ProgressBar
+                    value={goal.data.daysDone / goal.data.target}
+                    delay={260}
+                    accessibilityLabel={`Progresso da meta da semana: ${goal.data.daysDone} de ${goal.data.target} dias`}
+                  />
+                </>
+              )}
+              <AppText variant="caption" tone={goal.data.goalMet ? 'success' : 'secondary'}>
+                {goal.data.goalMet
+                  ? 'Juramento cumprido'
+                  : goal.data.streakDays > 0
+                    ? `${goal.data.streakDays} ${goal.data.streakDays === 1 ? 'dia seguido' : 'dias seguidos'} treinando`
+                    : 'Sua meta, no seu ritmo'}
+              </AppText>
+            </Card>
+          </PressableScale>
+        </Reveal>
+      ) : null}
+
       {queue.pending.length > 0 || queue.failures.length > 0 ? (
-        <Reveal index={5} style={styles.actions}>
+        <Reveal index={6} style={styles.actions}>
           {queue.pending.length > 0 ? (
             <Notice
               message={`${queue.pending.length} ${
@@ -297,7 +349,7 @@ export default function HomeScreen() {
         </Reveal>
       ) : null}
 
-      <Reveal index={6} style={styles.actions}>
+      <Reveal index={7} style={styles.actions}>
         <Button label="Registrar treino" icon="registrar" onPress={() => router.push('/registrar')} />
         <Button label="Treinar agora" icon="ampulheta" variant="secondary" onPress={() => router.push('/sessao')} />
         {last && lastLabel ? (
@@ -387,6 +439,20 @@ const styles = StyleSheet.create({
   stat: {
     flex: 1,
     gap: space.xs,
+  },
+  oath: {
+    gap: space.sm,
+  },
+  oathHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: space.sm,
+  },
+  flame: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.xxs,
   },
   actions: {
     gap: space.md,

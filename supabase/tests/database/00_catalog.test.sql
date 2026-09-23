@@ -64,7 +64,8 @@ select tests.assert_equal(
   ),
   'public.equipment, public.exercise_records, public.exercises, public.group_members, public.groups, '
     || 'public.honor, public.honor_levels, public.muscle_groups, public.profiles, public.rank_tiers, '
-    || 'public.routine_exercises, public.routines, public.workout_sets, public.workout_types, public.workouts'
+    || 'public.routine_exercises, public.routines, public.weekly_goals, public.workout_sets, '
+    || 'public.workout_types, public.workouts'
 );
 select tests.assert_equal(
   'tabelas graváveis por authenticated',
@@ -105,8 +106,9 @@ select tests.assert_equal(
   'private.is_group_member, private.shares_group_with, public.complete_profile, public.create_exercise, '
     || 'public.create_group, public.delete_routine, public.edit_workout, public.get_group_invite, public.group_weekly_ranking, '
     || 'public.join_group_by_code, public.leave_group, public.log_strength_workout, public.log_workout, '
-    || 'public.my_groups, public.my_honor, public.my_progress, public.my_records, public.my_workout_months, public.my_workouts, public.preview_invite, '
-    || 'public.regenerate_invite, public.save_routine, public.set_health_consent'
+    || 'public.my_groups, public.my_honor, public.my_progress, public.my_records, public.my_weekly_goal, '
+    || 'public.my_workout_months, public.my_workouts, public.preview_invite, '
+    || 'public.regenerate_invite, public.save_routine, public.set_health_consent, public.set_weekly_goal'
 );
 
 -- caso: esquema private fechado para os papéis da API
@@ -130,8 +132,9 @@ select tests.assert_equal(
     || 'public.complete_profile, public.create_exercise, public.create_group, public.delete_routine, '
     || 'public.edit_workout, public.get_group_invite, public.group_weekly_ranking, public.join_group_by_code, public.leave_group, '
     || 'public.log_strength_workout, public.log_workout, public.my_groups, public.my_honor, '
-    || 'public.my_progress, public.my_records, public.my_workout_months, public.my_workouts, public.preview_invite, public.regenerate_invite, '
-    || 'public.save_routine, public.set_health_consent'
+    || 'public.my_progress, public.my_records, public.my_weekly_goal, public.my_workout_months, '
+    || 'public.my_workouts, public.preview_invite, public.regenerate_invite, '
+    || 'public.save_routine, public.set_health_consent, public.set_weekly_goal'
 );
 
 -- caso: toda função de public e private fixa search_path vazio

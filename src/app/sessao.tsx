@@ -209,6 +209,8 @@ export default function LiveSessionScreen() {
       void queryClient.invalidateQueries({ queryKey: queryKeys.rankings });
       void queryClient.invalidateQueries({ queryKey: queryKeys.honor });
       void queryClient.invalidateQueries({ queryKey: queryKeys.records });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.weeklyGoal });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.historyAll });
     },
   });
 

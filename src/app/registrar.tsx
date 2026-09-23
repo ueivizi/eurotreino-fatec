@@ -400,6 +400,8 @@ export default function RegisterWorkoutScreen() {
       if (outcome.kind === 'logged') {
         void queryClient.invalidateQueries({ queryKey: queryKeys.progress });
         void queryClient.invalidateQueries({ queryKey: queryKeys.rankings });
+        void queryClient.invalidateQueries({ queryKey: queryKeys.weeklyGoal });
+        void queryClient.invalidateQueries({ queryKey: queryKeys.historyAll });
         // As cerimônias ficam na fila e tocam quando a folha fecha, sobre as abas.
         enqueueCelebrations(
           celebrationsForWorkout({
