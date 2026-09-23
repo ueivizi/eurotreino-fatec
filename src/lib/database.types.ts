@@ -746,6 +746,37 @@ export type Database = {
           workouts_count: number
         }[]
       }
+      my_workout_months: {
+        Args: never
+        Returns: {
+          glory: number
+          month: string
+          workouts_count: number
+        }[]
+      }
+      my_workouts: {
+        Args: { p_month?: string }
+        Returns: {
+          avg_heart_rate: number
+          bonus_points: number
+          distance_m: number
+          duration_min: number
+          duration_points: number
+          intensity: string
+          intensity_points: number
+          is_scored: boolean
+          load_kg: number
+          local_date: string
+          module: string
+          note: string
+          performed_at: string
+          points: number
+          presence_points: number
+          sets_count: number
+          workout_id: string
+          workout_type: string
+        }[]
+      }
       preview_invite: {
         Args: { p_code: string }
         Returns: {

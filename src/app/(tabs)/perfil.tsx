@@ -114,6 +114,7 @@ export default function ProfileScreen() {
           </>
         )}
         <View style={styles.rankLinks}>
+          <Button label="Anais: meus treinos" icon="pergaminho" variant="ghost" onPress={() => router.push('/anais')} />
           <Button label="Ver todos os ranks" variant="ghost" onPress={() => router.push('/ranks')} />
           <Button label="Meus recordes" variant="ghost" onPress={() => router.push('/recordes')} />
           <Button label="Minha Honra" variant="ghost" onPress={() => router.push('/honra')} />
