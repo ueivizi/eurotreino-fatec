@@ -19,6 +19,7 @@ const WORKOUT = {
   load_kg: null,
   avg_heart_rate: 151,
   note: null,
+  can_edit: false,
 };
 
 describe('Anais', () => {
@@ -40,6 +41,12 @@ describe('Anais', () => {
     expect(workout?.distanceM).toBe(5000);
     expect(workout?.avgHeartRate).toBe(151);
     expect(workout?.performedAt.toISOString()).toBe('2026-09-11T21:00:00.000Z');
+  });
+
+  /* Quem decide se ainda dá para corrigir é o banco, que sabe onde a semana começa em São Paulo. */
+  it('lê do servidor se o treino ainda pode ser corrigido', () => {
+    expect(parseHistoryWorkouts([{ ...WORKOUT, can_edit: true }])?.[0]?.canEdit).toBe(true);
+    expect(parseHistoryWorkouts([{ ...WORKOUT, can_edit: null }])).toHaveLength(0);
   });
 
   /* Um treino corrompido não pode apagar o mês inteiro da tela: ele sai da lista, o resto fica. */

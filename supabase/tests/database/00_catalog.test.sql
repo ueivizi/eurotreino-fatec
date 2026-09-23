@@ -103,7 +103,7 @@ select tests.assert_equal(
     where n.nspname in ('public', 'private') and has_function_privilege('authenticated', p.oid, 'EXECUTE')
   ),
   'private.is_group_member, private.shares_group_with, public.complete_profile, public.create_exercise, '
-    || 'public.create_group, public.delete_routine, public.get_group_invite, public.group_weekly_ranking, '
+    || 'public.create_group, public.delete_routine, public.edit_workout, public.get_group_invite, public.group_weekly_ranking, '
     || 'public.join_group_by_code, public.leave_group, public.log_strength_workout, public.log_workout, '
     || 'public.my_groups, public.my_honor, public.my_progress, public.my_records, public.my_workout_months, public.my_workouts, public.preview_invite, '
     || 'public.regenerate_invite, public.save_routine, public.set_health_consent'
@@ -128,7 +128,7 @@ select tests.assert_equal(
   ),
   'private.is_group_member, private.on_group_member_removed, private.shares_group_with, '
     || 'public.complete_profile, public.create_exercise, public.create_group, public.delete_routine, '
-    || 'public.get_group_invite, public.group_weekly_ranking, public.join_group_by_code, public.leave_group, '
+    || 'public.edit_workout, public.get_group_invite, public.group_weekly_ranking, public.join_group_by_code, public.leave_group, '
     || 'public.log_strength_workout, public.log_workout, public.my_groups, public.my_honor, '
     || 'public.my_progress, public.my_records, public.my_workout_months, public.my_workouts, public.preview_invite, public.regenerate_invite, '
     || 'public.save_routine, public.set_health_consent'

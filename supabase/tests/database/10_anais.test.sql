@@ -94,3 +94,91 @@ select tests.authenticate_as_anon();
 select tests.assert_raises('anon não lê Anais', $$select * from public.my_workouts()$$, 'permission denied for function my_workouts');
 select tests.assert_raises('anon não lê os meses', $$select * from public.my_workout_months()$$, 'permission denied for function my_workout_months');
 select tests.clear_authentication();
+
+-- ---------------------------------------------------------------------------------------------
+-- Editar um treino (RF014)
+
+select tests.create_member('corretor', 'Corretor', 'aguia');
+
+-- Um treino desta semana (ontem, para não depender da hora) e um de semana fechada.
+select tests.remember('corrigivel', tests.anais_log('corretor', now() - interval '20 hours', 'corrida', 30, 'moderado', 5000)::text);
+select tests.remember('antigo', tests.anais_log('corretor', now() - interval '20 days', 'bike', 40, 'leve', 9000)::text);
+
+select tests.authenticate_as('corretor');
+
+-- caso: os Anais já dizem qual treino ainda dá para corrigir
+select tests.assert_equal(
+  'treino da semana corrente é editável',
+  (
+    select w.can_edit
+    from public.my_workouts(date_trunc('month', now() - interval '20 hours')::date) as w
+    where w.workout_id = tests.recall('corrigivel')::uuid
+  ),
+  true
+);
+select tests.assert_equal(
+  'treino de semana fechada não é',
+  (
+    select w.can_edit
+    from public.my_workouts(date_trunc('month', now() - interval '20 days')::date) as w
+    where w.workout_id = tests.recall('antigo')::uuid
+  ),
+  false
+);
+
+-- caso: corrigir duração e intensidade recalcula a Glória pela regra v1
+select tests.assert_equal(
+  'corrigir 30 min moderado para 60 min intenso',
+  (
+    select format('%s pontos, pontuado %s', e.points, e.is_scored)
+    from public.edit_workout(tests.recall('corrigivel')::uuid, 'corrida', 60, 'intenso', 8000) as e
+  ),
+  '20 pontos, pontuado t'
+);
+select tests.assert_equal(
+  'o treino mudou mesmo, e a distância junto',
+  (
+    select format('%s min %s, %s m, %s pontos', w.duration_min, w.intensity, w.distance_m, w.points)
+    from public.workouts as w
+    where w.id = tests.recall('corrigivel')::uuid
+  ),
+  '60 min intenso, 8000 m, 20 pontos'
+);
+
+-- caso: semana fechada não muda
+select tests.assert_raises(
+  'treino de semana fechada',
+  format($$select * from public.edit_workout('%s'::uuid, 'bike', 60, 'intenso')$$, tests.recall('antigo')),
+  'week_closed'
+);
+
+-- caso: as regras de família valem na edição como valem no registro
+select tests.assert_raises(
+  'distância em musculação, na edição',
+  format($$select * from public.edit_workout('%s'::uuid, 'musculacao', 60, 'intenso', 5000)$$, tests.recall('corrigivel')),
+  'distance_not_allowed'
+);
+select tests.assert_raises(
+  'duração fora da faixa',
+  format($$select * from public.edit_workout('%s'::uuid, 'corrida', 0, 'intenso')$$, tests.recall('corrigivel')),
+  'invalid_duration'
+);
+select tests.assert_equal(
+  'nenhuma recusa gravou nada',
+  (
+    select format('%s min %s', w.duration_min, w.workout_type)
+    from public.workouts as w
+    where w.id = tests.recall('corrigivel')::uuid
+  ),
+  '60 min corrida'
+);
+select tests.clear_authentication();
+
+-- caso: treino de outra pessoa não existe para quem pede
+select tests.authenticate_as('cronista');
+select tests.assert_raises(
+  'editar treino alheio',
+  format($$select * from public.edit_workout('%s'::uuid, 'corrida', 30, 'leve')$$, tests.recall('corrigivel')),
+  'workout_not_found'
+);
+select tests.clear_authentication();

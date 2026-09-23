@@ -38,6 +38,8 @@ export type HistoryWorkout = {
   loadKg: number | null;
   avgHeartRate: number | null;
   note: string | null;
+  /** Se ainda está na semana corrente, a única que `edit_workout` aceita corrigir (RF014). */
+  canEdit: boolean;
 };
 
 function parseMonth(value: unknown): HistoryMonth | null {
@@ -53,11 +55,11 @@ function parseWorkout(value: unknown): HistoryWorkout | null {
   if (!isUuid(id) || !isWorkoutTypeId(type) || !isIntensityId(intensity)) return null;
   if (typeof module !== 'string' || !MODULES.includes(module as ModuleId)) return null;
 
-  const { duration_min: durationMin, performed_at: performedAt, is_scored: isScored, points } = value;
+  const { duration_min: durationMin, performed_at: performedAt, is_scored: isScored, points, can_edit: canEdit } = value;
   if (!isNonNegativeInteger(durationMin) || typeof performedAt !== 'string') return null;
   const at = new Date(performedAt);
   if (Number.isNaN(at.getTime())) return null;
-  if (typeof isScored !== 'boolean' || !isNonNegativeInteger(points)) return null;
+  if (typeof isScored !== 'boolean' || !isNonNegativeInteger(points) || typeof canEdit !== 'boolean') return null;
 
   const parts = [value.presence_points, value.duration_points, value.intensity_points, value.bonus_points];
   if (!parts.every(isNonNegativeInteger)) return null;
@@ -88,6 +90,7 @@ function parseWorkout(value: unknown): HistoryWorkout | null {
     loadKg: loadKg ?? null,
     avgHeartRate: avgHeartRate ?? null,
     note,
+    canEdit,
   };
 }
 
@@ -99,6 +102,37 @@ export function parseHistoryMonths(value: unknown): HistoryMonth[] | null {
 export function parseHistoryWorkouts(value: unknown): HistoryWorkout[] | null {
   if (!Array.isArray(value)) return null;
   return value.map(parseWorkout).filter((workout): workout is HistoryWorkout => workout !== null);
+}
+
+export type EditWorkoutInput = {
+  id: string;
+  type: WorkoutTypeId;
+  durationMin: number;
+  intensity: IntensityId;
+  distanceM?: number;
+  setsCount?: number;
+  loadKg?: number;
+  avgHeartRate?: number;
+  note?: string;
+};
+
+/**
+ * Corrige um treino da semana corrente (RF014). O servidor recusa semana fechada, detalhe fora da
+ * família e medida sem consentimento — as mesmas regras do registro.
+ */
+export async function editWorkout(input: EditWorkoutInput): Promise<void> {
+  const { error } = await getSupabase().rpc('edit_workout', {
+    p_workout_id: input.id,
+    p_workout_type: input.type,
+    p_duration_min: input.durationMin,
+    p_intensity: input.intensity,
+    ...(input.distanceM === undefined ? {} : { p_distance_m: input.distanceM }),
+    ...(input.setsCount === undefined ? {} : { p_sets_count: input.setsCount }),
+    ...(input.loadKg === undefined ? {} : { p_load_kg: input.loadKg }),
+    ...(input.avgHeartRate === undefined ? {} : { p_avg_heart_rate: input.avgHeartRate }),
+    ...(input.note === undefined ? {} : { p_note: input.note }),
+  });
+  if (error) throw toApiError(error);
 }
 
 export async function fetchHistoryMonths(): Promise<HistoryMonth[]> {
