@@ -267,7 +267,7 @@ export default function LiveSessionScreen() {
               </AppText>
             ))}
             <AppText variant="caption" tone="muted">
-              Honra é sua progressão pessoal. A Arena continua disputando Glória.
+              Honra é sua progressão pessoal. O Coliseu continua disputando Glória.
             </AppText>
           </Card>
         ) : null}

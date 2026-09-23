@@ -50,7 +50,7 @@ export const PRIVACY_POLICY: LegalDocument = {
       heading: 'Para que usamos',
       items: [
         'Permitir que você entre e continue conectado.',
-        'Calcular a Glória, os ranks e a Arena semanal.',
+        'Calcular a Glória, os ranks e o Coliseu semanal.',
         'Mostrar seu perfil e sua posição aos membros das suas Legiões.',
         'Proteger o serviço contra abuso, com limites de tentativas e registros de segurança.',
         'Enviar os e-mails com código de acesso. Não enviamos propaganda.',
@@ -59,7 +59,7 @@ export const PRIVACY_POLICY: LegalDocument = {
     {
       heading: 'Quem vê o quê',
       items: [
-        'Membros das suas Legiões: nome de exibição, emblema, rank, Glória da semana e posição na Arena.',
+        'Membros das suas Legiões: nome de exibição, emblema, rank, Glória da semana e posição no Coliseu.',
         'Só você: seu e-mail e os detalhes de cada treino.',
         'Quem não está em nenhuma Legião com você não vê nada do seu perfil.',
       ],
@@ -86,14 +86,14 @@ export const PRIVACY_POLICY: LegalDocument = {
     {
       heading: 'Com que base usamos',
       paragraphs: [
-        'Usamos seus dados para prestar o serviço que você pediu ao criar a conta (entrar, perfil, Legiões e Arena) e, no caso dos registros de segurança, para proteger o serviço e as pessoas que o usam. Você escolhe o que registrar, e pode apagar tudo a qualquer momento excluindo a conta.',
+        'Usamos seus dados para prestar o serviço que você pediu ao criar a conta (entrar, perfil, Legiões e Coliseu) e, no caso dos registros de segurança, para proteger o serviço e as pessoas que o usam. Você escolhe o que registrar, e pode apagar tudo a qualquer momento excluindo a conta.',
         'A frequência cardíaca é a única exceção: por ser dado sensível de saúde, ela só é tratada mediante o seu consentimento específico, ligado e desligado por você no Perfil.',
       ],
     },
     {
       heading: 'Seus direitos',
       items: [
-        'Ver seus dados: o Perfil, o Início e a Arena mostram o que guardamos sobre você.',
+        'Ver seus dados: o Perfil, o Início e o Coliseu mostram o que guardamos sobre você.',
         'Corrigir: Perfil › Editar nome e emblema.',
         'Excluir: Perfil › Excluir conta e dados, quando quiser.',
         'Desconectar o relógio: retire a permissão do EuroTreino no Health Connect, a qualquer momento.',
@@ -119,7 +119,7 @@ export const PRIVACY_POLICY: LegalDocument = {
       items: [
         'A medida é digitada por você ou lida do relógio que você conectou, e só com o consentimento ligado: o app não lê sensor do celular.',
         'Ela serve só para o seu próprio histórico.',
-        'Nunca aparece para a sua Legião, não entra na Arena, não conta na Glória e não vai no texto de compartilhar.',
+        'Nunca aparece para a sua Legião, não entra no Coliseu, não conta na Glória e não vai no texto de compartilhar.',
         'Sem o consentimento ligado, o servidor recusa o envio — não é o app que decide isso.',
       ],
     },
@@ -132,7 +132,7 @@ export const PRIVACY_POLICY: LegalDocument = {
       ],
       items: [
         'A Legião é fechada e só se entra por convite: não existe busca por pessoas, perfil público nem sugestão de amigos.',
-        'Não há mensagens nem chat entre membros: o que se troca é treino e posição na Arena.',
+        'Não há mensagens nem chat entre membros: o que se troca é treino e posição no Coliseu.',
         'Não pedimos foto, localização, peso, medidas nem data de nascimento.',
         'Seu perfil só é visto por quem está em uma Legião com você.',
         'Não há publicidade, rastreamento, compras nem qualquer cobrança.',

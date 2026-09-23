@@ -24,7 +24,7 @@ import { space } from '@/theme/tokens';
 const LAURELS: Record<number, Laurel> = { 1: 'gold', 2: 'silver', 3: 'bronze' };
 
 /**
- * Perfil de membro (visão restrita, RF009): só o que a Arena já mostra à Legião — nome, emblema,
+ * Perfil de membro (visão restrita, RF009): só o que o Coliseu já mostra à Legião — nome, emblema,
  * rank, Glória da semana e posição. Os treinos de cada pessoa continuam privados.
  */
 export default function MemberProfileScreen() {
@@ -51,7 +51,7 @@ export default function MemberProfileScreen() {
         icon="legiao"
         title="Membro não encontrado"
         description="A pessoa pode ter saído da Legião, ou você não faz mais parte dela."
-        actions={[{ label: 'Voltar para a Arena', onPress: () => router.replace('/arena') }]}
+        actions={[{ label: 'Voltar para o Coliseu', onPress: () => router.replace('/arena') }]}
       />
     );
   }
@@ -62,7 +62,7 @@ export default function MemberProfileScreen() {
     <ScrollView
       style={{ flex: 1, backgroundColor: colors.background }}
       contentContainerStyle={[styles.content, { paddingTop: insets.top + space.md, paddingBottom: insets.bottom + space.xxxl }]}>
-      <ScreenHeader title={member?.displayName ?? 'Membro'} subtitle={legion ? `Arena · ${legion.name}` : undefined} fallbackHref="/arena" />
+      <ScreenHeader title={member?.displayName ?? 'Membro'} subtitle={legion ? `Coliseu · ${legion.name}` : undefined} fallbackHref="/arena" />
 
       {failed ? (
         <View style={styles.block}>
@@ -107,7 +107,7 @@ export default function MemberProfileScreen() {
               <AppText variant="stat" tone="goldHighlight">{String(member.weekGlory)}</AppText>
             </Card>
             <Card style={styles.stat}>
-              <AppText variant="caption" tone="muted">Posição na Arena</AppText>
+              <AppText variant="caption" tone="muted">Posição no Coliseu</AppText>
               <AppText variant="stat">{`${member.place}º`}</AppText>
             </Card>
           </View>
@@ -117,7 +117,7 @@ export default function MemberProfileScreen() {
             <AppText variant="label" tone="secondary" style={styles.flex}>
               {member.isMe
                 ? 'É assim que os membros da Legião veem você. Seus treinos continuam privados.'
-                : `Os treinos de ${member.displayName} são privados. Na Legião aparecem só o rank, a Glória da semana e a posição na Arena.`}
+                : `Os treinos de ${member.displayName} são privados. Na Legião aparecem só o rank, a Glória da semana e a posição no Coliseu.`}
             </AppText>
           </View>
         </>

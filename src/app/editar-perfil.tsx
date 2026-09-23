@@ -52,7 +52,7 @@ export default function EditProfileScreen() {
       const result = await saveProfile(displayName, emblem, emblemColor);
       if (result.ok) {
         profileSaved(result.profile);
-        // Nome e emblema aparecem na Arena e nos membros das Legiões.
+        // Nome e emblema aparecem no Coliseu e nos membros das Legiões.
         void queryClient.invalidateQueries({ queryKey: queryKeys.rankings });
         if (router.canGoBack()) router.back();
         else router.replace('/perfil');

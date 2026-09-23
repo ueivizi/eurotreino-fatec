@@ -94,7 +94,7 @@ export default function HomeScreen() {
   if (!profile) return null;
 
   const week = weekInfo(new Date());
-  // A Arena zera toda segunda: quem já treinou antes vê a semana recomeçando, não um monte de zeros.
+  // O Coliseu zera toda segunda: quem já treinou antes vê a semana recomeçando, não um monte de zeros.
   const weekRestarted =
     progress.data !== undefined &&
     progress.data.totalWorkouts > 0 &&
@@ -205,8 +205,8 @@ export default function HomeScreen() {
                 </View>
                 <AppText variant="body" tone="secondary">
                   {legion
-                    ? `A Arena recomeçou e todo mundo está no zero. Um treino já coloca você na disputa da ${legion.name}.`
-                    : 'A Arena recomeçou e todo mundo está no zero. Um treino já coloca você na disputa.'}
+                    ? `O Coliseu recomeçou e todo mundo está no zero. Um treino já coloca você na disputa da ${legion.name}.`
+                    : 'O Coliseu recomeçou e todo mundo está no zero. Um treino já coloca você na disputa.'}
                 </AppText>
               </Card>
             </Reveal>
@@ -228,12 +228,12 @@ export default function HomeScreen() {
                 <PressableScale
                   style={styles.statColumn}
                   accessibilityRole="button"
-                  accessibilityLabel={legion ? `Arena da ${legion.name}` : 'Arena: funde ou entre em uma Legião'}
+                  accessibilityLabel={legion ? `Coliseu da ${legion.name}` : 'Coliseu: funde ou entre em uma Legião'}
                   onPress={() => router.navigate(legion ? { pathname: '/arena', params: { legiao: legion.id } } : '/legiao')}>
                   <Card style={styles.stat}>
                     {legion ? (
                       <>
-                        <AppText variant="caption" tone="muted" numberOfLines={1}>{`Arena · ${legion.name}`}</AppText>
+                        <AppText variant="caption" tone="muted" numberOfLines={1}>{`Coliseu · ${legion.name}`}</AppText>
                         {me ? (
                           <RollingNumber value={me.place} suffix="º" variant="stat" accessibilityLabel={`${me.place}º lugar`} />
                         ) : (
@@ -249,7 +249,7 @@ export default function HomeScreen() {
                       </>
                     ) : legions.isSuccess ? (
                       <>
-                        <AppText variant="caption" tone="muted">Arena</AppText>
+                        <AppText variant="caption" tone="muted">Coliseu</AppText>
                         <AppText variant="bodyMedium">Sem Legião ainda</AppText>
                         <AppText variant="caption" tone="gold">Fundar ou entrar</AppText>
                       </>

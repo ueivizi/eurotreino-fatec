@@ -24,7 +24,7 @@ type Props = {
   summary: string;
   /** Rótulo da intensidade, para a linha da composição. */
   intensityLabel: string;
-  /** Frase da Arena quando a posição melhorou. */
+  /** Frase do Coliseu quando a posição melhorou. */
   arenaLine?: string | null;
   /** Texto pronto de "compartilhar treino", já no tom da modalidade. */
   shareMessage?: string;
@@ -187,7 +187,7 @@ export function WorkoutResult({
         {shareMessage ? (
           <Button label="Compartilhar treino" icon="compartilhar" variant="secondary" onPress={() => void share()} />
         ) : null}
-        {arenaLine && onOpenArena ? <Button label="Ver Arena" onPress={onOpenArena} /> : null}
+        {arenaLine && onOpenArena ? <Button label="Ver Coliseu" onPress={onOpenArena} /> : null}
         <Button
           label={pending > 0 ? 'Continuar' : 'Fechar'}
           variant={arenaLine && onOpenArena ? 'ghost' : 'primary'}

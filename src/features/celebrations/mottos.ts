@@ -19,5 +19,5 @@ export function mottoFor(tier: TierId): Motto | null {
   return tier === 1 ? null : MOTTOS[tier];
 }
 
-/** Lema da semana que recomeça: a Arena zera toda segunda, a Glória acumulada não. */
+/** Lema da semana que recomeça: o Coliseu zera toda segunda, a Glória acumulada não. */
 export const WEEK_RESTART_MOTTO: Motto = { latin: 'Festina lente', translation: 'Apressa-te devagar' };

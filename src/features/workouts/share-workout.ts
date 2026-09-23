@@ -68,10 +68,10 @@ export function ascensionShareMessage(totalGlory: number): string {
   return lines.join('\n');
 }
 
-/** Mensagem de posição na Arena: sem citar quem ficou para trás. */
+/** Mensagem de posição no Coliseu: sem citar quem ficou para trás. */
 export function arenaShareMessage(place: number, weekGlory: number): string {
   const position = place === 1 ? 'Assumi o 1º lugar' : `Cheguei ao ${place}º lugar`;
-  return `🏟️ ${position} na Arena da semana no EuroTreino, com ${weekGlory} de Glória.\n"Fortes fortuna adiuvat"`;
+  return `🏟️ ${position} no Coliseu da semana no EuroTreino, com ${weekGlory} de Glória.\n"Fortes fortuna adiuvat"`;
 }
 
 /** Resumo do perfil, para quem quer chamar os amigos sem expor a Legião. */

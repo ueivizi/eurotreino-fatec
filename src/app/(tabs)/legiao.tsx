@@ -48,10 +48,10 @@ export default function LegionScreen() {
           <View style={[styles.circle, { borderColor: colors.hairline }]}>
             <Icon name="legiao" size={40} color={colors.gold} />
           </View>
-          <AppText variant="heading" style={styles.center}>Sua Arena começa aqui</AppText>
+          <AppText variant="heading" style={styles.center}>Seu Coliseu começa aqui</AppText>
           <AppText tone="secondary" style={styles.center}>
             Funde uma Legião e convide seus amigos, ou entre com o código que alguém te mandou. Só quem está na
-            Legião vê a Arena e os perfis.
+            Legião vê o Coliseu e os perfis.
           </AppText>
         </View>
       ) : (

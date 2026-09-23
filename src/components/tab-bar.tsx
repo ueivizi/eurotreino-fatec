@@ -134,7 +134,7 @@ export function TabBar() {
         <TabButton label="Início" icon="inicio" />
       </TabTrigger>
       <TabTrigger name="arena" asChild>
-        <TabButton label="Arena" icon="arena" />
+        <TabButton label="Coliseu" icon="arena" />
       </TabTrigger>
       <RegisterButton />
       <TabTrigger name="legiao" asChild>

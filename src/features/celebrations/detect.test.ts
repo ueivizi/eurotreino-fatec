@@ -81,13 +81,13 @@ describe('celebrationsForWorkout', () => {
     expect(list).toEqual([]);
   });
 
-  it('mostra quem você ultrapassou na Arena, do mais próximo ao mais distante', () => {
+  it('mostra quem você ultrapassou no Coliseu, do mais próximo ao mais distante', () => {
     const before = [entry('a', 1, 60), entry('b', 2, 44), entry('c', 3, 30), entry('me', 4, 20, true)];
     const after = [entry('a', 1, 60), entry('me', 2, 46, true), entry('b', 3, 44), entry('c', 4, 30)];
     const [scene] = celebrationsForWorkout({ result: logged(), previousTotalWorkouts: 3, arenas: [arena(before, after)] });
 
     expect(scene).toMatchObject({ kind: 'arena', fromPlace: 4, toPlace: 2, passed: ['Membro c', 'Membro b'] });
-    if (scene?.kind !== 'arena') throw new Error('esperava a cena da Arena');
+    if (scene?.kind !== 'arena') throw new Error('esperava a cena do Coliseu');
     expect(scene.standings.map((row) => [row.userId, row.beforePlace, row.afterPlace])).toEqual([
       ['c', 3, 4],
       ['b', 2, 3],

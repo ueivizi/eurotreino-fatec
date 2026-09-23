@@ -32,7 +32,7 @@ export default function RanksScreen() {
 
       <AppText tone="secondary">
         A Glória acumulada define o rank e nunca diminui. Cada rank tem três divisões, III, II e I. A disputa semanal
-        entre amigos acontece à parte, na Arena.
+        entre amigos acontece à parte, no Coliseu.
       </AppText>
 
       {progress.isError ? <Notice tone="danger" message={errorMessage(progress.error)} /> : null}

@@ -78,7 +78,7 @@ const SAMPLES: { label: string; description: string; celebrations: Celebration[]
     ],
   },
   {
-    label: 'Subiu na Arena',
+    label: 'Subiu no Coliseu',
     description: '5º → 4º, passando a Bia',
     celebrations: [
       {
@@ -214,7 +214,7 @@ export function MotionGallery() {
             result={SAMPLE_RESULT}
             summary="Musculação · 50 min · Moderado"
             intensityLabel="Moderado"
-            arenaLine="Você assumiu o 1º lugar na Arena da Legião Fênix."
+            arenaLine="Você assumiu o 1º lugar no Coliseu da Legião Fênix."
             onClose={() => setReplay((value) => value + 1)}
             onOpenArena={() => enqueueCelebrations([PODIUM])}
           />

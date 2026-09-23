@@ -113,7 +113,7 @@ function MiniStandings({ standings, delay }: { standings: readonly ArenaStanding
 
 type Props = { celebration: Extract<Celebration, { kind: 'arena' }>; onContinue: () => void };
 
-/** Subiu na Arena. Entrar no pódio vira cerimônia com louros; subir fora dele, um cartão. */
+/** Subiu no Coliseu. Entrar no pódio vira cerimônia com louros; subir fora dele, um cartão. */
 export function ArenaScene({ celebration, onContinue }: Props) {
   const router = useRouter();
   const reduced = useReducedMotionPreference();
@@ -146,14 +146,14 @@ export function ArenaScene({ celebration, onContinue }: Props) {
     { label: 'Continuar', onPress: onContinue, variant: 'ghost' as const },
   ];
 
-  const announcement = `${celebration.toPlace}º lugar na Arena da ${celebration.legionName}. ${passedLine}`;
+  const announcement = `${celebration.toPlace}º lugar no Coliseu da ${celebration.legionName}. ${passedLine}`;
 
   if (!podium || !tone) {
     return (
       <SceneFrame layout="card" announcement={announcement} onSkip={onContinue} actions={actions} actionsDelay={1100}>
         <Reveal>
           <AppText variant="overline" tone="gold" style={styles.center} numberOfLines={1}>
-            {`Arena · ${celebration.legionName}`}
+            {`Coliseu · ${celebration.legionName}`}
           </AppText>
         </Reveal>
         <View style={styles.titleRow}>

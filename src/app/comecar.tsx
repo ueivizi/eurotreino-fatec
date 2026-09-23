@@ -48,7 +48,7 @@ export default function FirstLegionScreen() {
       <AppText variant="overline" tone="muted">3 de 3</AppText>
       <View style={styles.header}>
         <AppText variant="title">Treine com sua Legião</AppText>
-        <AppText variant="motto" tone="gold">A Arena é privada: só participa quem você convidar.</AppText>
+        <AppText variant="motto" tone="gold">O Coliseu é privado: só participa quem você convidar.</AppText>
       </View>
 
       <View style={styles.choices}>

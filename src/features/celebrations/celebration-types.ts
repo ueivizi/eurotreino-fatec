@@ -4,7 +4,7 @@ import type { TierId } from '@/features/ranks/tiers';
 /** Próxima divisão, para a frase "Faltam N para X". */
 export type NextStep = { label: string; min: number; remaining: number } | null;
 
-/** Linha do mini ranking da cena da Arena: posição antes e depois do treino. */
+/** Linha do mini ranking da cena do Coliseu: posição antes e depois do treino. */
 export type ArenaStanding = {
   userId: string;
   displayName: string;

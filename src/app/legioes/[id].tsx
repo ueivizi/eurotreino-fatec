@@ -193,7 +193,7 @@ export default function LegionDetailScreen() {
         <View style={styles.sectionHeader}>
           <AppText variant="subheading">Membros</AppText>
           <Button
-            label="Ver Arena"
+            label="Ver Coliseu"
             variant="ghost"
             icon="arena"
             onPress={() => router.navigate({ pathname: '/arena', params: { legiao: legion.id } })}
@@ -238,10 +238,10 @@ export default function LegionDetailScreen() {
           <Notice
             message={
               isOwner && legion.memberCount > 1
-                ? 'Você sai da Arena desta Legião e o membro mais antigo vira fundador. Sua Glória acumulada continua com você.'
+                ? 'Você sai do Coliseu desta Legião e o membro mais antigo vira fundador. Sua Glória acumulada continua com você.'
                 : legion.memberCount <= 1
                   ? 'Você é o último membro: a Legião será apagada. Sua Glória acumulada continua com você.'
-                  : 'Você sai da Arena desta Legião. Sua Glória acumulada continua com você.'
+                  : 'Você sai do Coliseu desta Legião. Sua Glória acumulada continua com você.'
             }
           />
           <Button label={leave.isPending ? 'Saindo…' : 'Sair da Legião'} variant="danger" onPress={() => leave.mutate()} disabled={leave.isPending} />
