@@ -190,12 +190,14 @@ function LoggedResult({
   now,
   onClose,
   onOpenArena,
+  onShareImage,
 }: {
   outcome: Extract<Outcome, { kind: 'logged' }>;
   draft: Draft;
   now: Date;
   onClose: () => void;
   onOpenArena: (legionId: string) => void;
+  onShareImage: (workoutId: string) => void;
 }) {
   const { arena } = outcome;
   return (
@@ -219,6 +221,7 @@ function LoggedResult({
       })}
       onClose={onClose}
       onOpenArena={arena ? () => onOpenArena(arena.legionId) : undefined}
+      onShareImage={() => onShareImage(outcome.logged.workoutId)}
     />
   );
 }
@@ -433,6 +436,13 @@ export default function RegisterWorkoutScreen() {
     router.navigate({ pathname: '/arena', params: { legiao: legionId } });
   };
 
+  // A imagem é montada a partir do histórico, e o treino mora no mês em que foi feito -- não no de hoje.
+  const openShare = (workoutId: string) => {
+    const at = performedAt ?? new Date();
+    const month = `${at.getFullYear()}-${String(at.getMonth() + 1).padStart(2, '0')}-01`;
+    router.push({ pathname: '/compartilhar/[id]', params: { id: workoutId, mes: month } });
+  };
+
   const days = availableDayOffsets(now);
   const dayValue = performedAt ? dayOffsetOf(performedAt, now) : -1;
   const dayOptions = [{ id: -1, label: 'Agora' }, ...days.map((offset) => ({ id: offset, label: DAY_LABELS[offset] }))];
@@ -461,7 +471,7 @@ export default function RegisterWorkoutScreen() {
         save.data.kind === 'queued' ? (
           <QueuedResult draft={draft} performedAt={save.data.performedAt} onClose={close} />
         ) : (
-          <LoggedResult outcome={save.data} draft={draft} now={now} onClose={close} onOpenArena={openArena} />
+          <LoggedResult outcome={save.data} draft={draft} now={now} onClose={close} onOpenArena={openArena} onShareImage={openShare} />
         )
       ) : (
         <>

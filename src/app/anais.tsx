@@ -132,6 +132,12 @@ function WorkoutRow({ workout, month, index }: { workout: HistoryWorkout; month:
           {workout.note ? (
             <AppText variant="caption" tone="muted">{`Anotado como "${workout.note}".`}</AppText>
           ) : null}
+          <Button
+            label="Compartilhar como imagem"
+            icon="compartilhar"
+            variant="ghost"
+            onPress={() => router.navigate({ pathname: '/compartilhar/[id]', params: { id: workout.id, mes: month } })}
+          />
           {/* Corrigir só vale na semana corrente: o Coliseu das passadas já foi disputado (RF014). */}
           {workout.canEdit ? (
             <Button
