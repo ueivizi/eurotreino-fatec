@@ -8,6 +8,7 @@ import { Button, tapFeedback } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Icon, type IconName } from '@/components/ui/icon';
 import { Notice } from '@/components/ui/notice';
+import { NumberField } from '@/components/ui/number-field';
 import { AppText } from '@/components/ui/text';
 import { TextField } from '@/components/ui/text-field';
 import { fetchWeeklyRanking } from '@/features/arena/arena-api';
@@ -43,7 +44,6 @@ import {
   SETS,
   WORKOUT_TYPES,
   intensityLabel,
-  stepDuration,
   workoutModule,
   workoutTypeLabel,
   type IntensityId,
@@ -157,6 +157,7 @@ function DetailRow({
   min,
   max,
   start,
+  decimals,
   disabled,
   onChange,
 }: {
@@ -169,12 +170,13 @@ function DetailRow({
   max: number;
   /** Valor sugerido ao ligar o detalhe. */
   start: number;
+  /** Medidas que aceitam meio quilo ou meio quilômetro. */
+  decimals?: boolean;
   disabled: boolean;
   onChange: (value: number | null) => void;
 }) {
   const { colors } = useTheme();
   const active = value !== null;
-  const clamp = (next: number) => Math.min(max, Math.max(min, Math.round(next / step) * step));
 
   return (
     <View style={styles.group}>
@@ -185,18 +187,16 @@ function DetailRow({
         </View>
         {active ? (
           <View style={styles.stepper}>
-            <StepButton
-              icon="menos"
-              label={`Diminuir ${label.toLowerCase()}`}
-              disabled={disabled || value <= min}
-              onPress={() => onChange(clamp(value - step))}
-            />
-            <AppText variant="bodyMedium" style={styles.value} accessibilityLiveRegion="polite">{format(value)}</AppText>
-            <StepButton
-              icon="mais"
-              label={`Aumentar ${label.toLowerCase()}`}
-              disabled={disabled || value >= max}
-              onPress={() => onChange(clamp(value + step))}
+            <NumberField
+              label={label}
+              value={value}
+              onChange={onChange}
+              min={min}
+              max={max}
+              step={step}
+              format={format}
+              decimals={decimals}
+              disabled={disabled}
             />
           </View>
         ) : (
@@ -588,18 +588,15 @@ export default function RegisterWorkoutScreen() {
               </AppText>
             </View>
             <View style={styles.stepper}>
-              <StepButton
-                icon="menos"
-                label="Diminuir 5 minutos"
-                disabled={disabled || minutes <= DURATION.min}
-                onPress={() => change(() => setMinutes((value) => stepDuration(value, -1)))}
-              />
-              <AppText variant="bodyMedium" style={styles.value} accessibilityLiveRegion="polite">{`${minutes} min`}</AppText>
-              <StepButton
-                icon="mais"
-                label="Aumentar 5 minutos"
-                disabled={disabled || minutes >= DURATION.max}
-                onPress={() => change(() => setMinutes((value) => stepDuration(value, 1)))}
+              <NumberField
+                label="Duração"
+                value={minutes}
+                onChange={(value) => change(() => setMinutes(value))}
+                min={DURATION.min}
+                max={DURATION.max}
+                step={DURATION.step}
+                format={(value) => `${value} min`}
+                disabled={disabled}
               />
             </View>
           </View>
@@ -677,9 +674,10 @@ export default function RegisterWorkoutScreen() {
                 value={loadKg}
                 format={formatLoad}
                 step={LOAD.step}
-                min={LOAD.step}
+                min={LOAD.min}
                 max={LOAD.max}
                 start={20}
+                decimals
                 disabled={disabled}
                 onChange={(value) => change(() => setLoadKg(value))}
               />

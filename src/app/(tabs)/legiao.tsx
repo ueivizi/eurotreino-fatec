@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { TabFade } from '@/components/motion/tab-fade';
 import { EmblemAvatar } from '@/components/rank/emblem-avatar';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
@@ -26,6 +27,7 @@ export default function LegionScreen() {
   const atLimit = list.length >= MAX_LEGIONS;
 
   return (
+    <TabFade>
     <ScrollView
       style={{ flex: 1, backgroundColor: colors.background }}
       contentContainerStyle={[styles.content, { paddingTop: insets.top + space.lg }]}
@@ -96,6 +98,7 @@ export default function LegionScreen() {
         </View>
       ) : null}
     </ScrollView>
+    </TabFade>
   );
 }
 

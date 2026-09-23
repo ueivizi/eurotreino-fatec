@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { TabFade } from '@/components/motion/tab-fade';
 import { EmblemAvatar } from '@/components/rank/emblem-avatar';
 import { RankMedallion } from '@/components/rank/rank-medallion';
 import { Button } from '@/components/ui/button';
@@ -48,6 +49,7 @@ export default function ProfileScreen() {
   const rank = progress.data ? rankFromGlory(progress.data.totalGlory) : null;
 
   return (
+    <TabFade>
     <ScrollView
       style={{ flex: 1, backgroundColor: colors.background }}
       contentContainerStyle={[styles.content, { paddingTop: insets.top + space.lg }]}
@@ -147,8 +149,8 @@ export default function ProfileScreen() {
         description="Aparência, privacidade, relógios e conta"
         onPress={() => router.push('/configuracoes')}
       />
-
     </ScrollView>
+    </TabFade>
   );
 }
 
