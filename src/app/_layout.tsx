@@ -123,6 +123,7 @@ function RootNavigator() {
         <Stack.Screen name="editar-perfil" />
         <Stack.Screen name="configuracoes" />
         <Stack.Screen name="anais" />
+        <Stack.Screen name="corrigir/[id]" />
         <Stack.Screen name="excluir-conta" />
         <Stack.Screen name="ranks" />
         <Stack.Screen name="recordes" />

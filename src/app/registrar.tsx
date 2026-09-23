@@ -6,6 +6,7 @@ import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { Button, tapFeedback } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { DetailRow } from '@/components/ui/detail-row';
 import { Icon, type IconName } from '@/components/ui/icon';
 import { Notice } from '@/components/ui/notice';
 import { NumberField } from '@/components/ui/number-field';
@@ -139,94 +140,6 @@ function Segmented<T extends string | number>({
           </Pressable>
         );
       })}
-    </View>
-  );
-}
-
-/**
- * Detalhe opcional da modalidade (distância, séries, carga). Começa desligado: o fluxo de 3 toques
- * continua intacto para quem só quer registrar e sair. Quem liga, ajusta com os mesmos passos do
- * resto da tela, sem teclado.
- */
-function DetailRow({
-  label,
-  hint,
-  value,
-  format,
-  step,
-  min,
-  max,
-  start,
-  decimals,
-  disabled,
-  onChange,
-}: {
-  label: string;
-  hint: string;
-  value: number | null;
-  format: (value: number) => string;
-  step: number;
-  min: number;
-  max: number;
-  /** Valor sugerido ao ligar o detalhe. */
-  start: number;
-  /** Medidas que aceitam meio quilo ou meio quilômetro. */
-  decimals?: boolean;
-  disabled: boolean;
-  onChange: (value: number | null) => void;
-}) {
-  const { colors } = useTheme();
-  const active = value !== null;
-
-  return (
-    <View style={styles.group}>
-      <View style={styles.row}>
-        <View style={styles.headerText}>
-          <AppText variant="bodyMedium">{label}</AppText>
-          <AppText variant="caption" tone="muted">{active ? hint : 'Opcional'}</AppText>
-        </View>
-        {active ? (
-          <View style={styles.stepper}>
-            <NumberField
-              label={label}
-              value={value}
-              onChange={onChange}
-              min={min}
-              max={max}
-              step={step}
-              format={format}
-              decimals={decimals}
-              disabled={disabled}
-            />
-          </View>
-        ) : (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`Informar ${label.toLowerCase()}`}
-            disabled={disabled}
-            onPress={() => {
-              tapFeedback();
-              onChange(start);
-            }}
-            style={[styles.whenChip, { borderColor: colors.hairline }]}>
-            <Icon name="mais" size={16} color={colors.gold} />
-            <AppText variant="label" tone="secondary">Informar</AppText>
-          </Pressable>
-        )}
-      </View>
-      {active ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`Remover ${label.toLowerCase()}`}
-          disabled={disabled}
-          onPress={() => {
-            tapFeedback();
-            onChange(null);
-          }}
-          style={styles.removeDetail}>
-          <AppText variant="caption" tone="muted">Remover</AppText>
-        </Pressable>
-      ) : null}
     </View>
   );
 }
@@ -847,12 +760,6 @@ const styles = StyleSheet.create({
     minHeight: touchTarget - 6,
     borderRadius: radius.sm,
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: space.xs,
-  },
-  removeDetail: {
-    alignSelf: 'flex-end',
-    minHeight: touchTarget - 16,
     justifyContent: 'center',
     paddingHorizontal: space.xs,
   },

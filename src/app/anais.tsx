@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -58,8 +59,9 @@ function timeOf(date: Date): string {
 }
 
 /** Uma linha de treino: o que foi, quando, e o que rendeu. */
-function WorkoutRow({ workout, index }: { workout: HistoryWorkout; index: number }) {
+function WorkoutRow({ workout, month, index }: { workout: HistoryWorkout; month: string; index: number }) {
   const { colors } = useTheme();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const type = WORKOUT_TYPES.find((item) => item.id === workout.type);
 
@@ -129,6 +131,15 @@ function WorkoutRow({ workout, index }: { workout: HistoryWorkout; index: number
           )}
           {workout.note ? (
             <AppText variant="caption" tone="muted">{`Anotado como "${workout.note}".`}</AppText>
+          ) : null}
+          {/* Corrigir só vale na semana corrente: o Coliseu das passadas já foi disputado (RF014). */}
+          {workout.canEdit ? (
+            <Button
+              label="Corrigir treino"
+              icon="editar"
+              variant="ghost"
+              onPress={() => router.navigate({ pathname: '/corrigir/[id]', params: { id: workout.id, mes: month } })}
+            />
           ) : null}
         </Card>
       ) : null}
@@ -248,7 +259,7 @@ export default function HistoryScreen() {
       ) : (
         <View style={styles.list}>
           {shown.map((workout, index) => (
-            <WorkoutRow key={workout.id} workout={workout} index={index} />
+            <WorkoutRow key={workout.id} workout={workout} month={month} index={index} />
           ))}
         </View>
       )}

@@ -618,6 +618,26 @@ export type Database = {
         }[]
       }
       delete_routine: { Args: { p_routine_id: string }; Returns: boolean }
+      edit_workout: {
+        Args: {
+          p_avg_heart_rate?: number
+          p_distance_m?: number
+          p_duration_min: number
+          p_intensity: string
+          p_load_kg?: number
+          p_note?: string
+          p_sets_count?: number
+          p_workout_id: string
+          p_workout_type: string
+        }
+        Returns: {
+          is_scored: boolean
+          points: number
+          total_glory: number
+          week_glory: number
+          workout_id: string
+        }[]
+      }
       get_group_invite: {
         Args: { p_group_id: string }
         Returns: {
@@ -759,6 +779,7 @@ export type Database = {
         Returns: {
           avg_heart_rate: number
           bonus_points: number
+          can_edit: boolean
           distance_m: number
           duration_min: number
           duration_points: number

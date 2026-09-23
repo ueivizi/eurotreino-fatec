@@ -40,6 +40,12 @@ const MESSAGES: Record<string, string> = {
   routine_not_found: 'Esta ficha não existe mais.',
   invalid_sets_list: 'Confira as séries do treino: repetições de 1 a 200 e carga de meio em meio quilo.',
   sets_not_allowed: 'Séries valem só para musculação e funcional.',
+  // Anais e correção de treino
+  workout_not_found: 'Este treino não existe mais.',
+  week_closed: 'Esta semana já fechou. Só dá para corrigir treino da semana corrente — o Coliseu daquela semana já foi disputado.',
+  invalid_workout: 'Não foi possível identificar o treino.',
+  note_not_allowed: 'O campo livre existe só nas modalidades "outro".',
+  invalid_note: 'O campo livre tem no máximo 40 caracteres.',
   // Medidas de saúde
   health_consent_required: 'Ligue o registro de frequência cardíaca no Perfil antes de informá-la.',
   invalid_heart_rate: 'A frequência cardíaca vai de 30 a 240 bpm, e a média não passa da máxima.',
