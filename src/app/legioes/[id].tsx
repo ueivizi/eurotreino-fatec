@@ -189,6 +189,13 @@ export default function LegionDetailScreen() {
         )
       ) : null}
 
+      <Button
+        label="Abrir o Mural"
+        icon="mural"
+        variant="secondary"
+        onPress={() => router.push({ pathname: '/mural/[id]', params: { id: legion.id } })}
+      />
+
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <AppText variant="subheading">Membros</AppText>

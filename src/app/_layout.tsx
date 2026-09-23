@@ -120,6 +120,7 @@ function RootNavigator() {
         <Stack.Screen name="legioes/entrar" />
         <Stack.Screen name="legioes/[id]" />
         <Stack.Screen name="membro/[id]" />
+        <Stack.Screen name="mural/[id]" />
         <Stack.Screen name="editar-perfil" />
         <Stack.Screen name="configuracoes" />
         <Stack.Screen name="anais" />
