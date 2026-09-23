@@ -31,6 +31,7 @@ import {
   suggestedPerformedAt,
   withDayOffset,
 } from '@/features/workouts/performed-at';
+import { workoutWarnings } from '@/features/workouts/coherence';
 import { workoutShareMessage } from '@/features/workouts/share-workout';
 import { formatDistance, formatLoad, performanceFor } from '@/features/workouts/metrics';
 import {
@@ -411,6 +412,16 @@ export default function RegisterWorkoutScreen() {
     avgHeartRate: healthConsent ? avgHeartRate : null,
   };
 
+  /* Aviso, nunca bloqueio: quem registra sabe o que fez. Serve para o dedo que escorregou no
+     seletor, não para discutir o treino de ninguém. */
+  const warnings = workoutWarnings({
+    type: draft.type,
+    durationMin: draft.durationMin,
+    intensity: draft.intensity,
+    distanceM: draft.distanceM,
+    avgHeartRate: draft.avgHeartRate,
+  });
+
   const save = useMutation({
     mutationFn: async (): Promise<Outcome> => {
       const legion = legions.data?.[0] ?? null;
@@ -737,6 +748,10 @@ export default function RegisterWorkoutScreen() {
               </View>
             ) : null}
           </View>
+
+          {warnings.map((warning) => (
+            <Notice key={warning} message={warning} />
+          ))}
 
           <Button
             label={save.isPending ? 'Registrando…' : save.isError ? 'Tentar de novo' : 'Concluí'}
