@@ -156,6 +156,25 @@ export default function LiveSessionScreen() {
 
   const routine = current?.routineId ? routines.data?.find((item) => item.id === current.routineId) ?? null : null;
 
+  /*
+   * O exercício e os números da vez, calculados aqui em cima porque a notificação da tela
+   * bloqueada precisa deles guardados na sessão — e efeito não pode vir depois de um `return`.
+   */
+  const strength = current !== null && workoutModule(current.workoutType) !== 'resistencia';
+  const plannedIds = strength ? routine?.items.map((item) => item.exerciseId) ?? [] : [];
+  const exerciseIds = strength ? [...plannedIds, ...extra.filter((id) => !plannedIds.includes(id))] : [];
+  const focusId = exerciseIds[Math.min(focusIndex, Math.max(exerciseIds.length - 1, 0))] ?? null;
+  const plannedFocus = focusId ? routine?.items.find((item) => item.exerciseId === focusId) ?? null : null;
+  const focusReps = focusId ? reps[focusId] ?? plannedFocus?.targetReps ?? 10 : 0;
+  const focusLoad = focusId ? loads[focusId] ?? plannedFocus?.targetLoadKg ?? 0 : 0;
+  const focusName = focusId ? catalog.data?.exercises.find((item) => item.id === focusId)?.name ?? focusId : null;
+
+  const applyFocus = session.setFocus;
+  useEffect(() => {
+    if (!focusId || !focusName) return;
+    void applyFocus({ exerciseId: focusId, exerciseName: focusName, reps: focusReps, loadKg: focusLoad > 0 ? focusLoad : null });
+  }, [applyFocus, focusId, focusName, focusReps, focusLoad]);
+
   const finish = useMutation({
     mutationFn: async (): Promise<StrengthOutcome> => {
       if (!current) throw new Error('sem sessão');
@@ -220,7 +239,8 @@ export default function LiveSessionScreen() {
   });
 
   async function begin(routineId: string | null) {
-    await session.start({ workoutType: type, requestId: randomUUID(), routineId });
+    const routineName = routineId ? routines.data?.find((item) => item.id === routineId)?.name ?? null : null;
+    await session.start({ workoutType: type, requestId: randomUUID(), routineId, routineName });
     setNow(new Date());
   }
 
@@ -344,9 +364,7 @@ export default function LiveSessionScreen() {
   }
 
   const elapsed = elapsedMs(current, now);
-  const isEndurance = workoutModule(current.workoutType) === 'resistencia';
-  const plannedIds = isEndurance ? [] : routine?.items.map((item) => item.exerciseId) ?? [];
-  const exerciseIds = isEndurance ? [] : [...plannedIds, ...extra.filter((id) => !plannedIds.includes(id))];
+  const isEndurance = !strength;
   const totalSets = current.sets.length;
 
   const plannedFor = (exerciseId: string) => routine?.items.find((item) => item.exerciseId === exerciseId) ?? null;
@@ -354,7 +372,6 @@ export default function LiveSessionScreen() {
     const planned = plannedFor(exerciseId);
     return planned !== null && setsOf(current, exerciseId).length >= planned.targetSets;
   };
-  const focusId = exerciseIds[Math.min(focusIndex, Math.max(exerciseIds.length - 1, 0))] ?? null;
 
   return (
     <ScrollView

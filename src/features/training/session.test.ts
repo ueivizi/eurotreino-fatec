@@ -13,9 +13,11 @@ import {
   pauseSession,
   removeLastSet,
   resumeSession,
+  setFocus,
   setsOf,
   startSession,
 } from './session';
+import { notificationText } from './session-notification';
 
 const USER = 'f8c21c6c-4628-42d3-97da-545f780926a2';
 const REQUEST = '8f14e45f-ceea-467a-9575-28262f7a6b26';
@@ -161,5 +163,44 @@ describe('voltas', () => {
     expect(parseSession(JSON.stringify({ ...session, laps: [1000, 500] }))).toBeNull();
     expect(parseSession(JSON.stringify({ ...session, laps: [-1] }))).toBeNull();
     expect(parseSession(JSON.stringify({ ...session, laps: ['x'] }))).toBeNull();
+  });
+});
+
+describe('o que a notificação mostra', () => {
+  const focus = { exerciseId: 'supino', exerciseName: 'Supino reto com barra', reps: 10, loadKg: 62.5 };
+
+  it('guarda o foco e não grava de novo quando nada mudou', () => {
+    const session = setFocus(newSession(), focus);
+    expect(session.focus).toEqual(focus);
+    // Mesma referência: sem mudança, nada de repintar notificação nem gravar no aparelho.
+    expect(setFocus(session, { ...focus })).toBe(session);
+    expect(setFocus(session, { ...focus, reps: 12 })).not.toBe(session);
+  });
+
+  it('sessão guardada antes do foco continua abrindo', () => {
+    const { focus: _sem, ...antiga } = newSession();
+    expect(parseSession(JSON.stringify(antiga))?.focus).toBeNull();
+    expect(parseSession(JSON.stringify({ ...antiga, focus: { exerciseId: 'x' } }))).toBeNull();
+  });
+
+  it('na força, diz o exercício, a série da vez e os números', () => {
+    const session = addSet(setFocus(newSession(), focus), { exerciseId: 'supino', reps: 10, loadKg: 62.5 }, at(5));
+    const { title, body } = notificationText(session, { exerciseName: focus.exerciseName, routineName: 'UPPER' }, at(10));
+    expect(title).toBe('UPPER · 10:00');
+    expect(body).toBe('Supino reto com barra · série 2 · 10 reps · 62,5 kg');
+  });
+
+  it('na resistência, diz as voltas; pausado, diz que está pausado', () => {
+    const bike = startSession({ userId: USER, workoutType: 'bike', requestId: REQUEST, now: START });
+    expect(notificationText(bike, { exerciseName: null, routineName: null }, at(3)).body).toBe('Sem voltas marcadas');
+    const comVolta = addLap(bike, at(4));
+    expect(notificationText(comVolta, { exerciseName: null, routineName: null }, at(4)).body).toBe('1 volta');
+    const pausada = pauseSession(comVolta, at(5));
+    expect(notificationText(pausada, { exerciseName: null, routineName: null }, at(9)).title).toBe('Bike · pausado em 5:00');
+  });
+
+  it('peso livre aparece como peso livre', () => {
+    const session = setFocus(newSession(), { ...focus, loadKg: null });
+    expect(notificationText(session, { exerciseName: focus.exerciseName, routineName: null }, at(1)).body).toContain('peso livre');
   });
 });
