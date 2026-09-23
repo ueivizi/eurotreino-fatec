@@ -10,6 +10,7 @@ import { Reveal } from '@/components/motion/reveal';
 import { useReducedMotionPreference } from '@/components/motion/reduced-motion';
 import { RollingNumber } from '@/components/motion/rolling-number';
 import { Skeleton } from '@/components/motion/skeleton';
+import { TabFade } from '@/components/motion/tab-fade';
 import { EmblemAvatar, type Laurel } from '@/components/rank/emblem-avatar';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
@@ -134,6 +135,7 @@ export default function ArenaScreen() {
   const podiumKey = `${legion?.id ?? ''}:${weekOffset}`;
 
   return (
+    <TabFade>
     <ScrollView
       style={{ flex: 1, backgroundColor: colors.background }}
       contentContainerStyle={[styles.content, { paddingTop: insets.top + space.lg }]}
@@ -291,6 +293,7 @@ export default function ArenaScreen() {
         </>
       )}
     </ScrollView>
+    </TabFade>
   );
 }
 

@@ -10,6 +10,7 @@ import { Reveal } from '@/components/motion/reveal';
 import { RollingNumber } from '@/components/motion/rolling-number';
 import { Shimmer } from '@/components/motion/shimmer';
 import { Skeleton } from '@/components/motion/skeleton';
+import { TabFade } from '@/components/motion/tab-fade';
 import { EmblemAvatar } from '@/components/rank/emblem-avatar';
 import { RankMedallion } from '@/components/rank/rank-medallion';
 import { Button } from '@/components/ui/button';
@@ -121,6 +122,7 @@ export default function HomeScreen() {
   const refreshing = progress.isRefetching || legions.isRefetching || ranking.isRefetching;
 
   return (
+    <TabFade>
     <ScrollView
       style={{ flex: 1, backgroundColor: colors.background }}
       contentContainerStyle={[styles.content, { paddingTop: insets.top + space.lg }]}
@@ -314,6 +316,7 @@ export default function HomeScreen() {
         ) : null}
       </Reveal>
     </ScrollView>
+    </TabFade>
   );
 }
 

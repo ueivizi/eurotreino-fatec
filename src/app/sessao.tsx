@@ -12,11 +12,11 @@ import { RollingNumber } from '@/components/motion/rolling-number';
 import { ScreenHeader } from '@/components/screen-header';
 import { Button, tapFeedback } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Icon, type IconName } from '@/components/ui/icon';
+import { Icon } from '@/components/ui/icon';
 import { Notice } from '@/components/ui/notice';
+import { NumberField } from '@/components/ui/number-field';
 import { SegmentedControl } from '@/components/ui/segmented-control';
 import { AppText } from '@/components/ui/text';
-import { TextField } from '@/components/ui/text-field';
 import { useProfile } from '@/features/auth/session';
 import { healthConnect } from '@/features/devices/health-connect';
 import { matchingWorkout } from '@/features/devices/imported-workout';
@@ -61,29 +61,6 @@ const SESSION_TYPES = WORKOUT_TYPES.filter((type) =>
   ['musculacao', 'funcional', 'corrida', 'bike', 'natacao'].includes(type.id),
 );
 
-function StepButton({ icon, label, onPress, disabled }: { icon: IconName; label: string; onPress: () => void; disabled?: boolean }) {
-  const { colors } = useTheme();
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      accessibilityState={{ disabled: disabled === true }}
-      disabled={disabled}
-      onPress={() => {
-        tapFeedback();
-        onPress();
-      }}
-      style={[styles.stepButton, { borderColor: colors.hairline, opacity: disabled ? 0.4 : 1 }]}>
-      <Icon name={icon} size={16} color={colors.gold} strokeWidth={1.8} />
-    </Pressable>
-  );
-}
-
-/**
- * Sessão de treino ao vivo. O cronômetro conta a partir dos instantes guardados no aparelho, então
- * fechar o app, trancar a tela ou ficar sem bateria não perde o treino. Só ao finalizar é que o
- * registro vai para o servidor — e lá a Glória continua vindo da regra v1 de sempre.
- */
 /**
  * Exercício concluído: a ficha previa N séries e elas saíram. Um selo de ouro cobre o cartão por
  * um instante antes de passar para o próximo -- é a cerimônia miúda que o treino de força não
@@ -115,6 +92,11 @@ function ExerciseDone({ name, sets }: { name: string; sets: number }) {
   );
 }
 
+/**
+ * Sessão de treino ao vivo. O cronômetro conta a partir dos instantes guardados no aparelho, então
+ * fechar o app, trancar a tela ou ficar sem bateria não perde o treino. Só ao finalizar é que o
+ * registro vai para o servidor — e lá a Glória continua vindo da regra v1 de sempre.
+ */
 export default function LiveSessionScreen() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
@@ -142,7 +124,6 @@ export default function LiveSessionScreen() {
   const [focusIndex, setFocusIndex] = useState(0);
   /** Exercício que acabou de fechar o previsto, e para qual índice ir depois do selo. */
   const [doneExercise, setDoneExercise] = useState<{ id: string; next: number } | null>(null);
-  const [typing, setTyping] = useState<'reps' | 'carga' | null>(null);
   const [outcome, setOutcome] = useState<StrengthOutcome | null>(null);
 
   const current = session.current;
@@ -510,74 +491,33 @@ export default function LiveSessionScreen() {
                   </AppText>
                 ) : null}
 
-                {typing === 'reps' ? (
-                  <TextField
-                    label="Repetições"
-                    value={String(repsValue)}
-                    onChangeText={(text) => {
-                      const digits = Number(text.replace(/[^0-9]/g, ''));
-                      setReps({ ...reps, [focusId]: Math.min(REPS.max, Math.max(REPS.min, digits || REPS.min)) });
-                    }}
-                    keyboardType="number-pad"
-                    autoFocus
-                    returnKeyType="done"
-                    onBlur={() => setTyping(null)}
-                    onSubmitEditing={() => setTyping(null)}
-                    hint="Toque em concluído para voltar aos botões"
-                  />
-                ) : typing === 'carga' ? (
-                  <TextField
-                    label="Carga (kg)"
-                    value={loadValue > 0 ? String(loadValue) : ''}
-                    onChangeText={(text) => {
-                      const clean = Number(text.replace(',', '.').replace(/[^0-9.]/g, ''));
-                      setLoads({ ...loads, [focusId]: Number.isFinite(clean) ? Math.min(LOAD.max, Math.max(0, clean)) : 0 });
-                    }}
-                    keyboardType="decimal-pad"
-                    autoFocus
-                    returnKeyType="done"
-                    onBlur={() => setTyping(null)}
-                    onSubmitEditing={() => setTyping(null)}
-                    hint="Vazio quer dizer peso livre"
-                  />
-                ) : (
-                  <View style={styles.controls}>
-                    <View style={styles.control}>
-                      <AppText variant="caption" tone="muted">Repetições</AppText>
-                      <View style={styles.stepper}>
-                        <StepButton icon="menos" label="Menos repetições" disabled={repsValue <= REPS.min} onPress={() => setReps({ ...reps, [focusId]: repsValue - 1 })} />
-                        <Pressable
-                          accessibilityRole="button"
-                          accessibilityLabel={`${repsValue} repetições. Toque para digitar.`}
-                          onPress={() => {
-                            tapFeedback();
-                            setTyping('reps');
-                          }}
-                          style={styles.typed}>
-                          <AppText variant="bodyMedium" style={styles.stepperValue}>{String(repsValue)}</AppText>
-                        </Pressable>
-                        <StepButton icon="mais" label="Mais repetições" disabled={repsValue >= REPS.max} onPress={() => setReps({ ...reps, [focusId]: repsValue + 1 })} />
-                      </View>
-                    </View>
-                    <View style={styles.control}>
-                      <AppText variant="caption" tone="muted">Carga</AppText>
-                      <View style={styles.stepper}>
-                        <StepButton icon="menos" label="Menos carga" disabled={loadValue <= 0} onPress={() => setLoads({ ...loads, [focusId]: Math.max(0, loadValue - LOAD.step) })} />
-                        <Pressable
-                          accessibilityRole="button"
-                          accessibilityLabel={`${loadValue > 0 ? `${loadValue} quilos` : 'Peso livre'}. Toque para digitar.`}
-                          onPress={() => {
-                            tapFeedback();
-                            setTyping('carga');
-                          }}
-                          style={styles.typed}>
-                          <AppText variant="bodyMedium" style={styles.stepperValue}>{loadValue > 0 ? formatLoad(loadValue) : 'Livre'}</AppText>
-                        </Pressable>
-                        <StepButton icon="mais" label="Mais carga" disabled={loadValue >= LOAD.max} onPress={() => setLoads({ ...loads, [focusId]: Math.min(LOAD.max, loadValue + LOAD.step) })} />
-                      </View>
-                    </View>
+                <View style={styles.controls}>
+                  <View style={styles.control}>
+                    <AppText variant="caption" tone="muted">Repetições</AppText>
+                    <NumberField
+                      label="Repetições"
+                      value={repsValue}
+                      onChange={(next) => setReps({ ...reps, [focusId]: next })}
+                      min={REPS.min}
+                      max={REPS.max}
+                      step={REPS.step}
+                      format={(next) => String(next)}
+                    />
                   </View>
-                )}
+                  <View style={styles.control}>
+                    <AppText variant="caption" tone="muted">Carga</AppText>
+                    <NumberField
+                      label="Carga"
+                      value={loadValue}
+                      onChange={(next) => setLoads({ ...loads, [focusId]: next })}
+                      min={0}
+                      max={LOAD.max}
+                      step={LOAD.step}
+                      format={(next) => (next > 0 ? formatLoad(next) : 'Livre')}
+                      decimals
+                    />
+                  </View>
+                </View>
 
                 <View style={styles.setActions}>
                   <PressableScale
@@ -696,19 +636,15 @@ export default function LiveSessionScreen() {
                   </AppText>
                 </View>
                 <View style={styles.stepper}>
-                  <StepButton
-                    icon="menos"
-                    label="Menos distância"
-                    disabled={distanceM === null}
-                    onPress={() => setDistanceM((value) => (value === null || value <= DISTANCE.step ? null : value - DISTANCE.step))}
-                  />
-                  <AppText variant="bodyMedium" style={styles.stepperValue}>
-                    {distanceM === null ? '—' : formatDistance(distanceM)}
-                  </AppText>
-                  <StepButton
-                    icon="mais"
-                    label="Mais distância"
-                    onPress={() => setDistanceM((value) => Math.min(DISTANCE.max, (value ?? 0) + DISTANCE.step))}
+                  {/* Zero quer dizer "não informei": o registro só manda distância acima disso. */}
+                  <NumberField
+                    label="Distância"
+                    value={distanceM ?? 0}
+                    onChange={(next) => setDistanceM(next > 0 ? next : null)}
+                    min={0}
+                    max={DISTANCE.max}
+                    step={DISTANCE.step}
+                    format={(next) => (next > 0 ? formatDistance(next) : '—')}
                   />
                 </View>
               </View>
@@ -720,19 +656,14 @@ export default function LiveSessionScreen() {
                     <AppText variant="caption" tone="muted">Dado de saúde: fica só com você.</AppText>
                   </View>
                   <View style={styles.stepper}>
-                    <StepButton
-                      icon="menos"
-                      label="Menos batimentos"
-                      disabled={avgHeartRate === null}
-                      onPress={() => setAvgHeartRate((value) => (value === null || value <= 30 ? null : value - 5))}
-                    />
-                    <AppText variant="bodyMedium" style={styles.stepperValue}>
-                      {avgHeartRate === null ? '—' : `${avgHeartRate} bpm`}
-                    </AppText>
-                    <StepButton
-                      icon="mais"
-                      label="Mais batimentos"
-                      onPress={() => setAvgHeartRate((value) => Math.min(240, (value ?? 135) + 5))}
+                    <NumberField
+                      label="Frequência cardíaca média"
+                      value={avgHeartRate ?? 0}
+                      onChange={(next) => setAvgHeartRate(next >= 30 ? next : null)}
+                      min={0}
+                      max={240}
+                      step={5}
+                      format={(next) => (next >= 30 ? `${next} bpm` : '—')}
                     />
                   </View>
                 </View>
