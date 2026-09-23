@@ -26,6 +26,9 @@ export const queryKeys = {
   invite: (legionId: string) => ['legions', legionId, 'invite'] as const,
   rankings: ['ranking'] as const,
   ranking: (legionId: string, weekOffset: 0 | -1) => ['ranking', legionId, weekOffset] as const,
+  /** Anais: os meses com treino e os treinos de um mês. */
+  historyMonths: ['history', 'months'] as const,
+  history: (month: string) => ['history', month] as const,
 };
 
 if (Platform.OS !== 'web') {
