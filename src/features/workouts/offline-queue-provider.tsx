@@ -116,6 +116,8 @@ export function OfflineQueueProvider({ children }: { children: ReactNode }) {
     if (sent > 0) {
       void queryClient.invalidateQueries({ queryKey: queryKeys.progress });
       void queryClient.invalidateQueries({ queryKey: queryKeys.rankings });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.weeklyGoal });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.historyAll });
     }
     if (failed.length > 0) setFailures((current) => [...current, ...failed]);
     return { sent, failed: failed.length, remaining: forUser(await readQueue(), userId).length };

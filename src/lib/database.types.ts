@@ -405,6 +405,35 @@ export type Database = {
           },
         ]
       }
+      weekly_goals: {
+        Row: {
+          set_at: string
+          target: number
+          user_id: string
+          week_start: string
+        }
+        Insert: {
+          set_at?: string
+          target: number
+          user_id: string
+          week_start: string
+        }
+        Update: {
+          set_at?: string
+          target?: number
+          user_id?: string
+          week_start?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "weekly_goals_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       workout_sets: {
         Row: {
           exercise_id: string
@@ -766,6 +795,18 @@ export type Database = {
           workouts_count: number
         }[]
       }
+      my_weekly_goal: {
+        Args: never
+        Returns: {
+          days_done: number
+          days_trained: boolean[]
+          goal_met: boolean
+          streak_days: number
+          target: number
+          week_start: string
+          weeks_in_a_row: number
+        }[]
+      }
       my_workout_months: {
         Args: never
         Returns: {
@@ -833,6 +874,18 @@ export type Database = {
         }
       }
       set_health_consent: { Args: { p_granted: boolean }; Returns: string }
+      set_weekly_goal: {
+        Args: { p_target: number }
+        Returns: {
+          days_done: number
+          days_trained: boolean[]
+          goal_met: boolean
+          streak_days: number
+          target: number
+          week_start: string
+          weeks_in_a_row: number
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

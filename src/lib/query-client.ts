@@ -26,9 +26,12 @@ export const queryKeys = {
   invite: (legionId: string) => ['legions', legionId, 'invite'] as const,
   rankings: ['ranking'] as const,
   ranking: (legionId: string, weekOffset: 0 | -1) => ['ranking', legionId, weekOffset] as const,
-  /** Anais: os meses com treino e os treinos de um mês. */
+  /** Anais: os meses com treino e os treinos de um mês. `historyAll` alcança os dois de uma vez. */
+  historyAll: ['history'] as const,
   historyMonths: ['history', 'months'] as const,
   history: (month: string) => ['history', month] as const,
+  /** Juramento da semana: meta, dias cumpridos, sequência e Chama de Vesta. */
+  weeklyGoal: ['weekly-goal'] as const,
 };
 
 if (Platform.OS !== 'web') {

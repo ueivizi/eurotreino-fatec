@@ -128,6 +128,8 @@ function ImportCard({ workout, healthConsent }: { workout: ImportedWorkout; heal
       void queryClient.invalidateQueries({ queryKey: queryKeys.progress });
       void queryClient.invalidateQueries({ queryKey: queryKeys.rankings });
       void queryClient.invalidateQueries({ queryKey: queryKeys.records });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.weeklyGoal });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.historyAll });
       void queryClient.invalidateQueries({ queryKey: [...DEVICE_QUERY, 'recentes'] });
       enqueueCelebrations(celebrationsForWorkout({ result: logged, previousTotalWorkouts, arenas: [] }));
     },
