@@ -18,6 +18,8 @@ import { Icon } from '@/components/ui/icon';
 import { ProgressBar } from '@/components/ui/progress-bar';
 import { SegmentedControl } from '@/components/ui/segmented-control';
 import { AppText } from '@/components/ui/text';
+import { shareLayout, type ShareWorkout } from '@/features/share/layouts';
+import { ShareCard } from '@/features/share/share-card';
 import { INTENSITIES, type IntensityId } from '@/features/workouts/workout-types';
 import type { LoggedWorkout } from '@/features/workouts/workouts-parsers';
 import { useTheme } from '@/theme/theme';
@@ -128,6 +130,19 @@ const SAMPLE_RESULT: LoggedWorkout = {
   isDistanceRecord: false,
 };
 
+const SAMPLE_SHARE: ShareWorkout = {
+  type: 'corrida',
+  durationMin: 52,
+  intensity: 'intenso',
+  distanceM: 10200,
+  setsCount: null,
+  loadKg: null,
+  points: 20,
+  isScored: true,
+  note: null,
+  performedAt: new Date(2026, 8, 23, 19, 30),
+};
+
 function Section({ title, children }: { title: string; children: ReactNode }) {
   const { colors } = useTheme();
   return (
@@ -218,6 +233,23 @@ export function MotionGallery() {
             onClose={() => setReplay((value) => value + 1)}
             onOpenArena={() => enqueueCelebrations([PODIUM])}
           />
+        </Section>
+
+        <Section title="Imagem de partilha">
+          <View style={styles.kitBlock}>
+            <AppText variant="caption" tone="muted">
+              Cartão 9:16 gerado para compartilhar, sempre no Ônix. Com foto, o retrato entra no fundo.
+            </AppText>
+            <View style={styles.shareRow}>
+              <ShareCard layout={shareLayout(SAMPLE_SHARE)} displayName="Arthur" rankLabel="Centurião II" width={200} />
+              <ShareCard
+                layout={shareLayout({ ...SAMPLE_SHARE, type: 'musculacao', distanceM: null, setsCount: 16, loadKg: 82.5, note: null })}
+                displayName="Arthur"
+                rankLabel="Centurião II"
+                width={200}
+              />
+            </View>
+          </View>
         </Section>
 
         <Section title="Kit de movimento">
@@ -335,6 +367,11 @@ const styles = StyleSheet.create({
   },
   kitBlock: {
     gap: space.sm,
+  },
+  shareRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: space.md,
   },
   kitText: {
     flex: 1,

@@ -34,6 +34,8 @@ type Props = {
   recordLine?: string | null;
   onClose: () => void;
   onOpenArena?: () => void;
+  /** Abre o cartão de partilha em imagem, com ou sem foto. */
+  onShareImage?: () => void;
 };
 
 /** Composição dos pontos: cada linha entra em cascata logo depois do total. */
@@ -62,6 +64,7 @@ export function WorkoutResult({
   recordLine,
   onClose,
   onOpenArena,
+  onShareImage,
 }: Props) {
   const { colors } = useTheme();
   const pending = usePendingCelebrations();
@@ -184,8 +187,11 @@ export function WorkoutResult({
 
       <Reveal delay={1080} style={styles.actions}>
         {shareNote ? <Notice message={shareNote} /> : null}
+        {onShareImage ? (
+          <Button label="Compartilhar como imagem" icon="imagem" variant="secondary" onPress={onShareImage} />
+        ) : null}
         {shareMessage ? (
-          <Button label="Compartilhar treino" icon="compartilhar" variant="secondary" onPress={() => void share()} />
+          <Button label="Compartilhar em texto" icon="compartilhar" variant="ghost" onPress={() => void share()} />
         ) : null}
         {arenaLine && onOpenArena ? <Button label="Ver Coliseu" onPress={onOpenArena} /> : null}
         <Button

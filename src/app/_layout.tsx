@@ -124,6 +124,7 @@ function RootNavigator() {
         <Stack.Screen name="configuracoes" />
         <Stack.Screen name="anais" />
         <Stack.Screen name="corrigir/[id]" />
+        <Stack.Screen name="compartilhar/[id]" />
         <Stack.Screen name="meta" />
         <Stack.Screen name="excluir-conta" />
         <Stack.Screen name="ranks" />

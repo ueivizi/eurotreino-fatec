@@ -49,7 +49,15 @@
           }
         }
       ],
-      "@maplibre/maplibre-react-native"
+      "@maplibre/maplibre-react-native",
+      "expo-sharing",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Suas fotos são usadas só para montar a imagem do treino que você vai compartilhar. A foto não sai deste aparelho.",
+          "cameraPermission": "A câmera serve para a foto que entra na imagem do treino. A foto não sai deste aparelho."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
