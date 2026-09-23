@@ -32,6 +32,8 @@ export const queryKeys = {
   history: (month: string) => ['history', month] as const,
   /** Juramento da semana: meta, dias cumpridos, sequência e Chama de Vesta. */
   weeklyGoal: ['weekly-goal'] as const,
+  /** Mural de uma Legião. */
+  mural: (legionId: string) => ['mural', legionId] as const,
 };
 
 if (Platform.OS !== 'web') {

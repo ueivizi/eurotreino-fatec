@@ -48,6 +48,11 @@ const MESSAGES: Record<string, string> = {
   invalid_note: 'O campo livre tem no máximo 40 caracteres.',
   // Juramento da semana
   invalid_goal: 'A meta vai de 1 a 7 dias por semana.',
+  // Mural da Legião
+  invalid_message: 'A mensagem vai de 1 a 500 caracteres.',
+  link_not_allowed: 'O Mural não aceita link. Combine o treino por aqui e mande o endereço por fora.',
+  message_not_found: 'Esta mensagem não existe mais.',
+  cannot_report_own: 'Você não pode denunciar a própria mensagem. Se quiser, apague.',
   // Medidas de saúde
   health_consent_required: 'Ligue o registro de frequência cardíaca no Perfil antes de informá-la.',
   invalid_heart_rate: 'A frequência cardíaca vai de 30 a 240 bpm, e a média não passa da máxima.',

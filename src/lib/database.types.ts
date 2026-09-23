@@ -168,6 +168,54 @@ export type Database = {
           },
         ]
       }
+      group_messages: {
+        Row: {
+          author_id: string
+          body: string
+          cleared_at: string | null
+          created_at: string
+          group_id: string
+          hidden_at: string | null
+          id: string
+          reports_count: number
+        }
+        Insert: {
+          author_id: string
+          body: string
+          cleared_at?: string | null
+          created_at?: string
+          group_id: string
+          hidden_at?: string | null
+          id?: string
+          reports_count?: number
+        }
+        Update: {
+          author_id?: string
+          body?: string
+          cleared_at?: string | null
+          created_at?: string
+          group_id?: string
+          hidden_at?: string | null
+          id?: string
+          reports_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_messages_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_messages_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       groups: {
         Row: {
           created_at: string
@@ -252,6 +300,39 @@ export type Database = {
           name?: string
         }
         Relationships: []
+      }
+      message_reports: {
+        Row: {
+          message_id: string
+          reported_at: string
+          reporter_id: string
+        }
+        Insert: {
+          message_id: string
+          reported_at?: string
+          reporter_id: string
+        }
+        Update: {
+          message_id?: string
+          reported_at?: string
+          reporter_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_reports_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "group_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_reports_reporter_id_fkey"
+            columns: ["reporter_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       muscle_groups: {
         Row: {
@@ -595,6 +676,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      clear_message_reports: {
+        Args: { p_message_id: string }
+        Returns: undefined
+      }
       complete_profile: {
         Args: {
           p_display_name: string
@@ -646,6 +731,7 @@ export type Database = {
           name: string
         }[]
       }
+      delete_message: { Args: { p_message_id: string }; Returns: undefined }
       delete_routine: { Args: { p_routine_id: string }; Returns: boolean }
       edit_workout: {
         Args: {
@@ -672,6 +758,22 @@ export type Database = {
         Returns: {
           code: string
           expires_at: string
+        }[]
+      }
+      group_mural: {
+        Args: { p_before?: string; p_group_id: string }
+        Returns: {
+          author_id: string
+          body: string
+          created_at: string
+          display_name: string
+          emblem: string
+          emblem_color: string
+          is_held: boolean
+          is_mine: boolean
+          is_owner_message: boolean
+          message_id: string
+          reports_count: number
         }[]
       }
       group_weekly_ranking: {
@@ -839,6 +941,13 @@ export type Database = {
           workout_type: string
         }[]
       }
+      post_message: {
+        Args: { p_body: string; p_group_id: string }
+        Returns: {
+          created_at: string
+          message_id: string
+        }[]
+      }
       preview_invite: {
         Args: { p_code: string }
         Returns: {
@@ -854,6 +963,13 @@ export type Database = {
         Returns: {
           code: string
           expires_at: string
+        }[]
+      }
+      report_message: {
+        Args: { p_message_id: string }
+        Returns: {
+          is_held: boolean
+          reports_count: number
         }[]
       }
       save_routine: {
