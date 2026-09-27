@@ -16,6 +16,7 @@ import {
   fetchHistoryWorkouts,
   type HistoryWorkout,
 } from '@/features/workouts/history-api';
+import { gloryByDay } from '@/features/workouts/history-month';
 import { formatDistance, formatLoad, performanceFor } from '@/features/workouts/metrics';
 import { WORKOUT_TYPES, intensityLabel, workoutTypeLabel, type WorkoutTypeId } from '@/features/workouts/workout-types';
 import { queryKeys } from '@/lib/query-client';
@@ -56,6 +57,54 @@ function dayOf(date: Date): string {
 
 function timeOf(date: Date): string {
   return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+}
+
+/** Seta do mês: só o ícone, para o nome do mês caber inteiro em tela estreita. */
+function MonthArrow({ icon, label, target, onPress }: { icon: 'chevronLeft' | 'chevronRight'; label: string; target: string | null; onPress: (month: string) => void }) {
+  const { colors } = useTheme();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled: !target }}
+      disabled={!target}
+      onPress={() => target && onPress(target)}
+      style={[styles.arrow, { borderColor: colors.hairline, opacity: target ? 1 : 0.35 }]}>
+      <Icon name={icon} size={18} color={colors.gold} />
+    </Pressable>
+  );
+}
+
+/** Barras da Glória de cada dia do mês (quadro 7.3), com o dia 1, 7, 14, 21 e 28 marcados embaixo. */
+function MonthBars({ days }: { days: number[] }) {
+  const { colors } = useTheme();
+  const max = Math.max(...days, 0);
+  const scored = days.flatMap((glory, index) => (glory > 0 ? [`dia ${index + 1}, ${glory}`] : []));
+  return (
+    <View accessible accessibilityLabel={scored.length ? `Glória por dia: ${scored.join('; ')}` : 'Nenhuma Glória neste mês'}>
+      <View style={styles.bars}>
+        {days.map((glory, index) => (
+          <View key={index} style={styles.barSlot}>
+            <View
+              style={[
+                styles.bar,
+                glory > 0
+                  ? { height: `${Math.max(12, (glory / max) * 100)}%`, backgroundColor: colors.gold }
+                  : { height: 2, backgroundColor: colors.hairlineSoft },
+              ]}
+            />
+          </View>
+        ))}
+      </View>
+      <View style={styles.axis}>
+        {[1, 7, 14, 21, 28].map((day) => (
+          <AppText key={day} variant="caption" tone="muted" style={[styles.tick, { left: `${((day - 0.5) / days.length) * 100}%` }]}>
+            {String(day)}
+          </AppText>
+        ))}
+      </View>
+    </View>
+  );
 }
 
 /** Uma linha de treino: o que foi, quando, e o que rendeu. */
@@ -109,7 +158,7 @@ function WorkoutRow({ workout, month, index }: { workout: HistoryWorkout; month:
 
         <View style={styles.points}>
           <AppText variant="bodyMedium" tone={workout.isScored ? 'goldHighlight' : 'muted'}>
-            {workout.isScored ? `+${workout.points}` : '—'}
+            {workout.isScored ? `+${workout.points}` : '+0'}
           </AppText>
         </View>
       </Pressable>
@@ -189,30 +238,21 @@ export default function HistoryScreen() {
       }>
       <ScreenHeader title="Anais" subtitle="Tudo o que você já registrou" />
 
-      <View style={styles.monthRow}>
-        <Button
-          label="Anterior"
-          icon="chevronLeft"
-          variant="ghost"
-          disabled={!older}
-          onPress={() => older && setMonth(older)}
-        />
-        <View style={styles.monthText}>
-          <AppText variant="subheading" numberOfLines={1}>{monthLabel(month)}</AppText>
-          <AppText variant="caption" tone="muted">
-            {summary
-              ? `${summary.workoutsCount} ${summary.workoutsCount === 1 ? 'treino' : 'treinos'} · ${summary.glory} de Glória`
-              : 'Nenhum treino neste mês'}
-          </AppText>
+      <Card style={styles.monthCard}>
+        <View style={styles.monthRow}>
+          <MonthArrow icon="chevronLeft" label="Mês anterior" target={older} onPress={setMonth} />
+          <View style={styles.monthText}>
+            <AppText variant="overline" tone="gold" numberOfLines={1}>{monthLabel(month)}</AppText>
+            <AppText variant="caption" tone="muted" numberOfLines={1}>
+              {summary
+                ? `${summary.workoutsCount} ${summary.workoutsCount === 1 ? 'treino' : 'treinos'} · ${summary.glory} de Glória`
+                : 'Nenhum treino neste mês'}
+            </AppText>
+          </View>
+          <MonthArrow icon="chevronRight" label="Mês seguinte" target={newer} onPress={setMonth} />
         </View>
-        <Button
-          label="Seguinte"
-          icon="chevronRight"
-          variant="ghost"
-          disabled={!newer}
-          onPress={() => newer && setMonth(newer)}
-        />
-      </View>
+        {workouts.data && workouts.data.length > 0 ? <MonthBars days={gloryByDay(shown, month)} /> : null}
+      </Card>
 
       {types.length > 1 ? (
         <View style={styles.chips} accessibilityRole="radiogroup" accessibilityLabel="Filtrar por modalidade">
@@ -283,6 +323,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.xl,
     gap: space.lg,
   },
+  monthCard: {
+    gap: space.md,
+  },
   monthRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -291,6 +334,39 @@ const styles = StyleSheet.create({
   monthText: {
     flex: 1,
     alignItems: 'center',
+    gap: 2,
+  },
+  arrow: {
+    width: touchTarget,
+    height: touchTarget,
+    borderWidth: 1,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bars: {
+    height: 56,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 2,
+  },
+  barSlot: {
+    flex: 1,
+    height: '100%',
+    justifyContent: 'flex-end',
+  },
+  bar: {
+    borderRadius: 1,
+  },
+  axis: {
+    height: 16,
+    marginTop: space.xs,
+  },
+  tick: {
+    position: 'absolute',
+    width: 24,
+    marginLeft: -12,
+    textAlign: 'center',
   },
   chips: {
     flexDirection: 'row',
