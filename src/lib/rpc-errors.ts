@@ -53,8 +53,16 @@ const MESSAGES: Record<string, string> = {
   link_not_allowed: 'O Mural não aceita link. Combine o treino por aqui e mande o endereço por fora.',
   message_not_found: 'Esta mensagem não existe mais.',
   cannot_report_own: 'Você não pode denunciar a própria mensagem. Se quiser, apague.',
+  // Estandarte e modos de Legião
+  invalid_emblem_color: 'Escolha uma das cores.',
+  invalid_group_mode: 'Escolha entre Legião clássica e competitiva.',
+  invalid_weekly_minimum: 'Na Legião competitiva, o mínimo é de 2, 3 ou 4 treinos por semana.',
+  minimum_locked: 'O mínimo fica o mesmo enquanto a Legião é competitiva. Para mudar, volte para clássica e recomece.',
+  not_competitive: 'Esta Legião é clássica: não tem temporada nem Louros.',
+  invalid_season_offset: 'Temporada indisponível.',
+  member_not_found: 'Este perfil não está em nenhuma das suas Legiões.',
   // Medidas de saúde
-  health_consent_required: 'Ligue o registro de frequência cardíaca no Perfil antes de informá-la.',
+  health_consent_required: 'Ligue o registro de frequência cardíaca em Configurações antes de informá-la.',
   invalid_heart_rate: 'A frequência cardíaca vai de 30 a 240 bpm, e a média não passa da máxima.',
   invalid_consent: 'Não foi possível salvar essa escolha. Tente de novo.',
 };

@@ -1,3 +1,4 @@
+import type { TrophyKind } from '@/features/legions/louros';
 import type { EmblemColor, EmblemName } from '@/features/profile/emblems';
 import type { TierId } from '@/features/ranks/tiers';
 
@@ -56,6 +57,8 @@ export type Celebration =
   | { kind: 'constancy'; bonus: number; weekGlory: number }
   | { kind: 'first-workout' }
   | { kind: 'medal'; title: string; description: string }
-  | { kind: 'record'; exercise: string; previous: number; current: number; unit: 'kg' };
+  | { kind: 'record'; exercise: string; previous: number; current: number; unit: 'kg' }
+  /** Triunfo de temporada competitiva, apurado pelo servidor. */
+  | { kind: 'trophy'; trophy: TrophyKind; legionName: string | null; louros: number };
 
 export type CelebrationKind = Celebration['kind'];

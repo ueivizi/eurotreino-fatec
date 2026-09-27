@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { EmblemAvatar } from '@/components/rank/emblem-avatar';
+import { LegionBanner } from '@/components/legion/legion-banner';
+import { ModeBadge } from '@/components/legion/legion-hero';
 import { ScreenHeader } from '@/components/screen-header';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -129,13 +130,21 @@ export default function JoinLegionScreen() {
 
         {previewData?.status === 'ok' ? (
           <View style={styles.previewBlock}>
+            {/* Quadro 2.3: o convite mostra o estandarte, e o modo aparece antes de a pessoa entrar. */}
             <Card style={styles.preview}>
-              <EmblemAvatar emblem={previewData.emblem} size={64} />
+              <LegionBanner emblem={previewData.emblem} color={previewData.bannerColor} width={64} />
               <View style={styles.previewText}>
+                <AppText variant="caption" tone="muted">Convite para</AppText>
                 <AppText variant="heading" numberOfLines={2}>{previewData.name}</AppText>
                 <AppText variant="label" tone="muted">{`${previewData.memberCount} de 50 membros`}</AppText>
+                <ModeBadge mode={previewData.mode} weeklyMinimum={previewData.weeklyMinimum} />
               </View>
             </Card>
+            {previewData.mode === 'competitiva' && !previewData.isMember ? (
+              <Notice
+                message={`Legião competitiva: abaixo de ${previewData.weeklyMinimum} treinos por semana, você perde Louros da temporada. A sua Glória não cai.`}
+              />
+            ) : null}
 
             {previewData.isMember ? (
               <>
@@ -174,5 +183,6 @@ const styles = StyleSheet.create({
   previewText: {
     flex: 1,
     gap: space.xs,
+    alignItems: 'flex-start',
   },
 });

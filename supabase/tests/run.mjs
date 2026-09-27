@@ -117,6 +117,17 @@ async function checkSyncWithApp(db) {
     { accepted: [...EMBLEM_COLORS].sort(), accepts_unknown: false },
   );
 
+  // Louros: a tela explica e projeta com a mesma regra que o banco usa para contar.
+  const { lourosForWeek } = await importApp('src/features/legions/louros.ts');
+  const lourosCases = [true, false].flatMap((counts) =>
+    [true, false].flatMap((met) => [null, 1, 2, 3, 4].map((place) => ({ counts, met, place }))),
+  );
+  const louros = await db.query(
+    'select array_agg(private.louros_delta(c.counts, c.met, c.place) order by c.ord) as deltas from rows from (jsonb_to_recordset($1::jsonb) as (counts boolean, met boolean, place integer)) with ordinality as c (counts, met, place, ord)',
+    [JSON.stringify(lourosCases)],
+  );
+  check('Louros do app iguais aos do banco', louros.rows[0].deltas, lourosCases.map((c) => lourosForWeek(c)));
+
   const { isValidDisplayName } = await importApp('src/features/profile/display-name.ts');
   const decomposed = `Te${String.fromCharCode(0x301)}o`;
   const names = ['Lu', 'Digão', "D'Ávila", 'Ana-Clara', 'Jr.', 'Rafa 2', 'A', 'a'.repeat(32), 'a'.repeat(33), ' Ana', 'Ana ',

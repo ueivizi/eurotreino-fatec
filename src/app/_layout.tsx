@@ -119,6 +119,7 @@ function RootNavigator() {
         <Stack.Screen name="legioes/nova" />
         <Stack.Screen name="legioes/entrar" />
         <Stack.Screen name="legioes/[id]" />
+        <Stack.Screen name="legioes/estandarte/[id]" />
         <Stack.Screen name="membro/[id]" />
         <Stack.Screen name="mural/[id]" />
         <Stack.Screen name="editar-perfil" />

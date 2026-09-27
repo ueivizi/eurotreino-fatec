@@ -26,6 +26,10 @@ export const queryKeys = {
   invite: (legionId: string) => ['legions', legionId, 'invite'] as const,
   rankings: ['ranking'] as const,
   ranking: (legionId: string, weekOffset: 0 | -1) => ['ranking', legionId, weekOffset] as const,
+  /** Tabela da temporada competitiva: fica sob `rankings`, que todo registro de treino invalida. */
+  season: (legionId: string, seasonOffset: 0 | -1) => ['ranking', legionId, 'temporada', seasonOffset] as const,
+  /** Triunfos de um perfil ('eu' para o próprio). */
+  trophies: (userId: string) => ['trophies', userId] as const,
   /** Anais: os meses com treino e os treinos de um mês. `historyAll` alcança os dois de uma vez. */
   historyAll: ['history'] as const,
   historyMonths: ['history', 'months'] as const,

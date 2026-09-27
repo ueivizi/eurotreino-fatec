@@ -12,11 +12,35 @@ const ID = '3f1c2b1e-6a0d-4b8e-9d7a-2c5e8f9a1b3c';
 const OTHER_ID = '9b2d7e4a-1c3f-4a5b-8e6d-7f0a1b2c3d4e';
 
 describe('parseMyLegions', () => {
-  const row = { group_id: ID, name: 'Legião Fênix', emblem: 'aguia', role: 'owner', member_count: 4, joined_at: '2026-09-14T12:00:00+00:00' };
+  const row = {
+    group_id: ID,
+    name: 'Legião Fênix',
+    emblem: 'aguia',
+    banner_color: 'porfiro',
+    mode: 'classica',
+    weekly_minimum: null,
+    mode_since: null,
+    role: 'owner',
+    member_count: 4,
+    joined_at: '2026-09-14T12:00:00+00:00',
+  };
+  const competitiva = { ...row, banner_color: 'oliva', mode: 'competitiva', weekly_minimum: 3, mode_since: '2026-09-28' };
 
-  it('converte a lista de Legiões', () => {
-    expect(parseMyLegions([row])).toEqual([
-      { id: ID, name: 'Legião Fênix', emblem: 'aguia', role: 'owner', memberCount: 4, joinedAt: '2026-09-14T12:00:00+00:00' },
+  it('converte a lista de Legiões, com estandarte e modo', () => {
+    expect(parseMyLegions([row, competitiva])).toEqual([
+      {
+        id: ID,
+        name: 'Legião Fênix',
+        emblem: 'aguia',
+        bannerColor: 'porfiro',
+        mode: 'classica',
+        weeklyMinimum: null,
+        modeSince: null,
+        role: 'owner',
+        memberCount: 4,
+        joinedAt: '2026-09-14T12:00:00+00:00',
+      },
+      expect.objectContaining({ bannerColor: 'oliva', mode: 'competitiva', weeklyMinimum: 3, modeSince: '2026-09-28' }),
     ]);
     expect(parseMyLegions([])).toEqual([]);
   });
@@ -26,6 +50,14 @@ describe('parseMyLegions', () => {
     expect(parseMyLegions([{ ...row, emblem: 'quimera' }])).toBeNull();
     expect(parseMyLegions([{ ...row, member_count: -1 }])).toBeNull();
     expect(parseMyLegions({ rows: [row] })).toBeNull();
+  });
+
+  it('recusa estandarte e modo incoerentes', () => {
+    expect(parseMyLegions([{ ...row, banner_color: 'rosa' }])).toBeNull();
+    expect(parseMyLegions([{ ...row, mode: 'hardcore' }])).toBeNull();
+    expect(parseMyLegions([{ ...row, weekly_minimum: 3 }])).toBeNull();
+    expect(parseMyLegions([{ ...competitiva, weekly_minimum: 5 }])).toBeNull();
+    expect(parseMyLegions([{ ...competitiva, mode_since: null }])).toBeNull();
   });
 });
 
@@ -37,9 +69,28 @@ describe('convites', () => {
     });
     expect(
       parseCreatedLegion([
-        { group_id: ID, name: 'Legião Fênix', emblem: 'loba', invite_code: 'ABCD2345', invite_expires_at: '2026-09-21T12:00:00Z' },
+        {
+          group_id: ID,
+          name: 'Legião Fênix',
+          emblem: 'loba',
+          banner_color: 'ouro',
+          mode: 'competitiva',
+          weekly_minimum: 2,
+          mode_since: '2026-09-28',
+          invite_code: 'ABCD2345',
+          invite_expires_at: '2026-09-21T12:00:00Z',
+        },
       ]),
-    ).toEqual({ id: ID, name: 'Legião Fênix', emblem: 'loba', invite: { code: 'ABCD2345', expiresAt: '2026-09-21T12:00:00Z' } });
+    ).toEqual({
+      id: ID,
+      name: 'Legião Fênix',
+      emblem: 'loba',
+      bannerColor: 'ouro',
+      mode: 'competitiva',
+      weeklyMinimum: 2,
+      modeSince: '2026-09-28',
+      invite: { code: 'ABCD2345', expiresAt: '2026-09-21T12:00:00Z' },
+    });
   });
 
   it('recusa código fora da regra ou resposta com mais de uma linha', () => {
@@ -51,8 +102,28 @@ describe('convites', () => {
 
   it('converte a prévia conforme o status', () => {
     expect(
-      parseInvitePreview([{ status: 'ok', group_name: 'Legião Fênix', group_emblem: 'aguia', member_count: 3, is_member: false }]),
-    ).toEqual({ status: 'ok', name: 'Legião Fênix', emblem: 'aguia', memberCount: 3, isMember: false });
+      parseInvitePreview([
+        {
+          status: 'ok',
+          group_name: 'Legião Fênix',
+          group_emblem: 'aguia',
+          banner_color: 'porfiro',
+          mode: 'competitiva',
+          weekly_minimum: 3,
+          member_count: 3,
+          is_member: false,
+        },
+      ]),
+    ).toEqual({
+      status: 'ok',
+      name: 'Legião Fênix',
+      emblem: 'aguia',
+      bannerColor: 'porfiro',
+      mode: 'competitiva',
+      weeklyMinimum: 3,
+      memberCount: 3,
+      isMember: false,
+    });
     expect(parseInvitePreview([{ status: 'invalid', group_name: null, group_emblem: null, member_count: null, is_member: null }])).toEqual({
       status: 'invalid',
     });
