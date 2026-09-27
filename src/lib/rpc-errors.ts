@@ -69,6 +69,9 @@ const MESSAGES: Record<string, string> = {
   photo_consent_required: 'Ligue a foto de perfil nas suas escolhas antes de enviar uma foto.',
   avatar_not_uploaded: 'A foto não chegou ao servidor. Tente enviar de novo.',
   invalid_avatar: 'Não foi possível salvar a foto. Tente de novo.',
+  // Roteador (função rotas)
+  no_route: 'Não achamos caminho por ali. Tente pontos mais perto de uma rua, ciclovia ou trilha.',
+  routing_unavailable: 'O roteador está indisponível agora. Dá para desenhar a rota à mão, ponto a ponto.',
 };
 
 export const RPC_MESSAGES = {

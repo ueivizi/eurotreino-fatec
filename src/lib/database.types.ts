@@ -745,6 +745,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      claim_route_request: { Args: never; Returns: undefined }
       clear_message_reports: {
         Args: { p_message_id: string }
         Returns: undefined
