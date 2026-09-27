@@ -108,6 +108,7 @@ export default function ProfileScreen() {
             </View>
             <ProgressBar
               value={rank.progress}
+              wrapOnDecrease
               accessibilityLabel={rank.next ? `Progresso até ${rank.next.label}` : 'Rank máximo alcançado'}
             />
             <AppText variant="caption" tone="secondary" style={styles.tabular}>

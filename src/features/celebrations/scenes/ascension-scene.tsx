@@ -84,7 +84,7 @@ export function AscensionScene({ celebration, onContinue }: Props) {
         </Reveal>
       ) : null}
 
-      <Reveal delay={1720} style={[styles.card, { backgroundColor: 'rgba(21,18,14,0.85)', borderColor: colors.hairlineSoft }]}>
+      <Reveal delay={1720} style={[styles.card, { backgroundColor: colors.surfaceRaised, borderColor: colors.hairlineSoft }]}>
         <AppText tone="secondary" style={styles.center}>
           {'Você chegou a '}
           <AppText variant="bodyMedium" tone="goldHighlight" style={styles.tabular}>

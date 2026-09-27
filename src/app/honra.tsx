@@ -52,7 +52,7 @@ function HonorProgress({ entry }: { entry: HonorEntry }) {
   const progress = next === null ? 1 : Math.min(1, Math.max(0, (entry.points - floor) / Math.max(1, next - floor)));
   return (
     <>
-      <ProgressBar value={progress} accessibilityLabel={next === null ? 'Nível máximo de Honra' : `Progresso até ${next} de Honra`} />
+      <ProgressBar value={progress} wrapOnDecrease accessibilityLabel={next === null ? 'Nível máximo de Honra' : `Progresso até ${next} de Honra`} />
       <AppText variant="caption" tone="muted" style={styles.tabular}>
         {next === null ? 'Nível máximo alcançado' : `Faltam ${next - entry.points} para o próximo nível`}
       </AppText>
