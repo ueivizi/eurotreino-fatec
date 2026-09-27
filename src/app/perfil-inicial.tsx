@@ -72,7 +72,7 @@ export default function InitialProfileScreen() {
           { paddingTop: insets.top + space.xxl, paddingBottom: insets.bottom + space.xxxl },
         ]}>
         <View style={styles.header}>
-          <StepProgress step={1} total={3} />
+          <StepProgress step={1} total={4} />
           <AppText variant="title">Como sua Legião vai te chamar?</AppText>
           <AppText variant="motto" tone="gold">É assim que sua Legião vai te ver.</AppText>
         </View>

@@ -1,4 +1,3 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
@@ -11,11 +10,8 @@ import { LinkRow } from '@/components/ui/link-row';
 import { Notice } from '@/components/ui/notice';
 import { SegmentedControl } from '@/components/ui/segmented-control';
 import { AppText } from '@/components/ui/text';
-import { setHealthConsent } from '@/features/account/account-api';
 import { useSession } from '@/features/auth/session';
 import { useOfflineQueue } from '@/features/workouts/offline-queue-provider';
-import { queryKeys } from '@/lib/query-client';
-import { errorMessage } from '@/lib/rpc-errors';
 import { THEME_OPTIONS, useTheme } from '@/theme/theme';
 import { space } from '@/theme/tokens';
 
@@ -29,19 +25,9 @@ export default function SettingsScreen() {
   const { colors, preference, setPreference } = useTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { state, signOut, retry: refreshProfile } = useSession();
-  const queryClient = useQueryClient();
+  const { state, signOut } = useSession();
   const queue = useOfflineQueue();
   const [confirmSignOut, setConfirmSignOut] = useState(false);
-
-  const consent = useMutation({
-    mutationFn: (granted: boolean) => setHealthConsent(granted),
-    onSuccess: () => {
-      // O perfil guarda o consentimento: recarrega para a tela refletir na hora.
-      refreshProfile();
-      void queryClient.invalidateQueries({ queryKey: queryKeys.progress });
-    },
-  });
 
   if (state.status !== 'ready') return null;
   const { profile } = state;
@@ -91,24 +77,16 @@ export default function SettingsScreen() {
             Seu perfil só aparece para membros das suas Legiões. Seus treinos ficam só com você.
           </AppText>
         </View>
-        <View style={styles.consent}>
-          <View style={styles.flex}>
-            <AppText variant="bodyMedium">Registrar frequência cardíaca</AppText>
-            <AppText variant="caption" tone="muted">
-              {profile.healthConsentAt
-                ? 'Ligado: o campo aparece ao registrar treino. Desligar apaga as medidas já guardadas.'
-                : 'Desligado. Frequência cardíaca é dado sensível de saúde: só registramos com seu consentimento.'}
-            </AppText>
-          </View>
-        </View>
-        <Button
-          label={consent.isPending ? 'Salvando…' : profile.healthConsentAt ? 'Desligar e apagar medidas' : 'Ligar o registro'}
-          variant="secondary"
-          icon={profile.healthConsentAt ? 'excluir' : 'check'}
-          onPress={() => consent.mutate(!profile.healthConsentAt)}
-          disabled={consent.isPending}
+        <LinkRow
+          label="Suas escolhas de dados"
+          icon="escudo"
+          description={[
+            profile.photoConsentAt ? 'foto ligada' : 'foto desligada',
+            profile.locationConsentAt ? 'GPS ligado' : 'GPS desligado',
+            profile.healthConsentAt ? 'frequência ligada' : 'frequência desligada',
+          ].join(' · ')}
+          onPress={() => router.push('/escolhas')}
         />
-        {consent.isError ? <Notice tone="danger" message={errorMessage(consent.error)} /> : null}
         <LinkRow label="Política de Privacidade" icon="pergaminho" onPress={() => router.push('/privacidade')} />
         <LinkRow label="Termos de Uso" icon="pergaminho" onPress={() => router.push('/termos')} />
       </View>
@@ -141,11 +119,6 @@ const styles = StyleSheet.create({
   },
   section: {
     gap: space.xs,
-  },
-  consent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.md,
   },
   privacy: {
     flexDirection: 'row',

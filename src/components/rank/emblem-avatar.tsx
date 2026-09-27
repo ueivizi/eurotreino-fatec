@@ -1,4 +1,4 @@
-import { View } from 'react-native';
+import { Image, View } from 'react-native';
 import Svg, { Ellipse } from 'react-native-svg';
 
 import { LaurelCrown } from '@/components/motion/laurel-crown';
@@ -28,9 +28,11 @@ type Props = {
   laurel?: Laurel;
   /** Os louros surgem folha a folha ("Coroar"), a partir deste atraso em ms. */
   crownDelay?: number;
+  /** Foto de perfil (só com consentimento): entra no lugar do emblema, dentro do mesmo aro. */
+  photoUri?: string | null;
 };
 
-export function EmblemAvatar({ emblem, color, size = 48, laurel, crownDelay }: Props) {
+export function EmblemAvatar({ emblem, color, size = 48, laurel, crownDelay, photoUri }: Props) {
   const { colors, name } = useTheme();
   const tone = EMBLEM_COLOR_TONES[color ?? DEFAULT_EMBLEM_COLOR][name];
   const rim = laurel ? LAUREL_COLORS[laurel].rim : color ? tone : colors.hairline;
@@ -57,8 +59,13 @@ export function EmblemAvatar({ emblem, color, size = 48, laurel, crownDelay }: P
           backgroundColor: colors.surface,
           alignItems: 'center',
           justifyContent: 'center',
+          overflow: 'hidden',
         }}>
-        <Icon name={emblem} size={Math.round(inner * 0.5)} color={laurel ? rim : color ? tone : colors.textSecondary} />
+        {photoUri ? (
+          <Image source={{ uri: photoUri }} style={{ width: inner - 3, height: inner - 3, borderRadius: (inner - 3) / 2 }} accessibilityIgnoresInvertColors />
+        ) : (
+          <Icon name={emblem} size={Math.round(inner * 0.5)} color={laurel ? rim : color ? tone : colors.textSecondary} />
+        )}
       </View>
     </View>
   );

@@ -54,8 +54,20 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Suas fotos são usadas só para montar a imagem do treino que você vai compartilhar. A foto não sai deste aparelho.",
-          "cameraPermission": "A câmera serve para a foto que entra na imagem do treino. A foto não sai deste aparelho."
+          "photosPermission": "Suas fotos são usadas para a imagem do treino, que é montada neste aparelho, e para a foto de perfil, se você ligar essa opção: ela é vista só pelas suas Legiões.",
+          "cameraPermission": "A câmera serve para a foto da imagem do treino e, se você ligar essa opção, para a foto de perfil vista pelas suas Legiões."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Com o GPS ligado nas suas escolhas, o EuroTreino mede o percurso da corrida, caminhada ou bike enquanto o app está aberto. O trajeto fica neste aparelho.",
+          "locationAlwaysPermission": false,
+          "locationAlwaysAndWhenInUsePermission": false,
+          "motionUsagePermission": false,
+          "isIosBackgroundLocationEnabled": false,
+          "isAndroidBackgroundLocationEnabled": false,
+          "isAndroidForegroundServiceEnabled": false
         }
       ]
     ],

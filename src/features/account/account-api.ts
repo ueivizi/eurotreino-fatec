@@ -70,3 +70,12 @@ export async function setHealthConsent(granted: boolean): Promise<string | null>
   if (error) throw toApiError(error);
   return typeof data === 'string' ? data : null;
 }
+
+/** Escolhas de dados além da saúde: foto de perfil e GPS no treino. */
+export type DataPurpose = 'foto' | 'localizacao';
+
+export async function setDataConsent(purpose: DataPurpose, granted: boolean): Promise<string | null> {
+  const { data, error } = await getSupabase().rpc('set_data_consent', { p_purpose: purpose, p_granted: granted });
+  if (error) throw toApiError(error);
+  return typeof data === 'string' ? data : null;
+}

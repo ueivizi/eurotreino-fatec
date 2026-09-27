@@ -15,6 +15,7 @@ import { AppText } from '@/components/ui/text';
 import { fetchWeeklyRanking } from '@/features/arena/arena-api';
 import { fetchMyLegions } from '@/features/legions/legions-api';
 import { TrophyShelf } from '@/features/legions/trophy-shelf';
+import { useLegionPhotos } from '@/features/profile/photo';
 import { rankFromGlory } from '@/features/ranks/tiers';
 import { isUuid } from '@/lib/parse';
 import { queryKeys } from '@/lib/query-client';
@@ -44,6 +45,7 @@ export default function MemberProfileScreen() {
     enabled: legion !== null,
   });
   const member = ranking.data?.entries.find((entry) => entry.userId === memberId) ?? null;
+  const photos = useLegionPhotos(legionId);
 
   const notFound = !memberId || !legionId || (legions.isSuccess && !legion) || (ranking.isSuccess && !member);
   if (notFound) {
@@ -87,6 +89,7 @@ export default function MemberProfileScreen() {
               color={member.emblemColor}
               size={120}
               laurel={member.weekGlory > 0 ? LAURELS[member.place] : undefined}
+              photoUri={photos[member.userId]}
             />
             <AppText variant="title" style={styles.center}>{member.isMe ? `${member.displayName} · você` : member.displayName}</AppText>
             <AppText tone="secondary" style={styles.center}>

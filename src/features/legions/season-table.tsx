@@ -19,6 +19,7 @@ import { LOUROS, SEASON_WEEKS, missingForMinimum } from '@/features/legions/lour
 import type { LegionSummary } from '@/features/legions/legions-parsers';
 import { fetchSeasonTable } from '@/features/legions/season-api';
 import type { SeasonEntry } from '@/features/legions/season-parsers';
+import { useLegionPhotos } from '@/features/profile/photo';
 import { queryKeys } from '@/lib/query-client';
 import { errorMessage } from '@/lib/rpc-errors';
 import { useTheme } from '@/theme/theme';
@@ -52,7 +53,7 @@ function DeltaChip({ delta }: { delta: number }) {
   );
 }
 
-function Row({ entry, index, minimum, current, onPress }: { entry: SeasonEntry; index: number; minimum: number; current: boolean; onPress: () => void }) {
+function Row({ entry, index, minimum, current, onPress, photoUri }: { entry: SeasonEntry; index: number; minimum: number; current: boolean; onPress: () => void; photoUri?: string }) {
   const { colors } = useTheme();
   const missing = current ? missingForMinimum(entry.weekScored, minimum) : 0;
   const danger = current && missing > 0;
@@ -75,7 +76,7 @@ function Row({ entry, index, minimum, current, onPress }: { entry: SeasonEntry; 
           <AppText variant="bodyMedium" tone={entry.place <= 3 ? 'goldHighlight' : 'muted'} style={styles.place}>
             {String(entry.place)}
           </AppText>
-          <EmblemAvatar emblem={entry.emblem} color={entry.emblemColor} size={38} laurel={entry.louros > 0 ? LAURELS[entry.place] : undefined} />
+          <EmblemAvatar emblem={entry.emblem} color={entry.emblemColor} size={38} laurel={entry.louros > 0 ? LAURELS[entry.place] : undefined} photoUri={photoUri} />
           <View style={styles.rowText}>
             <AppText variant="bodyMedium" numberOfLines={1}>{entry.isMe ? `${entry.displayName} · você` : entry.displayName}</AppText>
             <AppText variant="caption" tone="muted" numberOfLines={1}>
@@ -119,6 +120,7 @@ export function SeasonTableView({ legion }: { legion: LegionSummary }) {
   });
 
   const data = table.data;
+  const photos = useLegionPhotos(legion.id);
   const current = offset === 0 && (data?.seasonWeek ?? 0) > 0;
   const minimum = data?.weeklyMinimum || legion.weeklyMinimum || 0;
 
@@ -185,6 +187,7 @@ export function SeasonTableView({ legion }: { legion: LegionSummary }) {
                 index={index}
                 minimum={minimum}
                 current={current}
+                photoUri={photos[entry.userId]}
                 onPress={() =>
                   entry.isMe
                     ? router.navigate('/perfil')

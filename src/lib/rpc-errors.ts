@@ -65,6 +65,10 @@ const MESSAGES: Record<string, string> = {
   health_consent_required: 'Ligue o registro de frequência cardíaca em Configurações antes de informá-la.',
   invalid_heart_rate: 'A frequência cardíaca vai de 30 a 240 bpm, e a média não passa da máxima.',
   invalid_consent: 'Não foi possível salvar essa escolha. Tente de novo.',
+  // Foto de perfil
+  photo_consent_required: 'Ligue a foto de perfil nas suas escolhas antes de enviar uma foto.',
+  avatar_not_uploaded: 'A foto não chegou ao servidor. Tente enviar de novo.',
+  invalid_avatar: 'Não foi possível salvar a foto. Tente de novo.',
 };
 
 export const RPC_MESSAGES = {

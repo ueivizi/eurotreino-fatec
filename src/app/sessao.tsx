@@ -20,6 +20,11 @@ import { AppText } from '@/components/ui/text';
 import { useProfile } from '@/features/auth/session';
 import { healthConnect } from '@/features/devices/health-connect';
 import { matchingWorkout } from '@/features/devices/imported-workout';
+import { clearTrack, currentTrack } from '@/features/map/gps-store';
+import { decimate } from '@/features/map/gps-track';
+import { GPS_AVAILABLE, GpsTracker } from '@/features/map/gps-tracker';
+import { MAX_POINTS } from '@/features/map/route';
+import { loadRoutes, storeRoutes, withRoute } from '@/features/map/saved-routes';
 import { requestExercise, takePickedExercise } from '@/features/training/exercise-picker';
 import { fetchExerciseCatalog } from '@/features/training/exercises-api';
 import { fetchMyRoutines } from '@/features/training/routines-api';
@@ -113,6 +118,9 @@ export default function LiveSessionScreen() {
   const [now, setNow] = useState(() => new Date());
   const [type, setType] = useState<WorkoutTypeId>('musculacao');
   const [distanceM, setDistanceM] = useState<number | null>(null);
+  /** A distância do fim veio do GPS: a tela avisa para conferir. */
+  const [distanceFromGps, setDistanceFromGps] = useState(false);
+  const [routeSaved, setRouteSaved] = useState<'idle' | 'saved' | 'failed'>('idle');
   const [avgHeartRate, setAvgHeartRate] = useState<number | null>(null);
   const [intensity, setIntensity] = useState<IntensityId>('moderado');
   const [reps, setReps] = useState<Record<string, number>>({});
@@ -175,6 +183,30 @@ export default function LiveSessionScreen() {
     void applyFocus({ exerciseId: focusId, exerciseName: focusName, reps: focusReps, loadKg: focusLoad > 0 ? focusLoad : null });
   }, [applyFocus, focusId, focusName, focusReps, focusLoad]);
 
+  // GPS só na resistência, com a escolha ligada e no app instalado.
+  const gpsEnabled = current !== null && workoutModule(current.workoutType) === 'resistencia' && GPS_AVAILABLE && Boolean(profile?.locationConsentAt);
+
+  async function saveTrackAsRoute() {
+    if (!current) return;
+    const points = decimate(currentTrack(current.requestId).points, MAX_POINTS).map(({ lat, lng }) => ({ lat, lng }));
+    try {
+      const routes = await loadRoutes();
+      const day = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit' }).format(new Date());
+      await storeRoutes(
+        withRoute(routes, {
+          id: randomUUID(),
+          name: `${workoutTypeLabel(current.workoutType)} de ${day}`,
+          points,
+          distanceM: 0,
+          savedAt: new Date().toISOString(),
+        }),
+      );
+      setRouteSaved('saved');
+    } catch {
+      setRouteSaved('failed');
+    }
+  }
+
   const finish = useMutation({
     mutationFn: async (): Promise<StrengthOutcome> => {
       if (!current) throw new Error('sem sessão');
@@ -204,6 +236,7 @@ export default function LiveSessionScreen() {
     },
     onSuccess: async (result) => {
       setOutcome(result);
+      clearTrack();
       await session.discard();
       void queryClient.invalidateQueries({ queryKey: queryKeys.progress });
       void queryClient.invalidateQueries({ queryKey: queryKeys.rankings });
@@ -404,6 +437,7 @@ export default function LiveSessionScreen() {
 
       {isEndurance ? (
         <>
+          {gpsEnabled ? <GpsTracker sessionKey={current.requestId} paused={current.pausedAt !== null} /> : null}
           <PressableScale
             accessibilityRole="button"
             accessibilityLabel="Marcar volta"
@@ -659,7 +693,10 @@ export default function LiveSessionScreen() {
                   <NumberField
                     label="Distância"
                     value={distanceM ?? 0}
-                    onChange={(next) => setDistanceM(next > 0 ? next : null)}
+                    onChange={(next) => {
+                      setDistanceFromGps(false);
+                      setDistanceM(next > 0 ? next : null);
+                    }}
                     min={0}
                     max={DISTANCE.max}
                     step={DISTANCE.step}
@@ -667,6 +704,21 @@ export default function LiveSessionScreen() {
                   />
                 </View>
               </View>
+
+              {distanceFromGps ? <Notice message="A distância veio do GPS deste aparelho. Confira antes de registrar." /> : null}
+              {gpsEnabled && currentTrack(current.requestId).points.length >= 2 ? (
+                routeSaved === 'saved' ? (
+                  <Notice message="Percurso guardado nas suas rotas, só neste aparelho." />
+                ) : (
+                  <Button
+                    label="Guardar o percurso como rota"
+                    icon="local"
+                    variant="ghost"
+                    onPress={() => void saveTrackAsRoute()}
+                  />
+                )
+              ) : null}
+              {routeSaved === 'failed' ? <Notice tone="danger" message="Não foi possível guardar o percurso neste aparelho." /> : null}
 
               {healthConsent ? (
                 <View style={styles.exerciseHeader}>
@@ -707,12 +759,25 @@ export default function LiveSessionScreen() {
         </View>
       ) : (
         <>
-          <Button label="Finalizar treino" icon="check" onPress={() => setFinishing(true)} />
+          <Button
+            label="Finalizar treino"
+            icon="check"
+            onPress={() => {
+              // Com GPS, a distância do fim já vem medida (em passos de 10 m); a pessoa confere.
+              const gps = gpsEnabled ? currentTrack(current.requestId).distanceM : 0;
+              if (distanceM === null && gps >= DISTANCE.min) {
+                setDistanceM(Math.min(DISTANCE.max, Math.round(gps / 10) * 10));
+                setDistanceFromGps(true);
+              }
+              setFinishing(true);
+            }}
+          />
           <Button
             label="Descartar sessão"
             variant="ghost"
             icon="excluir"
             onPress={() => {
+              clearTrack();
               void session.discard();
               router.replace('/');
             }}

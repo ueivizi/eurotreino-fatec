@@ -366,30 +366,39 @@ export type Database = {
       }
       profiles: {
         Row: {
+          avatar_updated_at: string | null
           created_at: string
           display_name: string
           emblem: string
           emblem_color: string
           health_consent_at: string | null
           id: string
+          location_consent_at: string | null
+          photo_consent_at: string | null
           updated_at: string
         }
         Insert: {
+          avatar_updated_at?: string | null
           created_at?: string
           display_name: string
           emblem: string
           emblem_color?: string
           health_consent_at?: string | null
           id: string
+          location_consent_at?: string | null
+          photo_consent_at?: string | null
           updated_at?: string
         }
         Update: {
+          avatar_updated_at?: string | null
           created_at?: string
           display_name?: string
           emblem?: string
           emblem_color?: string
           health_consent_at?: string | null
           id?: string
+          location_consent_at?: string | null
+          photo_consent_at?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -747,12 +756,15 @@ export type Database = {
           p_emblem_color?: string
         }
         Returns: {
+          avatar_updated_at: string | null
           created_at: string
           display_name: string
           emblem: string
           emblem_color: string
           health_consent_at: string | null
           id: string
+          location_consent_at: string | null
+          photo_consent_at: string | null
           updated_at: string
         }
         SetofOptions: {
@@ -892,6 +904,13 @@ export type Database = {
         }[]
       }
       leave_group: { Args: { p_group_id: string }; Returns: undefined }
+      legion_photos: {
+        Args: { p_group_id: string }
+        Returns: {
+          avatar_updated_at: string
+          user_id: string
+        }[]
+      }
       log_strength_workout: {
         Args: {
           p_client_request_id: string
@@ -960,6 +979,19 @@ export type Database = {
           next_level_points: number
           points: number
           workout_type: string
+        }[]
+      }
+      my_profile: {
+        Args: never
+        Returns: {
+          avatar_updated_at: string
+          display_name: string
+          emblem: string
+          emblem_color: string
+          health_consent_at: string
+          id: string
+          location_consent_at: string
+          photo_consent_at: string
         }[]
       }
       my_progress: {
@@ -1097,6 +1129,11 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      set_avatar: { Args: { p_present: boolean }; Returns: string }
+      set_data_consent: {
+        Args: { p_granted: boolean; p_purpose: string }
+        Returns: string
       }
       set_health_consent: { Args: { p_granted: boolean }; Returns: string }
       set_weekly_goal: {

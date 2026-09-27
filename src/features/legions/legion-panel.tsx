@@ -16,6 +16,7 @@ import { formatInviteCode, inviteShareMessage } from '@/features/legions/invite-
 import { fetchInvite, leaveLegion, regenerateInvite } from '@/features/legions/legions-api';
 import type { LegionSummary } from '@/features/legions/legions-parsers';
 import { rankFromGlory } from '@/features/ranks/tiers';
+import { useLegionPhotos } from '@/features/profile/photo';
 import { queryKeys } from '@/lib/query-client';
 import { errorMessage } from '@/lib/rpc-errors';
 import { useTheme } from '@/theme/theme';
@@ -24,6 +25,15 @@ import { space } from '@/theme/tokens';
 const expiryFormat = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 
 type Confirmation = 'regenerate' | 'leave' | null;
+
+function Tag({ label }: { label: string }) {
+  const { colors } = useTheme();
+  return (
+    <View style={[styles.tag, { borderColor: colors.gold }]}>
+      <AppText variant="overline" tone="goldHighlight" style={styles.tagText}>{label}</AppText>
+    </View>
+  );
+}
 
 /** Recarrega o que o painel mostra: convite e membros de uma Legião. */
 export function refetchLegionPanel(queryClient: QueryClient, legionId: string) {
@@ -69,6 +79,7 @@ export function LegionPanel({ legion, children }: { legion: LegionSummary; child
   });
 
   const isOwner = legion.role === 'owner';
+  const photos = useLegionPhotos(legion.id);
   const code = invite.data?.code ?? null;
 
   async function share() {
@@ -189,15 +200,14 @@ export function LegionPanel({ legion, children }: { legion: LegionSummary; child
                     : router.push({ pathname: '/membro/[id]', params: { id: member.userId, legiao: legion.id } })
                 }
                 style={[styles.memberRow, { borderBottomColor: colors.hairlineSoft }]}>
-                <EmblemAvatar emblem={member.emblem} color={member.emblemColor} size={36} />
+                <EmblemAvatar emblem={member.emblem} color={member.emblemColor} size={36} photoUri={photos[member.userId]} />
                 <View style={styles.memberText}>
-                  <AppText variant="bodyMedium" numberOfLines={1}>
-                    {member.isMe ? `${member.displayName} · você` : member.displayName}
-                  </AppText>
-                  <AppText variant="caption" tone="muted">
-                    {`${rankFromGlory(member.totalGlory).label}${member.role === 'owner' ? ' · Fundador' : ''}`}
-                  </AppText>
+                  <AppText variant="bodyMedium" numberOfLines={1}>{member.displayName}</AppText>
+                  <AppText variant="caption" tone="muted">{rankFromGlory(member.totalGlory).label}</AppText>
                 </View>
+                {/* Selos do quadro 2.4: quem fundou e quem é você. */}
+                {member.role === 'owner' ? <Tag label="Fundador" /> : null}
+                {member.isMe ? <Tag label="Você" /> : null}
                 <Icon name="chevronRight" size={18} color={colors.textMuted} />
               </PressableScale>
             ))
@@ -260,5 +270,15 @@ const styles = StyleSheet.create({
   },
   memberText: {
     flex: 1,
+  },
+  tag: {
+    borderWidth: 1,
+    borderRadius: 3,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+  },
+  tagText: {
+    fontSize: 10,
+    lineHeight: 14,
   },
 });

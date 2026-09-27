@@ -42,3 +42,30 @@ alter default privileges for role postgres in schema public grant all on functio
 
 -- O Supabase roda em UTC; as regras de semana não podem depender do fuso da sessão.
 set timezone = 'UTC';
+
+-- Storage mínimo: os buckets e a tabela de objetos, com RLS, como o Supabase entrega. Os testes
+-- gravam linhas em storage.objects no lugar do envio do arquivo (o que o serviço faria).
+create schema storage;
+grant usage on schema storage to anon, authenticated, service_role;
+
+create table storage.buckets (
+  id text primary key,
+  name text not null,
+  public boolean default false,
+  file_size_limit bigint,
+  allowed_mime_types text[],
+  created_at timestamptz default now()
+);
+
+create table storage.objects (
+  id uuid primary key default gen_random_uuid(),
+  bucket_id text references storage.buckets (id),
+  name text,
+  owner uuid,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+alter table storage.buckets enable row level security;
+alter table storage.objects enable row level security;
+grant all on storage.buckets, storage.objects to anon, authenticated, service_role;

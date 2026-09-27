@@ -30,6 +30,10 @@ export const queryKeys = {
   season: (legionId: string, seasonOffset: 0 | -1) => ['ranking', legionId, 'temporada', seasonOffset] as const,
   /** Triunfos de um perfil ('eu' para o próprio). */
   trophies: (userId: string) => ['trophies', userId] as const,
+  /** Fotos de perfil (links temporários): de uma Legião e a própria, pela versão. */
+  photosAll: ['photos'] as const,
+  photos: (legionId: string) => ['photos', legionId] as const,
+  myPhoto: (version: string) => ['photos', 'eu', version] as const,
   /** Anais: os meses com treino e os treinos de um mês. `historyAll` alcança os dois de uma vez. */
   historyAll: ['history'] as const,
   historyMonths: ['history', 'months'] as const,
