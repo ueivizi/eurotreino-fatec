@@ -1,9 +1,9 @@
 import { Camera, Map, NativeUserLocation, type CameraRef, type MapRef } from '@maplibre/maplibre-react-native';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { randomUUID } from 'expo-crypto';
 import { useFocusEffect, useIsFocused, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { PressableScale } from '@/components/motion/pressable-scale';
@@ -14,7 +14,10 @@ import { Notice } from '@/components/ui/notice';
 import { SegmentedControl } from '@/components/ui/segmented-control';
 import { AppText } from '@/components/ui/text';
 import { useProfile } from '@/features/auth/session';
+import { deleteSharedRoute, fetchLegionRoutes, shareRoute, type LegionRoute } from '@/features/legions/legion-routes-api';
+import { fetchMyLegions } from '@/features/legions/legions-api';
 import { formatDistance } from '@/features/workouts/metrics';
+import { queryKeys } from '@/lib/query-client';
 import { errorMessage } from '@/lib/rpc-errors';
 import { useTheme } from '@/theme/theme';
 import { radius, space, touchTarget } from '@/theme/tokens';
@@ -23,7 +26,8 @@ import { CET_CREDIT, CYCLE_COLORS, CYCLE_LEGEND, cyclewayLabel } from './cyclewa
 import { CyclewayLayers, PLACE_LAYER, PlaceLayers, RouteLine, TAPPABLE_LAYERS } from './map-layers';
 import { DEFAULT_CENTER, MAP_CREDIT, MAP_STYLES } from './map-style';
 import { PLACE_COLORS, PLACE_KINDS, nearbyPlaces, placeKindOf, placeLabel, type NearbyPlace, type PlaceKind } from './places';
-import { routeBounds, type RoutePoint } from './route';
+import { PRIVACY_TRIM_M, routeBounds, trimEnds, type RoutePoint } from './route';
+import { shareableRouteName } from './route-name';
 import {
   LOOP_DISTANCES,
   ROUTING_CREDIT,
@@ -86,10 +90,53 @@ export function ExploreMap() {
   const [loopIndex, setLoopIndex] = useState(0);
   const variation = useRef(0);
   const [saveError, setSaveError] = useState(false);
+  const [legionId, setLegionId] = useState<string | null>(null);
+  const [sharedId, setSharedId] = useState<string | null>(null);
+  const [sharing, setSharing] = useState(false);
+  const [shareModality, setShareModality] = useState<RoutingModality>('pe');
+  const [hideEnds, setHideEnds] = useState(true);
+  const [sharedTo, setSharedTo] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
   const myPosition = location.status === 'ativa' ? location.position : null;
   const selected = routes.find((route) => route.id === selectedId) ?? null;
   const chosenLoop = loops[loopIndex] ?? null;
+
+  // Rotas das Legiões: a primeira Legião de início, e a pessoa troca pelos nomes.
+  const legions = useQuery({ queryKey: queryKeys.legions, queryFn: fetchMyLegions });
+  const legion = legions.data?.find((item) => item.id === legionId) ?? legions.data?.[0] ?? null;
+  const legionRoutes = useQuery({
+    queryKey: queryKeys.legionRoutes(legion?.id ?? ''),
+    queryFn: () => fetchLegionRoutes(legion?.id as string),
+    enabled: Boolean(legion) && focused,
+  });
+  const selectedShared = legionRoutes.data?.find((route) => route.id === sharedId) ?? null;
+
+  const share = useMutation({
+    mutationFn: async (route: SavedRoute) => {
+      if (!legion) throw new Error('sem Legião');
+      await shareRoute({
+        legionId: legion.id,
+        name: shareableRouteName(route.name, `Rota de ${formatDistance(route.distanceM)}`),
+        modality: shareModality,
+        points: hideEnds ? trimEnds(route.points) : route.points,
+      });
+      return legion;
+    },
+    onSuccess: (target) => {
+      setSharing(false);
+      setSharedTo(target.name);
+      void queryClient.invalidateQueries({ queryKey: queryKeys.legionRoutes(target.id) });
+    },
+  });
+
+  const unshare = useMutation({
+    mutationFn: (route: LegionRoute) => deleteSharedRoute(route.id),
+    onSuccess: () => {
+      setSharedId(null);
+      if (legion) void queryClient.invalidateQueries({ queryKey: queryKeys.legionRoutes(legion.id) });
+    },
+  });
 
   // Voltas geradas pelo roteador: começam e terminam na pessoa (ou no centro do mapa, sem posição).
   const generate = useMutation({
@@ -99,6 +146,7 @@ export function ExploreMap() {
       setLoops(paths);
       setLoopIndex(0);
       setSelectedId(null);
+      setSharedId(null);
       setFollowing(false);
       const bounds = routeBounds(paths.flatMap((path) => path.points));
       if (bounds) camera.current?.fitBounds(bounds, { padding: fitPadding, duration: 600 });
@@ -157,6 +205,10 @@ export function ExploreMap() {
 
   function select(route: SavedRoute) {
     setLoops([]);
+    setSharedId(null);
+    setSharing(false);
+    setSharedTo(null);
+    share.reset();
     setSelectedId(route.id);
     setFollowing(false);
     const bounds = routeBounds(route.points);
@@ -205,15 +257,19 @@ export function ExploreMap() {
     setTapped(null);
   }
 
-  /** Guarda a volta escolhida nas rotas do aparelho; devolve o id, ou nulo se não deu. */
-  async function keepLoop(loop: RoutedPath): Promise<string | null> {
-    const route: SavedRoute = {
-      id: randomUUID(),
-      name: `Volta de ${formatDistance(loop.distanceM)}${loopModality === 'bike' ? ' de bike' : ''}`,
-      points: loop.points,
-      distanceM: loop.distanceM,
-      savedAt: new Date().toISOString(),
-    };
+  function selectShared(route: LegionRoute) {
+    setLoops([]);
+    setSelectedId(null);
+    setSharing(false);
+    setSharedId(route.id);
+    setFollowing(false);
+    const bounds = routeBounds(route.points);
+    if (bounds) camera.current?.fitBounds(bounds, { padding: fitPadding, duration: 600 });
+  }
+
+  /** Guarda uma rota nas do aparelho; devolve o id, ou nulo se não deu. */
+  async function keepRoute(name: string, points: RoutePoint[], distanceM: number): Promise<string | null> {
+    const route: SavedRoute = { id: randomUUID(), name, points, distanceM, savedAt: new Date().toISOString() };
     const next = withRoute(routes, route);
     try {
       await storeRoutes(next);
@@ -224,6 +280,22 @@ export function ExploreMap() {
       setSaveError(true);
       return null;
     }
+  }
+
+  function keepLoop(loop: RoutedPath) {
+    return keepRoute(`Volta de ${formatDistance(loop.distanceM)}${loopModality === 'bike' ? ' de bike' : ''}`, loop.points, loop.distanceM);
+  }
+
+  async function trainOnShared(route: LegionRoute) {
+    const id = await keepRoute(route.name, route.points, route.distanceM);
+    if (id) router.push({ pathname: '/sessao', params: { rota: id, tipo: route.modality === 'bike' ? 'bike' : 'corrida' } });
+  }
+
+  async function keepShared(route: LegionRoute) {
+    const id = await keepRoute(route.name, route.points, route.distanceM);
+    if (!id) return;
+    setSharedId(null);
+    setSelectedId(id);
   }
 
   async function trainOnLoop(loop: RoutedPath) {
@@ -276,6 +348,7 @@ export function ExploreMap() {
           )}
           {chosenLoop ? <RouteLine id="volta-escolhida" points={chosenLoop.points} color={colors.goldHighlight} width={5} /> : null}
           {selected ? <RouteLine id="rota-escolhida" points={selected.points} color={colors.goldHighlight} /> : null}
+          {selectedShared ? <RouteLine id="rota-da-legiao" points={selectedShared.points} color={colors.goldHighlight} /> : null}
           {myPosition ? <NativeUserLocation mode="heading" /> : null}
         </Map>
 
@@ -364,6 +437,82 @@ export function ExploreMap() {
                     onPress={() => router.push({ pathname: '/sessao', params: { rota: selected.id } })}
                   />
                   <Button label="Editar no mapa" variant="ghost" onPress={() => router.push({ pathname: '/rota', params: { id: selected.id } })} />
+                  {legion && !sharing ? (
+                    <Button label="Compartilhar com a Legião" icon="legiao" variant="ghost" onPress={() => setSharing(true)} />
+                  ) : null}
+                  {sharing && legion ? (
+                    <View style={styles.shareForm}>
+                      {(legions.data?.length ?? 0) > 1 ? (
+                        <View style={styles.chipRow}>
+                          {legions.data?.map((item) => {
+                            const on = item.id === legion.id;
+                            return (
+                              <PressableScale
+                                key={item.id}
+                                haptic="select"
+                                accessibilityRole="radio"
+                                accessibilityState={{ checked: on }}
+                                accessibilityLabel={item.name}
+                                onPress={() => setLegionId(item.id)}
+                                style={[styles.chip, { borderColor: on ? colors.gold : colors.hairlineSoft, backgroundColor: on ? colors.selectedFill : 'transparent' }]}>
+                                <AppText variant="label" tone={on ? 'goldHighlight' : 'secondary'} numberOfLines={1}>{item.name}</AppText>
+                              </PressableScale>
+                            );
+                          })}
+                        </View>
+                      ) : null}
+                      <SegmentedControl options={ROUTING_MODALITIES} value={shareModality} onChange={setShareModality} accessibilityLabel="Rota a pé ou de bike" />
+                      <View style={styles.row}>
+                        <View style={styles.flex}>
+                          <AppText variant="bodyMedium">Esconder começo e fim</AppText>
+                          <AppText variant="caption" tone="muted">{`Tira ${PRIVACY_TRIM_M} m de cada ponta, onde costuma ficar a sua casa.`}</AppText>
+                        </View>
+                        <Switch
+                          value={hideEnds}
+                          onValueChange={setHideEnds}
+                          accessibilityLabel="Esconder começo e fim da rota"
+                          trackColor={{ true: colors.gold, false: colors.track }}
+                          thumbColor={colors.surface}
+                        />
+                      </View>
+                      <Button
+                        label={share.isPending ? 'Compartilhando…' : `Compartilhar com a ${legion.name}`}
+                        icon="legiao"
+                        disabled={share.isPending}
+                        onPress={() => share.mutate(selected)}
+                      />
+                      <Button label="Cancelar" variant="ghost" onPress={() => setSharing(false)} />
+                      <AppText variant="caption" tone="muted">Só os membros veem. Você ou o fundador podem apagar, e ela sai junto se você deixar a Legião.</AppText>
+                    </View>
+                  ) : null}
+                  {share.isError ? <Notice tone="danger" message={errorMessage(share.error)} /> : null}
+                  {sharedTo ? <Notice message={`Compartilhada com a ${sharedTo}.`} /> : null}
+                </View>
+              ) : selectedShared ? (
+                <View style={[styles.selected, { borderColor: colors.gold, backgroundColor: colors.selectedFill }]}>
+                  <View style={styles.row}>
+                    <View style={styles.flex}>
+                      <AppText variant="bodyMedium" numberOfLines={1}>{selectedShared.name}</AppText>
+                      <AppText variant="caption" tone="secondary">
+                        {`${formatDistance(selectedShared.distanceM)} · ${selectedShared.modality === 'bike' ? 'bike' : 'a pé'} · de ${selectedShared.isMine ? 'você' : selectedShared.authorName}`}
+                      </AppText>
+                    </View>
+                    <Pressable accessibilityRole="button" accessibilityLabel="Tirar a rota do mapa" hitSlop={12} onPress={() => setSharedId(null)}>
+                      <Icon name="fechar" size={18} color={colors.textMuted} />
+                    </Pressable>
+                  </View>
+                  <Button label="Treinar nesta rota" icon="registrar" onPress={() => void trainOnShared(selectedShared)} />
+                  <Button label="Guardar nas minhas rotas" variant="ghost" onPress={() => void keepShared(selectedShared)} />
+                  {selectedShared.canDelete ? (
+                    <Button
+                      label={unshare.isPending ? 'Apagando…' : 'Apagar da Legião'}
+                      icon="excluir"
+                      variant="ghost"
+                      disabled={unshare.isPending}
+                      onPress={() => unshare.mutate(selectedShared)}
+                    />
+                  ) : null}
+                  {unshare.isError ? <Notice tone="danger" message={errorMessage(unshare.error)} /> : null}
                 </View>
               ) : (
                 <Button label="Criar rota" icon="mais" variant="secondary" onPress={() => router.push('/rota')} />
@@ -436,6 +585,53 @@ export function ExploreMap() {
                 </>
               ) : null}
               {saveError ? <Notice tone="danger" message="Não foi possível guardar a rota neste aparelho." /> : null}
+
+              <AppText variant="overline" tone="muted">{legion ? `Da ${legion.name}` : 'Da Legião'}</AppText>
+              {legions.isSuccess && !legion ? (
+                <AppText variant="caption" tone="muted">Funde ou entre numa Legião para ver as rotas dos membros e compartilhar as suas.</AppText>
+              ) : null}
+              {(legions.data?.length ?? 0) > 1 ? (
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+                  {legions.data?.map((item) => {
+                    const on = item.id === legion?.id;
+                    return (
+                      <PressableScale
+                        key={item.id}
+                        haptic="select"
+                        accessibilityRole="radio"
+                        accessibilityState={{ checked: on }}
+                        accessibilityLabel={item.name}
+                        onPress={() => {
+                          setLegionId(item.id);
+                          setSharedId(null);
+                        }}
+                        style={[styles.chip, { borderColor: on ? colors.gold : colors.hairlineSoft, backgroundColor: on ? colors.selectedFill : 'transparent' }]}>
+                        <AppText variant="label" tone={on ? 'goldHighlight' : 'secondary'} numberOfLines={1}>{item.name}</AppText>
+                      </PressableScale>
+                    );
+                  })}
+                </ScrollView>
+              ) : null}
+              {legionRoutes.isError ? <Notice tone="danger" message={errorMessage(legionRoutes.error)} /> : null}
+              {legion && legionRoutes.data?.length === 0 ? (
+                <AppText variant="caption" tone="muted">Nenhuma rota ainda. Escolha uma das suas e toque em Compartilhar com a Legião.</AppText>
+              ) : null}
+              {legionRoutes.data?.map((route) => (
+                <PressableScale
+                  key={route.id}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: route.id === sharedId }}
+                  accessibilityLabel={`${route.name}, ${formatDistance(route.distanceM)}, de ${route.isMine ? 'você' : route.authorName}`}
+                  onPress={() => selectShared(route)}
+                  style={[styles.item, { borderBottomColor: colors.hairlineSoft }]}>
+                  <Icon name={route.modality === 'bike' ? 'bike' : 'corrida'} size={18} color={route.id === sharedId ? colors.goldHighlight : colors.textMuted} />
+                  <View style={styles.flex}>
+                    <AppText variant="bodyMedium" numberOfLines={1}>{route.name}</AppText>
+                    <AppText variant="caption" tone="muted" numberOfLines={1}>{route.isMine ? 'Você' : route.authorName}</AppText>
+                  </View>
+                  <AppText variant="label" tone="secondary" style={styles.tabular}>{formatDistance(route.distanceM)}</AppText>
+                </PressableScale>
+              ))}
 
               <AppText variant="overline" tone="muted">Suas rotas</AppText>
               {routes.length === 0 ? (
@@ -646,6 +842,9 @@ const styles = StyleSheet.create({
   chipRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+    gap: space.sm,
+  },
+  shareForm: {
     gap: space.sm,
   },
   chip: {

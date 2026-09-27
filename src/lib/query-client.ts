@@ -42,6 +42,7 @@ export const queryKeys = {
   weeklyGoal: ['weekly-goal'] as const,
   /** Mural de uma Legião. */
   mural: (legionId: string) => ['mural', legionId] as const,
+  legionRoutes: (legionId: string) => ['rotas-da-legiao', legionId] as const,
 };
 
 if (Platform.OS !== 'web') {

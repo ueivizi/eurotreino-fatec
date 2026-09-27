@@ -106,16 +106,16 @@ select tests.assert_equal(
   ),
   'private.avatar_owner, private.can_see_avatar, private.can_write_avatar, '
     || 'private.is_group_member, private.shares_group_with, public.claim_route_request, public.clear_message_reports, public.complete_profile, '
-    || 'public.create_exercise, public.create_group, public.delete_message, public.delete_routine, '
+    || 'public.create_exercise, public.create_group, public.delete_message, public.delete_routine, public.delete_shared_route, '
     || 'public.edit_workout, public.get_group_invite, public.group_mural, public.group_season_table, '
     || 'public.group_weekly_ranking, '
-    || 'public.join_group_by_code, public.leave_group, public.legion_photos, public.log_strength_workout, public.log_workout, '
+    || 'public.join_group_by_code, public.leave_group, public.legion_photos, public.legion_routes, public.log_strength_workout, public.log_workout, '
     || 'public.my_groups, public.my_honor, public.my_profile, public.my_progress, public.my_records, public.my_weekly_goal, '
     || 'public.my_workout_months, public.my_workouts, public.post_message, public.preview_invite, '
     || 'public.profile_trophies, '
     || 'public.regenerate_invite, public.report_message, public.save_routine, public.set_avatar, public.set_data_consent, '
     || 'public.set_health_consent, '
-    || 'public.set_weekly_goal, public.settle_group_seasons, public.update_group'
+    || 'public.set_weekly_goal, public.settle_group_seasons, public.share_route, public.update_group'
 );
 
 -- caso: esquema private fechado para os papéis da API
@@ -138,16 +138,16 @@ select tests.assert_equal(
   'private.can_see_avatar, private.can_write_avatar, '
     || 'private.is_group_member, private.on_group_member_removed, private.shares_group_with, '
     || 'public.claim_route_request, public.clear_message_reports, public.complete_profile, public.create_exercise, public.create_group, '
-    || 'public.delete_message, public.delete_routine, public.edit_workout, public.get_group_invite, '
+    || 'public.delete_message, public.delete_routine, public.delete_shared_route, public.edit_workout, public.get_group_invite, '
     || 'public.group_mural, public.group_season_table, public.group_weekly_ranking, '
-    || 'public.join_group_by_code, public.leave_group, public.legion_photos, '
+    || 'public.join_group_by_code, public.leave_group, public.legion_photos, public.legion_routes, '
     || 'public.log_strength_workout, public.log_workout, public.my_groups, public.my_honor, public.my_profile, '
     || 'public.my_progress, public.my_records, public.my_weekly_goal, public.my_workout_months, '
     || 'public.my_workouts, public.post_message, public.preview_invite, public.profile_trophies, '
     || 'public.regenerate_invite, '
     || 'public.report_message, public.save_routine, public.set_avatar, public.set_data_consent, '
     || 'public.set_health_consent, public.set_weekly_goal, '
-    || 'public.settle_group_seasons, public.update_group'
+    || 'public.settle_group_seasons, public.share_route, public.update_group'
 );
 
 -- caso: toda função de public e private fixa search_path vazio

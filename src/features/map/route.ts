@@ -188,3 +188,36 @@ function douglasPeucker(points: readonly RoutePoint[], toleranceM: number): Rout
   }
   return points.filter((_, index) => keep[index]);
 }
+
+/** Zona de privacidade: quanto do começo e do fim sai de uma rota compartilhada. */
+export const PRIVACY_TRIM_M = 300;
+
+/**
+ * Corta o começo e o fim do traçado (onde costuma ficar a casa de quem compartilha), cortando no
+ * meio do trecho quando preciso. Rota curta demais para perder 2 × o corte perde só um terço de
+ * cada lado, para ainda sobrar caminho.
+ */
+export function trimEnds(points: readonly RoutePoint[], meters = PRIVACY_TRIM_M): RoutePoint[] {
+  if (points.length < 2) return [...points];
+  const total = routeDistanceM(points);
+  const cut = Math.min(meters, total / 3);
+  if (cut <= 0) return [...points];
+  const head = cutFromStart(points, cut);
+  return cutFromStart([...head].reverse(), cut).reverse();
+}
+
+function cutFromStart(points: readonly RoutePoint[], meters: number): RoutePoint[] {
+  let walked = 0;
+  for (let i = 1; i < points.length; i += 1) {
+    const a = points[i - 1] as RoutePoint;
+    const b = points[i] as RoutePoint;
+    const leg = haversineMeters(a, b);
+    if (walked + leg >= meters) {
+      const t = leg === 0 ? 0 : (meters - walked) / leg;
+      const start = { lat: a.lat + (b.lat - a.lat) * t, lng: a.lng + (b.lng - a.lng) * t };
+      return [start, ...points.slice(i)];
+    }
+    walked += leg;
+  }
+  return [points[points.length - 1] as RoutePoint];
+}

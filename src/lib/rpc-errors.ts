@@ -72,6 +72,11 @@ const MESSAGES: Record<string, string> = {
   // Roteador (função rotas)
   no_route: 'Não achamos caminho por ali. Tente pontos mais perto de uma rua, ciclovia ou trilha.',
   routing_unavailable: 'O roteador está indisponível agora. Dá para desenhar a rota à mão, ponto a ponto.',
+  // Rotas da Legião
+  invalid_route_name: 'Use de 2 a 40 caracteres no nome: letras, números, espaço e os sinais . , \' ( ) / -',
+  invalid_route: 'Essa rota não pode ser compartilhada: ela precisa ter de 100 m a 200 km.',
+  route_limit_reached: 'Esta Legião já tem 100 rotas. Apague alguma antes de compartilhar outra.',
+  cannot_delete_route: 'Só quem compartilhou a rota ou o fundador pode apagá-la.',
 };
 
 export const RPC_MESSAGES = {

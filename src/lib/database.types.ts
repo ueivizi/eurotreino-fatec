@@ -313,6 +313,54 @@ export type Database = {
         }
         Relationships: []
       }
+      legion_routes: {
+        Row: {
+          author_id: string
+          created_at: string
+          distance_m: number
+          group_id: string
+          id: string
+          modality: string
+          name: string
+          points: Json
+        }
+        Insert: {
+          author_id: string
+          created_at?: string
+          distance_m: number
+          group_id: string
+          id?: string
+          modality: string
+          name: string
+          points: Json
+        }
+        Update: {
+          author_id?: string
+          created_at?: string
+          distance_m?: number
+          group_id?: string
+          id?: string
+          modality?: string
+          name?: string
+          points?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "legion_routes_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "legion_routes_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       message_reports: {
         Row: {
           message_id: string
@@ -816,6 +864,7 @@ export type Database = {
       }
       delete_message: { Args: { p_message_id: string }; Returns: undefined }
       delete_routine: { Args: { p_routine_id: string }; Returns: boolean }
+      delete_shared_route: { Args: { p_route_id: string }; Returns: undefined }
       edit_workout: {
         Args: {
           p_avg_heart_rate?: number
@@ -910,6 +959,20 @@ export type Database = {
         Returns: {
           avatar_updated_at: string
           user_id: string
+        }[]
+      }
+      legion_routes: {
+        Args: { p_group_id: string }
+        Returns: {
+          author_name: string
+          can_delete: boolean
+          created_at: string
+          distance_m: number
+          id: string
+          is_mine: boolean
+          modality: string
+          name: string
+          points: Json
         }[]
       }
       log_strength_workout: {
@@ -1157,6 +1220,15 @@ export type Database = {
           louros: number
           season_start: string
         }[]
+      }
+      share_route: {
+        Args: {
+          p_group_id: string
+          p_modality: string
+          p_name: string
+          p_points: Json
+        }
+        Returns: string
       }
       update_group: {
         Args: {

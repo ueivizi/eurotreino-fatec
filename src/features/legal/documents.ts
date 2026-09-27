@@ -44,6 +44,7 @@ export const PRIVACY_POLICY: LegalDocument = {
         'Juramento da semana (se você fizer): quantos dias por semana você se comprometeu a treinar, guardado na semana em que foi feito. Ele não muda a Glória nem o Coliseu.',
         'Legiões: as Legiões que você fundou ou em que entrou, seu papel, a data de entrada, os códigos de convite gerados, o estandarte e o modo (clássica ou competitiva). Na competitiva, os Louros da temporada saem dos seus treinos e os Triunfos que você ganhar ficam guardados no seu perfil.',
         'Mural da Legião: as mensagens que você escreve (só texto, até 500 caracteres, sem link) com a data, e as denúncias que você faz.',
+        'Rotas da Legião (só as que você compartilhar): nome, modalidade, traçado e distância, vistos só pelos membros daquela Legião. Por padrão o app tira 300 m do começo e do fim antes de enviar, para não mostrar onde você mora.',
         'Segurança: tentativas de código de convite inválido e registros de ações como fundar, entrar e sair de Legiões, trocar código, editar o perfil, escrever, apagar e denunciar no Mural e pedir rotas ao roteador. Esses registros não guardam códigos, nomes, senhas nem coordenadas.',
         'Rotas pelas ruas e voltas geradas (só quando você pede): os pontos que você tocou no mapa, ou o ponto de partida da volta, passam pelo nosso servidor até o roteador, que devolve o caminho. Nosso servidor não guarda os pontos; conta só quantos pedidos você fez, para o limite de uso.',
         'No aparelho: a sessão de acesso fica no armazenamento seguro do celular (ou no navegador, na versão Web), e treinos registrados sem internet ficam guardados até o envio.',
@@ -88,11 +89,12 @@ export const PRIVACY_POLICY: LegalDocument = {
       items: [
         'Perfil, treinos, Glória e Legiões: enquanto sua conta existir.',
         'Mensagens do Mural: até quem escreveu ou o fundador apagar, a Legião deixar de existir ou a conta ser excluída.',
+        'Rotas da Legião: até você ou o fundador apagar, você sair da Legião, a Legião deixar de existir ou a conta ser excluída.',
         'Foto de perfil: até você trocar, tirar ou desligar a escolha, ou excluir a conta.',
         'Triunfos: enquanto a sua conta existir, mesmo depois de a Legião acabar.',
         'Tentativas de código de convite inválido: 1 dia.',
         'Registros de segurança: 90 dias.',
-        'Ao excluir a conta, perfil, treinos, Glória, juramentos, mensagens do Mural e vínculos com Legiões são apagados na hora, e os registros de segurança deixam de apontar para você.',
+        'Ao excluir a conta, perfil, treinos, Glória, juramentos, mensagens do Mural, rotas compartilhadas e vínculos com Legiões são apagados na hora, e os registros de segurança deixam de apontar para você.',
       ],
     },
     {
