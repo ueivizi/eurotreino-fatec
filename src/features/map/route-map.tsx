@@ -19,10 +19,12 @@ type Props = {
   frame: readonly RoutePoint[] | null;
   /** Posição da pessoa (com a escolha "Localização" ligada): o mapa abre nela e mostra o ponto. */
   myPosition?: RoutePoint | null;
+  /** Paradas tocadas, quando a linha é o caminho traçado pelas ruas; sem elas, os pontos da linha. */
+  waypoints?: readonly RoutePoint[];
 };
 
 /** Mapa de desenhar rota (quadro 8.4): cada toque vira um ponto do traçado. */
-export function RouteMap({ points, onAddPoint, frame, myPosition = null }: Props) {
+export function RouteMap({ points, onAddPoint, frame, myPosition = null, waypoints }: Props) {
   const { colors, name } = useTheme();
   const camera = useRef<CameraRef>(null);
   const centered = useRef(false);
@@ -71,7 +73,7 @@ export function RouteMap({ points, onAddPoint, frame, myPosition = null }: Props
             paint={{ 'line-color': colors.goldHighlight, 'line-width': 4 }}
           />
         </GeoJSONSource>
-        <GeoJSONSource id="pontos" data={pointsShape(points)}>
+        <GeoJSONSource id="pontos" data={pointsShape(waypoints ?? points)}>
           <Layer
             id="pontos-marca"
             type="circle"

@@ -8,6 +8,7 @@ type Props = {
   onAddPoint: (point: RoutePoint) => void;
   frame: readonly RoutePoint[] | null;
   myPosition?: RoutePoint | null;
+  waypoints?: readonly RoutePoint[];
 };
 
 export function RouteMap(_props: Props) {

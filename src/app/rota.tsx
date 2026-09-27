@@ -1,5 +1,6 @@
 import { randomUUID } from 'expo-crypto';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useMutation } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,6 +9,7 @@ import { ScreenHeader } from '@/components/screen-header';
 import { StatusScreen } from '@/components/status-screen';
 import { Button } from '@/components/ui/button';
 import { Notice } from '@/components/ui/notice';
+import { SegmentedControl } from '@/components/ui/segmented-control';
 import { AppText } from '@/components/ui/text';
 import { TextField } from '@/components/ui/text-field';
 import { useProfile } from '@/features/auth/session';
@@ -15,9 +17,20 @@ import { rememberDistance } from '@/features/map/pending-distance';
 import { MAX_POINTS, addRoutePoint, closeRoute, routeDistanceM, type RoutePoint } from '@/features/map/route';
 import { ROUTE_MAP_AVAILABLE, RouteMap } from '@/features/map/route-map';
 import { MAX_ROUTES, ROUTE_NAME_MAX, loadRoutes, normalizeRouteName, storeRoutes, withRoute, type SavedRoute } from '@/features/map/saved-routes';
+import {
+  MAX_WAYPOINTS,
+  ROUTING_CREDIT,
+  ROUTING_MODALITIES,
+  ROUTING_PRIVACY,
+  describeRoutedPath,
+  routeThrough,
+  type RoutedPath,
+  type RoutingModality,
+} from '@/features/map/routing-api';
 import { useMyLocation } from '@/features/map/use-my-location';
 import { formatDistance } from '@/features/workouts/metrics';
 import { DISTANCE } from '@/features/workouts/workout-types';
+import { errorMessage } from '@/lib/rpc-errors';
 import { useTheme } from '@/theme/theme';
 import { radius, space, touchTarget } from '@/theme/tokens';
 
@@ -42,6 +55,13 @@ export default function RouteScreen() {
   const [loadedId, setLoadedId] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [storeError, setStoreError] = useState(false);
+  // Pontos tocados são paradas; o roteador devolve o caminho pelas ruas entre elas.
+  const [routed, setRouted] = useState<RoutedPath | null>(null);
+  const [modality, setModality] = useState<RoutingModality>('pe');
+  const snap = useMutation({
+    mutationFn: (stops: RoutePoint[]) => routeThrough(modality, stops),
+    onSuccess: (path) => setRouted(path),
+  });
 
   useEffect(() => {
     let alive = true;
@@ -77,17 +97,21 @@ export default function RouteScreen() {
     );
   }
 
-  const distanceM = routeDistanceM(points);
+  const line = routed?.points ?? points;
+  const distanceM = routed?.distanceM ?? routeDistanceM(points);
   const loaded = routes.find((route) => route.id === loadedId) ?? null;
   const usable = points.length >= 2 && distanceM >= DISTANCE.min;
 
   function edit(next: RoutePoint[]) {
     setPoints(next);
+    setRouted(null);
+    snap.reset();
     // Mexeu no traçado: a rota carregada vira um desenho novo, salvo com outro nome se quiser.
     setLoadedId(null);
   }
 
   function load(route: SavedRoute) {
+    setRouted(null);
     setPoints(route.points);
     setFrame(route.points);
     setLoadedId(route.id);
@@ -110,11 +134,14 @@ export default function RouteScreen() {
     const route: SavedRoute = {
       id: loaded?.id ?? randomUUID(),
       name: normalizeRouteName(name) || `Rota de ${dayFormat.format(new Date())}`,
-      points,
+      points: line,
       distanceM,
       savedAt: new Date().toISOString(),
     };
     if (await persist(withRoute(routes, route))) {
+      // Guardada, a rota traçada vira o próprio desenho: dá para abrir e seguir depois.
+      setPoints(route.points);
+      setRouted(null);
       setLoadedId(route.id);
       setName(route.name);
     }
@@ -125,6 +152,7 @@ export default function RouteScreen() {
     if (await persist(routes.filter((route) => route.id !== loaded.id))) {
       setLoadedId(null);
       setPoints([]);
+      setRouted(null);
       setName('');
     }
   }
@@ -145,7 +173,8 @@ export default function RouteScreen() {
       </View>
 
       <RouteMap
-        points={points}
+        points={line}
+        waypoints={points}
         frame={frame}
         myPosition={location.status === 'ativa' ? location.position : null}
         onAddPoint={(point) => edit(addRoutePoint(points, point))}
@@ -167,6 +196,27 @@ export default function RouteScreen() {
           </View>
         </View>
         {points.length >= MAX_POINTS ? <Notice message={`O traçado chegou ao limite de ${MAX_POINTS} pontos.`} /> : null}
+
+        <SegmentedControl
+          options={ROUTING_MODALITIES}
+          value={modality}
+          onChange={(next) => {
+            setModality(next);
+            setRouted(null);
+          }}
+          accessibilityLabel="Rota a pé ou de bike"
+        />
+        <Button
+          label={snap.isPending ? 'Traçando…' : routed ? 'Traçada pelas ruas' : 'Seguir ruas e ciclovias'}
+          icon="mapa"
+          variant="secondary"
+          disabled={points.length < 2 || points.length > MAX_WAYPOINTS || snap.isPending || routed !== null}
+          onPress={() => snap.mutate(points)}
+        />
+        {routed ? <AppText variant="label" tone="secondary">{describeRoutedPath(routed, formatDistance)}</AppText> : null}
+        {snap.isError ? <Notice tone="danger" message={errorMessage(snap.error)} /> : null}
+        {points.length > MAX_WAYPOINTS ? <Notice message={`Com mais de ${MAX_WAYPOINTS} pontos, a rota fica como foi desenhada.`} /> : null}
+        <AppText variant="caption" tone="muted">{routed ? `${ROUTING_PRIVACY} ${ROUTING_CREDIT}.` : ROUTING_PRIVACY}</AppText>
 
         {routes.length > 0 ? (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>

@@ -107,7 +107,7 @@ export default function LiveSessionScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const params = useLocalSearchParams<{ ficha?: string; rota?: string }>();
+  const params = useLocalSearchParams<{ ficha?: string; rota?: string; tipo?: string }>();
   const session = useTrainingSession();
   const profile = useProfile();
   const healthConsent = profile?.healthConsentAt !== null && profile?.healthConsentAt !== undefined;
@@ -116,8 +116,11 @@ export default function LiveSessionScreen() {
   const catalog = useQuery({ queryKey: queryKeys.exercises, queryFn: fetchExerciseCatalog, staleTime: 10 * 60_000 });
 
   const [now, setNow] = useState(() => new Date());
-  // Vindo do mapa com uma rota, o treino é de resistência: começa na corrida.
-  const [type, setType] = useState<WorkoutTypeId>(() => (params.rota ? 'corrida' : 'musculacao'));
+  // Vindo do mapa com uma rota, o treino é de resistência: começa na modalidade da rota ou na corrida.
+  const [type, setType] = useState<WorkoutTypeId>(() => {
+    const asked = SESSION_TYPES.find((option) => option.id === params.tipo && workoutModule(option.id) === 'resistencia');
+    return asked ? asked.id : params.rota ? 'corrida' : 'musculacao';
+  });
   const [savedRoutes, setSavedRoutes] = useState<SavedRoute[]>([]);
   const [routeDropped, setRouteDropped] = useState(false);
   const [distanceM, setDistanceM] = useState<number | null>(null);

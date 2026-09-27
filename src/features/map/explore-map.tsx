@@ -1,4 +1,6 @@
 import { Camera, Map, NativeUserLocation, type CameraRef, type MapRef } from '@maplibre/maplibre-react-native';
+import { useMutation } from '@tanstack/react-query';
+import { randomUUID } from 'expo-crypto';
 import { useFocusEffect, useIsFocused, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
@@ -13,6 +15,7 @@ import { SegmentedControl } from '@/components/ui/segmented-control';
 import { AppText } from '@/components/ui/text';
 import { useProfile } from '@/features/auth/session';
 import { formatDistance } from '@/features/workouts/metrics';
+import { errorMessage } from '@/lib/rpc-errors';
 import { useTheme } from '@/theme/theme';
 import { radius, space, touchTarget } from '@/theme/tokens';
 
@@ -21,7 +24,16 @@ import { CyclewayLayers, PLACE_LAYER, PlaceLayers, RouteLine, TAPPABLE_LAYERS } 
 import { DEFAULT_CENTER, MAP_CREDIT, MAP_STYLES } from './map-style';
 import { PLACE_COLORS, PLACE_KINDS, nearbyPlaces, placeKindOf, placeLabel, type NearbyPlace, type PlaceKind } from './places';
 import { routeBounds, type RoutePoint } from './route';
-import { loadRoutes, type SavedRoute } from './saved-routes';
+import {
+  LOOP_DISTANCES,
+  ROUTING_CREDIT,
+  ROUTING_MODALITIES,
+  describeRoutedPath,
+  generateLoops,
+  type RoutedPath,
+  type RoutingModality,
+} from './routing-api';
+import { loadRoutes, storeRoutes, withRoute, type SavedRoute } from './saved-routes';
 import { useMyLocation } from './use-my-location';
 
 export const EXPLORE_MAP_AVAILABLE = true;
@@ -68,9 +80,30 @@ export function ExploreMap() {
   const [tapped, setTapped] = useState<string | null>(null);
   const [following, setFollowing] = useState(false);
   const [locationHint, setLocationHint] = useState<string | null>(null);
+  const [loopModality, setLoopModality] = useState<RoutingModality>('pe');
+  const [loopDistance, setLoopDistance] = useState<number>(5_000);
+  const [loops, setLoops] = useState<RoutedPath[]>([]);
+  const [loopIndex, setLoopIndex] = useState(0);
+  const variation = useRef(0);
+  const [saveError, setSaveError] = useState(false);
 
   const myPosition = location.status === 'ativa' ? location.position : null;
   const selected = routes.find((route) => route.id === selectedId) ?? null;
+  const chosenLoop = loops[loopIndex] ?? null;
+
+  // Voltas geradas pelo roteador: começam e terminam na pessoa (ou no centro do mapa, sem posição).
+  const generate = useMutation({
+    mutationFn: (start: RoutePoint) => generateLoops(loopModality, start, loopDistance, variation.current),
+    onSuccess: (paths) => {
+      variation.current += 1;
+      setLoops(paths);
+      setLoopIndex(0);
+      setSelectedId(null);
+      setFollowing(false);
+      const bounds = routeBounds(paths.flatMap((path) => path.points));
+      if (bounds) camera.current?.fitBounds(bounds, { padding: fitPadding, duration: 600 });
+    },
+  });
 
   // As rotas moram no aparelho e mudam em outras telas (desenhar, fim do treino): relê ao voltar.
   useFocusEffect(
@@ -123,6 +156,7 @@ export function ExploreMap() {
   }
 
   function select(route: SavedRoute) {
+    setLoops([]);
     setSelectedId(route.id);
     setFollowing(false);
     const bounds = routeBounds(route.points);
@@ -171,6 +205,39 @@ export function ExploreMap() {
     setTapped(null);
   }
 
+  /** Guarda a volta escolhida nas rotas do aparelho; devolve o id, ou nulo se não deu. */
+  async function keepLoop(loop: RoutedPath): Promise<string | null> {
+    const route: SavedRoute = {
+      id: randomUUID(),
+      name: `Volta de ${formatDistance(loop.distanceM)}${loopModality === 'bike' ? ' de bike' : ''}`,
+      points: loop.points,
+      distanceM: loop.distanceM,
+      savedAt: new Date().toISOString(),
+    };
+    const next = withRoute(routes, route);
+    try {
+      await storeRoutes(next);
+      setRoutes(next);
+      setSaveError(false);
+      return route.id;
+    } catch {
+      setSaveError(true);
+      return null;
+    }
+  }
+
+  async function trainOnLoop(loop: RoutedPath) {
+    const id = await keepLoop(loop);
+    if (id) router.push({ pathname: '/sessao', params: { rota: id, tipo: loopModality === 'bike' ? 'bike' : 'corrida' } });
+  }
+
+  async function saveLoop(loop: RoutedPath) {
+    const id = await keepLoop(loop);
+    if (!id) return;
+    setLoops([]);
+    setSelectedId(id);
+  }
+
   const cycleColors = CYCLE_COLORS[name];
   const placeColors = PLACE_COLORS[name];
 
@@ -204,6 +271,10 @@ export function ExploreMap() {
           />
           <CyclewayLayers visible={cycleways} />
           <PlaceLayers kinds={placeKinds} />
+          {loops.map((loop, index) =>
+            index === loopIndex ? null : <RouteLine key={`volta-${index}`} id={`volta-${index}`} points={loop.points} color={colors.textMuted} width={3} />,
+          )}
+          {chosenLoop ? <RouteLine id="volta-escolhida" points={chosenLoop.points} color={colors.goldHighlight} width={5} /> : null}
           {selected ? <RouteLine id="rota-escolhida" points={selected.points} color={colors.goldHighlight} /> : null}
           {myPosition ? <NativeUserLocation mode="heading" /> : null}
         </Map>
@@ -297,6 +368,74 @@ export function ExploreMap() {
               ) : (
                 <Button label="Criar rota" icon="mais" variant="secondary" onPress={() => router.push('/rota')} />
               )}
+
+              <AppText variant="overline" tone="muted">Voltas perto de você</AppText>
+              <SegmentedControl
+                options={ROUTING_MODALITIES}
+                value={loopModality}
+                onChange={(next) => {
+                  setLoopModality(next);
+                  setLoops([]);
+                }}
+                accessibilityLabel="Volta a pé ou de bike"
+              />
+              <View style={styles.chipRow}>
+                {LOOP_DISTANCES.map((meters) => {
+                  const on = meters === loopDistance;
+                  return (
+                    <PressableScale
+                      key={meters}
+                      haptic="select"
+                      accessibilityRole="radio"
+                      accessibilityState={{ checked: on }}
+                      accessibilityLabel={`Volta de ${formatDistance(meters)}`}
+                      onPress={() => {
+                        setLoopDistance(meters);
+                        setLoops([]);
+                      }}
+                      style={[styles.chip, { borderColor: on ? colors.gold : colors.hairlineSoft, backgroundColor: on ? colors.selectedFill : 'transparent' }]}>
+                      <AppText variant="label" tone={on ? 'goldHighlight' : 'secondary'}>{formatDistance(meters)}</AppText>
+                    </PressableScale>
+                  );
+                })}
+              </View>
+              <Button
+                label={generate.isPending ? 'Gerando voltas…' : loops.length > 0 ? 'Outras voltas' : 'Gerar voltas'}
+                icon="repetir"
+                variant="secondary"
+                disabled={generate.isPending}
+                onPress={() => generate.mutate(myPosition ?? center)}
+              />
+              <AppText variant="caption" tone="muted">
+                {`${myPosition ? 'Começam e terminam onde você está.' : 'Começam no centro do mapa.'} O ponto de partida vai ao OpenRouteService (HeiGIT) pelo nosso servidor, sem a sua conta.`}
+              </AppText>
+              {generate.isError ? <Notice tone="danger" message={errorMessage(generate.error)} /> : null}
+              {loops.map((loop, index) => {
+                const on = index === loopIndex;
+                return (
+                  <PressableScale
+                    key={`opcao-${index}`}
+                    accessibilityRole="radio"
+                    accessibilityState={{ checked: on }}
+                    accessibilityLabel={`Volta ${index + 1}: ${describeRoutedPath(loop, formatDistance)}`}
+                    onPress={() => setLoopIndex(index)}
+                    style={[styles.item, { borderBottomColor: colors.hairlineSoft }]}>
+                    <View style={[styles.legendLine, { backgroundColor: on ? colors.goldHighlight : colors.textMuted }]} />
+                    <View style={styles.flex}>
+                      <AppText variant="bodyMedium" tone={on ? 'goldHighlight' : 'primary'}>{`Volta ${index + 1}`}</AppText>
+                      <AppText variant="caption" tone="secondary">{describeRoutedPath(loop, formatDistance)}</AppText>
+                    </View>
+                  </PressableScale>
+                );
+              })}
+              {chosenLoop ? (
+                <>
+                  <Button label="Treinar nesta volta" icon="registrar" onPress={() => void trainOnLoop(chosenLoop)} />
+                  <Button label="Guardar nas minhas rotas" variant="ghost" onPress={() => void saveLoop(chosenLoop)} />
+                  <AppText variant="caption" tone="muted">{ROUTING_CREDIT}</AppText>
+                </>
+              ) : null}
+              {saveError ? <Notice tone="danger" message="Não foi possível guardar a rota neste aparelho." /> : null}
 
               <AppText variant="overline" tone="muted">Suas rotas</AppText>
               {routes.length === 0 ? (
@@ -502,6 +641,11 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   chips: {
+    gap: space.sm,
+  },
+  chipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: space.sm,
   },
   chip: {
