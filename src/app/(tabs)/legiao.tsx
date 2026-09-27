@@ -1,14 +1,17 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { useState } from 'react';
+import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { PressableScale } from '@/components/motion/pressable-scale';
 import { TabFade } from '@/components/motion/tab-fade';
 import { EmblemAvatar } from '@/components/rank/emblem-avatar';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Notice } from '@/components/ui/notice';
 import { AppText } from '@/components/ui/text';
+import { LegionPanel, refetchLegionPanel } from '@/features/legions/legion-panel';
 import { fetchMyLegions } from '@/features/legions/legions-api';
 import { queryKeys } from '@/lib/query-client';
 import { errorMessage } from '@/lib/rpc-errors';
@@ -21,10 +24,32 @@ export default function LegionScreen() {
   const { colors } = useTheme();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const queryClient = useQueryClient();
   const legions = useQuery({ queryKey: queryKeys.legions, queryFn: fetchMyLegions });
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const list = legions.data ?? [];
   const atLimit = list.length >= MAX_LEGIONS;
+  // A aba mostra a Legião direto (quadro 2.4): convidar é o que faz o Coliseu existir.
+  const legion = list.find((item) => item.id === selectedId) ?? list[0] ?? null;
+
+  const moreLegions = (
+        <View style={styles.block}>
+          <Button
+            label={list.length === 0 ? 'Fundar Legião' : 'Fundar outra Legião'}
+            icon="mais"
+            onPress={() => router.push('/legioes/nova')}
+            disabled={atLimit}
+            variant={list.length === 0 ? 'primary' : 'secondary'}
+          />
+          <Button label="Entrar com código" variant="secondary" onPress={() => router.push('/legioes/entrar')} disabled={atLimit} />
+          {atLimit ? (
+            <AppText variant="caption" tone="muted" style={styles.center}>
+              Você está no limite de 10 Legiões. Saia de uma para fundar ou entrar em outra.
+            </AppText>
+          ) : null}
+        </View>
+  );
 
   return (
     <TabFade>
@@ -32,7 +57,14 @@ export default function LegionScreen() {
       style={{ flex: 1, backgroundColor: colors.background }}
       contentContainerStyle={[styles.content, { paddingTop: insets.top + space.lg }]}
       refreshControl={
-        <RefreshControl refreshing={legions.isRefetching} onRefresh={() => void legions.refetch()} tintColor={colors.gold} />
+        <RefreshControl
+          refreshing={legions.isRefetching}
+          onRefresh={() => {
+            void legions.refetch();
+            if (legion) void refetchLegionPanel(queryClient, legion.id);
+          }}
+          tintColor={colors.gold}
+        />
       }>
       <AppText variant="title">Legião</AppText>
 
@@ -53,50 +85,49 @@ export default function LegionScreen() {
             Funde uma Legião e convide seus amigos, ou entre com o código que alguém te mandou. Só quem está na
             Legião vê o Coliseu e os perfis.
           </AppText>
+          {moreLegions}
         </View>
-      ) : (
-        <View style={styles.list} accessibilityRole="list">
-          {list.map((legion) => (
-            <Pressable
-              key={legion.id}
-              accessibilityRole="button"
-              accessibilityLabel={`${legion.name}, ${legion.memberCount} de 50 membros${legion.role === 'owner' ? ', você é o fundador' : ''}`}
-              onPress={() => router.push({ pathname: '/legioes/[id]', params: { id: legion.id } })}
-              style={({ pressed }) => [
-                styles.card,
-                { backgroundColor: colors.surface, borderColor: colors.hairlineSoft },
-                pressed && styles.pressed,
-              ]}>
-              <EmblemAvatar emblem={legion.emblem} size={48} />
-              <View style={styles.cardText}>
-                <AppText variant="subheading" numberOfLines={1}>{legion.name}</AppText>
-                <AppText variant="caption" tone="muted">
-                  {`${legion.role === 'owner' ? 'Fundador · ' : ''}${legion.memberCount} de 50 membros`}
-                </AppText>
-              </View>
-              <Icon name="chevronRight" size={18} color={colors.textMuted} />
-            </Pressable>
-          ))}
-        </View>
-      )}
-
-      {legions.isSuccess ? (
-        <View style={styles.block}>
-          <Button
-            label={list.length === 0 ? 'Fundar Legião' : 'Fundar outra Legião'}
-            icon="mais"
-            onPress={() => router.push('/legioes/nova')}
-            disabled={atLimit}
-            variant={list.length === 0 ? 'primary' : 'secondary'}
-          />
-          <Button label="Entrar com código" variant="secondary" onPress={() => router.push('/legioes/entrar')} disabled={atLimit} />
-          {atLimit ? (
-            <AppText variant="caption" tone="muted" style={styles.center}>
-              Você está no limite de 10 Legiões. Saia de uma para fundar ou entrar em outra.
-            </AppText>
+      ) : legion ? (
+        <>
+          {list.length > 1 ? (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+              {list.map((item) => {
+                const selected = item.id === legion.id;
+                return (
+                  <PressableScale
+                    key={item.id}
+                    haptic="select"
+                    accessibilityRole="button"
+                    accessibilityLabel={`Ver a ${item.name}`}
+                    accessibilityState={{ selected }}
+                    onPress={() => setSelectedId(item.id)}
+                    style={[
+                      styles.chip,
+                      { borderColor: selected ? colors.gold : colors.hairlineSoft, backgroundColor: selected ? colors.selectedFill : 'transparent' },
+                    ]}>
+                    <AppText variant="label" tone={selected ? 'goldHighlight' : 'secondary'} numberOfLines={1}>{item.name}</AppText>
+                  </PressableScale>
+                );
+              })}
+            </ScrollView>
           ) : null}
-        </View>
+
+          <View style={styles.legionHead}>
+            <EmblemAvatar emblem={legion.emblem} size={56} />
+            <View style={styles.legionText}>
+              <AppText variant="heading" numberOfLines={1}>{legion.name}</AppText>
+              <AppText variant="caption" tone="muted">
+                {`${legion.role === 'owner' ? 'Você é o fundador · ' : ''}${legion.memberCount} de 50 membros`}
+              </AppText>
+            </View>
+          </View>
+
+          <LegionPanel key={legion.id} legion={legion}>
+            {moreLegions}
+          </LegionPanel>
+        </>
       ) : null}
+
     </ScrollView>
     </TabFade>
   );
@@ -112,6 +143,7 @@ const styles = StyleSheet.create({
     marginTop: space.xxxl,
   },
   block: {
+    alignSelf: 'stretch',
     gap: space.md,
   },
   empty: {
@@ -131,24 +163,23 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     maxWidth: 340,
   },
-  list: {
-    gap: space.md,
+  chips: {
+    gap: space.sm,
   },
-  card: {
-    minHeight: touchTarget + 24,
-    borderWidth: 1,
-    borderRadius: radius.md,
+  chip: {
+    minHeight: touchTarget,
+    justifyContent: 'center',
     paddingHorizontal: space.lg,
-    paddingVertical: space.md,
+    borderWidth: 1,
+    borderRadius: radius.full,
+  },
+  legionHead: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.md,
   },
-  cardText: {
+  legionText: {
     flex: 1,
     gap: space.xxs,
-  },
-  pressed: {
-    opacity: 0.85,
   },
 });
