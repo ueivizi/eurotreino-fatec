@@ -34,6 +34,21 @@ export type SessionFocus = {
   loadKg: number | null;
 };
 
+/**
+ * Um exercício da ficha como a sessão guarda: nome, meta de séries e os números previstos. Fica na
+ * sessão porque o cartão da tela bloqueada precisa disso com o app fechado, sem consultar nada.
+ */
+export type PlanItem = {
+  exerciseId: string;
+  name: string;
+  /** Séries previstas; nulo para exercício avulso, que não tem meta. */
+  targetSets: number | null;
+  reps: number;
+  loadKg: number | null;
+};
+
+export const MAX_PLAN_ITEMS = 40;
+
 export type Session = {
   userId: string;
   workoutType: WorkoutTypeId;
@@ -54,6 +69,8 @@ export type Session = {
   laps: number[];
   /** Próxima série oferecida; nulo na resistência e antes de escolher exercício. */
   focus: SessionFocus | null;
+  /** Exercícios da ficha e avulsos, na ordem; vazio na resistência. */
+  plan: PlanItem[];
 };
 
 export const SESSION_STORAGE_KEY = 'eurotreino.sessao';
@@ -68,6 +85,7 @@ export function startSession(input: {
   routineId?: string | null;
   routineName?: string | null;
   routeId?: string | null;
+  plan?: readonly PlanItem[];
   now?: Date;
 }): Session {
   return {
@@ -83,6 +101,7 @@ export function startSession(input: {
     sets: [],
     laps: [],
     focus: null,
+    plan: input.plan ? input.plan.slice(0, MAX_PLAN_ITEMS) : [],
   };
 }
 
@@ -98,6 +117,79 @@ export function setFocus(session: Session, focus: SessionFocus | null): Session 
     return session;
   }
   return { ...session, focus };
+}
+
+function samePlan(a: readonly PlanItem[], b: readonly PlanItem[]): boolean {
+  return (
+    a.length === b.length &&
+    a.every((item, index) => {
+      const other = b[index];
+      return (
+        other !== undefined &&
+        item.exerciseId === other.exerciseId &&
+        item.name === other.name &&
+        item.targetSets === other.targetSets &&
+        item.reps === other.reps &&
+        item.loadKg === other.loadKg
+      );
+    })
+  );
+}
+
+/** Troca a ficha da sessão (entrou exercício avulso, o catálogo trouxe um nome). */
+export function setPlan(session: Session, plan: readonly PlanItem[]): Session {
+  const next = plan.slice(0, MAX_PLAN_ITEMS);
+  return samePlan(session.plan, next) ? session : { ...session, plan: next };
+}
+
+/** Séries que faltam para a meta do exercício; nulo quando ele não tem meta (avulso). */
+export function remainingSets(session: Session, exerciseId: string): number | null {
+  const item = session.plan.find((entry) => entry.exerciseId === exerciseId);
+  if (!item || item.targetSets === null) return null;
+  return Math.max(0, item.targetSets - setsOf(session, exerciseId).length);
+}
+
+/** A ficha manda: fechada a meta, não entra série a mais (achado do teste de 27/09). */
+export function canAddSet(session: Session, exerciseId: string): boolean {
+  const remaining = remainingSets(session, exerciseId);
+  return remaining === null || remaining > 0;
+}
+
+/** Próximo exercício com séries por fazer, depois do atual e dando a volta na ficha. */
+export function nextOpenItem(session: Session, afterExerciseId: string | null): PlanItem | null {
+  const start = session.plan.findIndex((item) => item.exerciseId === afterExerciseId);
+  for (let step = 1; step <= session.plan.length; step += 1) {
+    const item = session.plan[(start + step + session.plan.length) % session.plan.length];
+    if (item && item.exerciseId !== afterExerciseId && canAddSet(session, item.exerciseId) && item.targetSets !== null) return item;
+  }
+  return null;
+}
+
+/** Foco num exercício: repete os números da última série feita dele, ou usa os previstos. */
+export function focusForItem(session: Session, item: PlanItem): SessionFocus {
+  const last = setsOf(session, item.exerciseId).at(-1);
+  return {
+    exerciseId: item.exerciseId,
+    exerciseName: item.name,
+    reps: last?.reps ?? item.reps,
+    loadKg: last ? last.loadKg : item.loadKg,
+  };
+}
+
+/**
+ * Marca a série do exercício da vez com os números do foco. Se ela fechou a meta, o foco passa
+ * ao próximo exercício com séries por fazer. Série além da meta não entra.
+ */
+export function markFocusedSet(session: Session, now: Date): { session: Session; completed: boolean } {
+  const focus = session.focus;
+  if (!focus || !canAddSet(session, focus.exerciseId)) return { session, completed: false };
+  let next = addSet(session, { exerciseId: focus.exerciseId, reps: focus.reps, loadKg: focus.loadKg }, now);
+  const completed = remainingSets(next, focus.exerciseId) === 0;
+  if (completed) {
+    const upcoming = nextOpenItem(next, focus.exerciseId);
+    if (upcoming) next = setFocus(next, focusForItem(next, upcoming));
+  }
+  return { session: next, completed };
 }
 
 export function elapsedMs(session: Session, now: Date): number {
@@ -180,6 +272,16 @@ function parseFocus(value: unknown): SessionFocus | null {
   return { exerciseId, exerciseName, reps, loadKg: typeof loadKg === 'number' ? loadKg : null };
 }
 
+function parsePlanItem(value: unknown): PlanItem | null {
+  if (!isRow(value)) return null;
+  const { exerciseId, name, targetSets, reps, loadKg } = value;
+  if (!isNonEmptyText(exerciseId, 60) || !isNonEmptyText(name, 80)) return null;
+  if (targetSets !== null && (typeof targetSets !== 'number' || !Number.isInteger(targetSets) || targetSets < 1 || targetSets > 20)) return null;
+  if (typeof reps !== 'number' || !Number.isInteger(reps) || reps < 1 || reps > 200) return null;
+  if (loadKg !== null && (typeof loadKg !== 'number' || !Number.isFinite(loadKg) || loadKg <= 0 || loadKg > 500)) return null;
+  return { exerciseId, name, targetSets, reps, loadKg };
+}
+
 function parseSet(value: unknown): SessionSet | null {
   if (!isRow(value)) return null;
   const { exerciseId, reps, loadKg, doneAt } = value;
@@ -237,6 +339,16 @@ export function parseSession(raw: string | null): Session | null {
   const focus = value.focus === undefined || value.focus === null ? null : parseFocus(value.focus);
   if (value.focus !== undefined && value.focus !== null && focus === null) return null;
 
+  // Sessão gravada antes de 27/09 não tem ficha: entra vazia.
+  const rawPlan = value.plan === undefined ? [] : value.plan;
+  if (!Array.isArray(rawPlan) || rawPlan.length > MAX_PLAN_ITEMS) return null;
+  const plan: PlanItem[] = [];
+  for (const item of rawPlan) {
+    const parsed = parsePlanItem(item);
+    if (!parsed) return null;
+    plan.push(parsed);
+  }
+
   return {
     userId,
     workoutType,
@@ -251,6 +363,7 @@ export function parseSession(raw: string | null): Session | null {
     sets: parsedSets,
     laps: parsedLaps,
     focus,
+    plan,
   };
 }
 

@@ -1,24 +1,28 @@
 import * as Notifications from 'expo-notifications';
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { AppState } from 'react-native';
 
 import { useSession as useAuthSession } from '@/features/auth/session';
 import { LOAD } from '@/features/workouts/workout-types';
 import { deviceStorage } from '@/lib/device-storage';
 
+import { applyCardEvents, cardState } from './lock-card';
+import { LOCK_CARD_AVAILABLE, drainLockCardEvents, hideLockCard, onLockCardAction, showLockCard } from './lock-card-native';
 import {
   SESSION_STORAGE_KEY,
   addLap,
-  addSet,
+  markFocusedSet,
   parseSession,
   pauseSession,
   removeLastLap,
   removeLastSet,
   resumeSession,
   setFocus,
+  setPlan,
   startSession,
+  type PlanItem,
   type Session,
   type SessionFocus,
-  type SessionSet,
 } from './session';
 import {
   NOTIFICATION_LOAD_STEP,
@@ -29,9 +33,6 @@ import {
   showSessionNotification,
   type SessionAction,
 } from './session-notification';
-
-/** De quanto em quanto tempo o relógio da notificação é repintado enquanto o treino corre. */
-const CLOCK_REFRESH_MS = 60_000;
 
 /**
  * Guarda a sessão em andamento no aparelho e a mantém entre aberturas do app. Uma sessão por vez:
@@ -48,12 +49,16 @@ type SessionContextValue = {
     routineId?: string | null;
     routineName?: string | null;
     routeId?: string | null;
+    plan?: readonly PlanItem[];
   }) => Promise<Session | null>;
-  /** O exercício e os números da vez, que a notificação da tela bloqueada usa. */
+  /** O exercício e os números da vez, que o cartão da tela bloqueada usa. */
   setFocus: (focus: SessionFocus | null) => Promise<void>;
+  /** Exercícios da ficha e avulsos, com nome e meta: o cartão precisa deles com o app fechado. */
+  setPlan: (plan: readonly PlanItem[]) => Promise<void>;
   pause: () => Promise<void>;
   resume: () => Promise<void>;
-  addSet: (set: Omit<SessionSet, 'doneAt'>) => Promise<void>;
+  /** Série do exercício da vez; devolve se ela fechou a meta (e o foco passou ao próximo). */
+  markSet: () => Promise<{ completed: boolean }>;
   removeLastSet: (exerciseId: string) => Promise<void>;
   addLap: () => Promise<void>;
   removeLastLap: () => Promise<void>;
@@ -67,6 +72,11 @@ export function TrainingSessionProvider({ children }: { children: ReactNode }) {
   const userId = state.status === 'ready' ? state.userId : null;
   const [current, setCurrent] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  /*
+   * A versão mais nova da sessão, para as ações partirem sempre dela: dois toques seguidos (ou um
+   * toque no cartão enquanto a tela grava) não podem partir da mesma cópia e apagar um ao outro.
+   */
+  const latest = useRef<Session | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -76,10 +86,14 @@ export function TrainingSessionProvider({ children }: { children: ReactNode }) {
         if (!active) return;
         const session = parseSession(raw);
         // Sessão de outra conta usada neste aparelho nunca é retomada.
-        setCurrent(session && session.userId === userId ? session : null);
+        const mine = session && session.userId === userId ? session : null;
+        latest.current = mine;
+        setCurrent(mine);
       })
       .catch(() => {
-        if (active) setCurrent(null);
+        if (!active) return;
+        latest.current = null;
+        setCurrent(null);
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -90,6 +104,7 @@ export function TrainingSessionProvider({ children }: { children: ReactNode }) {
   }, [userId]);
 
   const persist = useCallback(async (session: Session | null) => {
+    latest.current = session;
     setCurrent(session);
     try {
       if (session) await deviceStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session));
@@ -99,106 +114,124 @@ export function TrainingSessionProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  /** Aplica uma mudança sobre a versão mais nova da sessão e grava. */
+  const update = useCallback(
+    async (change: (session: Session) => Session) => {
+      const session = latest.current;
+      if (!session) return;
+      const next = change(session);
+      if (next !== session) await persist(next);
+    },
+    [persist],
+  );
+
   /*
-   * A notificação é o espelho da sessão: sempre que a sessão muda, ela é repintada; quando a
-   * sessão acaba, ela some. O relógio é repintado de minuto em minuto, e só enquanto corre --
-   * repintar parado seria gastar bateria para mostrar o mesmo número.
+   * O cartão da tela bloqueada é o espelho da sessão: muda quando ela muda e some quando ela acaba.
+   * No Android o relógio corre sozinho no cartão nativo — nada de repintar de minuto em minuto, que
+   * virava uma notificação nova a cada minuto (achado do teste de 27/09). Fora dele (iPhone), fica a
+   * notificação comum, sem relógio.
    */
   useEffect(() => {
     if (!current) {
+      hideLockCard();
       void clearSessionNotification();
       return;
     }
-    const paint = () =>
-      void showSessionNotification(current, {
-        exerciseName: current.focus?.exerciseName ?? null,
-        routineName: current.routineName,
-      }).catch(() => undefined);
-    paint();
-    if (current.pausedAt) return;
-    const timer = setInterval(paint, CLOCK_REFRESH_MS);
-    return () => clearInterval(timer);
+    if (LOCK_CARD_AVAILABLE) {
+      showLockCard(cardState(current, new Date()));
+      return;
+    }
+    void showSessionNotification(current, {
+      exerciseName: current.focus?.exerciseName ?? null,
+      routineName: current.routineName,
+    }).catch(() => undefined);
   }, [current]);
 
-  /** Botão da notificação: o que ele faz é o mesmo que a tela faria. */
+  // A notificação antiga (de versões anteriores) não pode ficar ao lado do cartão novo.
+  useEffect(() => {
+    if (LOCK_CARD_AVAILABLE) void clearSessionNotification();
+  }, []);
+
+  /** Toques feitos no cartão (com o app aberto ou fechado) entram na sessão com as regras da tela. */
+  const drainCard = useCallback(async () => {
+    const events = drainLockCardEvents();
+    if (events.length === 0) return;
+    await update((session) => applyCardEvents(session, events, new Date()));
+  }, [update]);
+
+  useEffect(() => {
+    if (!loading) void drainCard();
+  }, [loading, drainCard]);
+
+  useEffect(() => onLockCardAction(() => void drainCard()), [drainCard]);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (status) => {
+      if (status === 'active') void drainCard();
+    });
+    return () => subscription.remove();
+  }, [drainCard]);
+
+  /** Botão da notificação comum (fora do Android): o que ele faz é o mesmo que a tela faria. */
   const applyAction = useCallback(
-    async (action: SessionAction, session: Session) => {
+    async (action: SessionAction) => {
       const now = new Date();
-      if (action === SESSION_ACTIONS.setDone) {
-        if (!session.focus) return;
-        await persist(
-          addSet(session, { exerciseId: session.focus.exerciseId, reps: session.focus.reps, loadKg: session.focus.loadKg }, now),
-        );
-        return;
-      }
-      if (action === SESSION_ACTIONS.loadUp || action === SESSION_ACTIONS.loadDown) {
-        if (!session.focus) return;
-        const step = action === SESSION_ACTIONS.loadUp ? NOTIFICATION_LOAD_STEP : -NOTIFICATION_LOAD_STEP;
-        const next = Math.round(((session.focus.loadKg ?? 0) + step) * 10) / 10;
-        await persist(setFocus(session, { ...session.focus, loadKg: next >= LOAD.min ? Math.min(LOAD.max, next) : null }));
-        return;
-      }
-      if (action === SESSION_ACTIONS.lap) {
-        await persist(addLap(session, now));
-        return;
-      }
-      if (action === SESSION_ACTIONS.pause) {
-        await persist(pauseSession(session, now));
-        return;
-      }
-      if (action === SESSION_ACTIONS.resume) {
-        await persist(resumeSession(session, now));
-      }
+      await update((session) => {
+        if (action === SESSION_ACTIONS.setDone) return markFocusedSet(session, now).session;
+        if (action === SESSION_ACTIONS.loadUp || action === SESSION_ACTIONS.loadDown) {
+          if (!session.focus) return session;
+          const step = action === SESSION_ACTIONS.loadUp ? NOTIFICATION_LOAD_STEP : -NOTIFICATION_LOAD_STEP;
+          const next = Math.round(((session.focus.loadKg ?? 0) + step) * 10) / 10;
+          return setFocus(session, { ...session.focus, loadKg: next >= LOAD.min ? Math.min(LOAD.max, next) : null });
+        }
+        if (action === SESSION_ACTIONS.lap) return addLap(session, now);
+        if (action === SESSION_ACTIONS.pause) return pauseSession(session, now);
+        if (action === SESSION_ACTIONS.resume) return resumeSession(session, now);
+        return session;
+      });
     },
-    [persist],
+    [update],
   );
 
   /* O que chega do sistema é dado de fora: só identificador conhecido vira ação. */
   useEffect(() => {
     const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
       const action = response.actionIdentifier;
-      if (!current || typeof action !== 'string' || !isSessionAction(action)) return;
-      void applyAction(action, current);
+      if (typeof action !== 'string' || !isSessionAction(action)) return;
+      void applyAction(action);
     });
     return () => subscription.remove();
-  }, [applyAction, current]);
+  }, [applyAction]);
 
   const value = useMemo<SessionContextValue>(
     () => ({
       current,
       loading,
-      start: async ({ workoutType, requestId, routineId, routineName, routeId }) => {
+      start: async ({ workoutType, requestId, routineId, routineName, routeId, plan }) => {
         if (!userId) return null;
-        const session = startSession({ userId, workoutType, requestId, routineId, routineName, routeId });
+        const session = startSession({ userId, workoutType, requestId, routineId, routineName, routeId, plan });
         await persist(session);
-        // A permissão é pedida no começo do treino, que é quando a notificação passa a servir.
+        // A permissão é pedida no começo do treino, que é quando o cartão passa a servir.
         void ensureSessionNotificationPermission().catch(() => false);
         return session;
       },
-      setFocus: async (focus) => {
-        if (current) await persist(setFocus(current, focus));
+      setFocus: (focus) => update((session) => setFocus(session, focus)),
+      setPlan: (plan) => update((session) => setPlan(session, plan)),
+      pause: () => update((session) => pauseSession(session, new Date())),
+      resume: () => update((session) => resumeSession(session, new Date())),
+      markSet: async () => {
+        const session = latest.current;
+        if (!session) return { completed: false };
+        const result = markFocusedSet(session, new Date());
+        if (result.session !== session) await persist(result.session);
+        return { completed: result.completed };
       },
-      pause: async () => {
-        if (current) await persist(pauseSession(current, new Date()));
-      },
-      resume: async () => {
-        if (current) await persist(resumeSession(current, new Date()));
-      },
-      addSet: async (set) => {
-        if (current) await persist(addSet(current, set, new Date()));
-      },
-      removeLastSet: async (exerciseId) => {
-        if (current) await persist(removeLastSet(current, exerciseId));
-      },
-      addLap: async () => {
-        if (current) await persist(addLap(current, new Date()));
-      },
-      removeLastLap: async () => {
-        if (current) await persist(removeLastLap(current));
-      },
+      removeLastSet: (exerciseId) => update((session) => removeLastSet(session, exerciseId)),
+      addLap: () => update((session) => addLap(session, new Date())),
+      removeLastLap: () => update((session) => removeLastLap(session)),
       discard: () => persist(null),
     }),
-    [current, loading, persist, userId],
+    [current, loading, persist, update, userId],
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;

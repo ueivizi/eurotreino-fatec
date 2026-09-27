@@ -186,7 +186,7 @@ describe('o que a notificação mostra', () => {
   it('na força, diz o exercício, a série da vez e os números', () => {
     const session = addSet(setFocus(newSession(), focus), { exerciseId: 'supino', reps: 10, loadKg: 62.5 }, at(5));
     const { title, body } = notificationText(session, { exerciseName: focus.exerciseName, routineName: 'UPPER' }, at(10));
-    expect(title).toBe('UPPER · 10:00');
+    expect(title).toBe('UPPER · em andamento');
     expect(body).toBe('Supino reto com barra · série 2 · 10 reps · 62,5 kg');
   });
 

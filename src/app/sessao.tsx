@@ -31,13 +31,16 @@ import { fetchExerciseCatalog } from '@/features/training/exercises-api';
 import { fetchMyRoutines } from '@/features/training/routines-api';
 import {
   MAX_SESSION_HOURS,
+  canAddSet,
   durationMinutes,
   elapsedMs,
   finishSession,
+  focusForItem,
   formatElapsed,
   isTooLong,
   lapDurations,
   setsOf,
+  type PlanItem,
 } from '@/features/training/session';
 import { useTrainingSession } from '@/features/training/session-provider';
 import { logStrengthWorkout, type StrengthOutcome } from '@/features/training/strength-api';
@@ -130,15 +133,12 @@ export default function LiveSessionScreen() {
   const [routeSaved, setRouteSaved] = useState<'idle' | 'saved' | 'failed'>('idle');
   const [avgHeartRate, setAvgHeartRate] = useState<number | null>(null);
   const [intensity, setIntensity] = useState<IntensityId>('moderado');
-  const [reps, setReps] = useState<Record<string, number>>({});
-  const [loads, setLoads] = useState<Record<string, number>>({});
   const [extra, setExtra] = useState<string[]>([]);
   const [finishing, setFinishing] = useState(false);
-  /* Um exercício por vez, na ordem da ficha: a lista inteira na tela fazia perder o lugar entre
-     uma série e outra (achado do teste de 22/09). */
-  const [focusIndex, setFocusIndex] = useState(0);
-  /** Exercício que acabou de fechar o previsto, e para qual índice ir depois do selo. */
-  const [doneExercise, setDoneExercise] = useState<{ id: string; next: number } | null>(null);
+  /** O cronômetro foi pausado por "Finalizar treino": voltar ao treino retoma. */
+  const [pausedToFinish, setPausedToFinish] = useState(false);
+  /** Exercício que acabou de fechar o previsto: o selo aparece um instante por cima do cartão. */
+  const [doneExercise, setDoneExercise] = useState<{ name: string; sets: number } | null>(null);
   const [outcome, setOutcome] = useState<StrengthOutcome | null>(null);
 
   const current = session.current;
@@ -159,14 +159,10 @@ export default function LiveSessionScreen() {
   const plannedRouteId = current ? current.routeId : routeDropped ? null : (params.rota ?? null);
   const plannedRoute = plannedRouteId ? (savedRoutes.find((route) => route.id === plannedRouteId) ?? null) : null;
 
-  // O selo de exercício concluído fica um instante e passa a vez ao próximo da ficha.
+  // O selo de exercício concluído fica um instante; a sessão já passou a vez ao próximo da ficha.
   useEffect(() => {
     if (!doneExercise) return;
-    const { next } = doneExercise;
-    const timer = setTimeout(() => {
-      setDoneExercise(null);
-      if (next >= 0) setFocusIndex(next);
-    }, 1400);
+    const timer = setTimeout(() => setDoneExercise(null), 1400);
     return () => clearTimeout(timer);
   }, [doneExercise]);
 
@@ -188,23 +184,66 @@ export default function LiveSessionScreen() {
   const routine = current?.routineId ? routines.data?.find((item) => item.id === current.routineId) ?? null : null;
 
   /*
-   * O exercício e os números da vez, calculados aqui em cima porque a notificação da tela
-   * bloqueada precisa deles guardados na sessão — e efeito não pode vir depois de um `return`.
+   * A ficha e o exercício da vez moram na sessão, não na tela: o cartão da tela bloqueada lê e muda
+   * os mesmos números com o app fechado. Um exercício por vez, na ordem da ficha — a lista inteira na
+   * tela fazia perder o lugar entre uma série e outra (achado do teste de 22/09).
    */
   const strength = current !== null && workoutModule(current.workoutType) !== 'resistencia';
   const plannedIds = strength ? routine?.items.map((item) => item.exerciseId) ?? [] : [];
-  const exerciseIds = strength ? [...plannedIds, ...extra.filter((id) => !plannedIds.includes(id))] : [];
-  const focusId = exerciseIds[Math.min(focusIndex, Math.max(exerciseIds.length - 1, 0))] ?? null;
-  const plannedFocus = focusId ? routine?.items.find((item) => item.exerciseId === focusId) ?? null : null;
-  const focusReps = focusId ? reps[focusId] ?? plannedFocus?.targetReps ?? 10 : 0;
-  const focusLoad = focusId ? loads[focusId] ?? plannedFocus?.targetLoadKg ?? 0 : 0;
-  const focusName = focusId ? catalog.data?.exercises.find((item) => item.id === focusId)?.name ?? focusId : null;
+  const keptIds = strength ? current?.plan.map((item) => item.exerciseId) ?? [] : [];
+  const exerciseIds = strength ? [...new Set([...plannedIds, ...keptIds, ...extra])] : [];
+  const nameOfId = (id: string) =>
+    catalog.data?.exercises.find((item) => item.id === id)?.name ?? current?.plan.find((item) => item.exerciseId === id)?.name ?? 'Exercício';
+  const plan: PlanItem[] = exerciseIds.map((id) => {
+    const planned = routine?.items.find((item) => item.exerciseId === id);
+    const kept = current?.plan.find((item) => item.exerciseId === id);
+    return {
+      exerciseId: id,
+      name: nameOfId(id),
+      targetSets: planned ? planned.targetSets : (kept?.targetSets ?? null),
+      reps: planned?.targetReps ?? kept?.reps ?? 10,
+      loadKg: planned ? (planned.targetLoadKg ?? null) : (kept?.loadKg ?? null),
+    };
+  });
+  const planKey = JSON.stringify(plan);
+  const focusId = current?.focus && exerciseIds.includes(current.focus.exerciseId) ? current.focus.exerciseId : (exerciseIds[0] ?? null);
+  const focusIndex = focusId ? exerciseIds.indexOf(focusId) : 0;
+  const focusItem = plan.find((item) => item.exerciseId === focusId) ?? null;
 
-  const applyFocus = session.setFocus;
+  const applyPlan = session.setPlan;
   useEffect(() => {
-    if (!focusId || !focusName) return;
-    void applyFocus({ exerciseId: focusId, exerciseName: focusName, reps: focusReps, loadKg: focusLoad > 0 ? focusLoad : null });
-  }, [applyFocus, focusId, focusName, focusReps, focusLoad]);
+    if (!strength) return;
+    void applyPlan(JSON.parse(planKey) as PlanItem[]);
+  }, [applyPlan, planKey, strength]);
+
+  // Sem foco (começo da sessão) ou com foco fora da ficha: o primeiro exercício assume.
+  const applyFocus = session.setFocus;
+  const focusMissing = strength && focusItem !== null && current?.focus?.exerciseId !== focusItem.exerciseId;
+  useEffect(() => {
+    if (!focusMissing || !current || !focusItem) return;
+    void applyFocus(focusForItem(current, focusItem));
+  }, [applyFocus, focusMissing, current, focusItem]);
+
+  const focusReps = current?.focus && current.focus.exerciseId === focusId ? current.focus.reps : (focusItem?.reps ?? 10);
+  const focusLoad = current?.focus && current.focus.exerciseId === focusId ? (current.focus.loadKg ?? 0) : (focusItem?.loadKg ?? 0);
+
+  /** Muda repetições ou carga do exercício da vez: vale para a próxima série, aqui e no cartão. */
+  function changeFocus(values: { reps?: number; loadKg?: number }) {
+    if (!focusItem) return;
+    const nextLoad = values.loadKg ?? focusLoad;
+    void session.setFocus({
+      exerciseId: focusItem.exerciseId,
+      exerciseName: focusItem.name,
+      reps: values.reps ?? focusReps,
+      loadKg: nextLoad > 0 ? nextLoad : null,
+    });
+  }
+
+  function goTo(index: number) {
+    const item = plan[index];
+    if (!item || !current) return;
+    void session.setFocus(focusForItem(current, item));
+  }
 
   // GPS só na resistência, com a escolha ligada e no app instalado.
   const gpsEnabled = current !== null && workoutModule(current.workoutType) === 'resistencia' && GPS_AVAILABLE && Boolean(profile?.locationConsentAt);
@@ -511,9 +550,8 @@ export default function LiveSessionScreen() {
         (() => {
           const planned = plannedFor(focusId);
           const done = setsOf(current, focusId);
-          const repsValue = reps[focusId] ?? planned?.targetReps ?? 10;
-          const loadValue = loads[focusId] ?? planned?.targetLoadKg ?? 0;
           const target = planned?.targetSets ?? Math.max(done.length + 1, 1);
+          const canMark = canAddSet(current, focusId);
 
           return (
             <>
@@ -584,67 +622,81 @@ export default function LiveSessionScreen() {
                   </AppText>
                 ) : null}
 
-                <View style={styles.controls}>
-                  <View style={styles.control}>
-                    <AppText variant="caption" tone="muted">Repetições</AppText>
-                    <NumberField
-                      label="Repetições"
-                      value={repsValue}
-                      onChange={(next) => setReps({ ...reps, [focusId]: next })}
-                      min={REPS.min}
-                      max={REPS.max}
-                      step={REPS.step}
-                      format={(next) => String(next)}
-                    />
-                  </View>
-                  <View style={styles.control}>
-                    <AppText variant="caption" tone="muted">Carga</AppText>
-                    <NumberField
-                      label="Carga"
-                      value={loadValue}
-                      onChange={(next) => setLoads({ ...loads, [focusId]: next })}
-                      min={0}
-                      max={LOAD.max}
-                      step={LOAD.step}
-                      format={(next) => (next > 0 ? formatLoad(next) : 'Livre')}
-                      decimals
-                    />
-                  </View>
+                {/* Um número por linha, na largura toda: lado a lado, a carga passava da tela (teste de 27/09). */}
+                <View style={styles.control}>
+                  <AppText variant="caption" tone="muted">Repetições</AppText>
+                  <NumberField
+                    label="Repetições"
+                    value={focusReps}
+                    onChange={(next) => changeFocus({ reps: next })}
+                    min={REPS.min}
+                    max={REPS.max}
+                    step={REPS.step}
+                    format={(next) => String(next)}
+                    fill
+                  />
                 </View>
-
-                <View style={styles.setActions}>
-                  <PressableScale
-                    accessibilityRole="button"
-                    accessibilityLabel={`Marcar série de ${nameOf(focusId)}`}
-                    haptic="tap"
-                    onPress={() => {
-                      void session.addSet({ exerciseId: focusId, reps: repsValue, loadKg: loadValue > 0 ? loadValue : null });
-                      // A ficha manda: fechou o previsto, o exercício se dá por concluído e a vez
-                      // passa para o próximo que ainda falta.
-                      if (planned && done.length + 1 >= planned.targetSets) {
-                        const next = exerciseIds.findIndex((id, index) => index > focusIndex && !completed(id));
-                        setDoneExercise({ id: focusId, next });
-                      }
-                    }}
-                    style={[styles.setButton, { backgroundColor: colors.selectedFill, borderColor: colors.gold }]}>
-                    <Icon name="check" size={20} color={colors.goldHighlight} />
-                    <AppText variant="button" tone="goldHighlight">Série feita</AppText>
-                  </PressableScale>
-                </View>
-
-                <View style={styles.controls}>
-                  <Button label="Anterior" icon="chevronLeft" variant="ghost" onPress={() => setFocusIndex((index) => Math.max(0, index - 1))} />
-                  {done.length > 0 ? <Button label="Desfazer série" variant="ghost" onPress={() => void session.removeLastSet(focusId)} /> : null}
-                  <Button
-                    label={focusIndex + 1 >= exerciseIds.length ? 'Fim da ficha' : 'Próximo'}
-                    icon="chevronRight"
-                    variant="ghost"
-                    onPress={() => setFocusIndex((index) => Math.min(exerciseIds.length - 1, index + 1))}
+                <View style={styles.control}>
+                  <AppText variant="caption" tone="muted">Carga</AppText>
+                  <NumberField
+                    label="Carga"
+                    value={focusLoad}
+                    onChange={(next) => changeFocus({ loadKg: next })}
+                    min={0}
+                    max={LOAD.max}
+                    step={LOAD.step}
+                    format={(next) => (next > 0 ? formatLoad(next) : 'Livre')}
+                    decimals
+                    fill
                   />
                 </View>
 
+                <View style={styles.setActions}>
+                  {/* A ficha manda: fechada a meta, não entra série a mais (teste de 27/09), e a vez
+                      passa sozinha ao próximo exercício que ainda falta. */}
+                  <PressableScale
+                    accessibilityRole="button"
+                    accessibilityLabel={canMark ? `Marcar série de ${nameOf(focusId)}` : `${nameOf(focusId)}: séries completas`}
+                    accessibilityState={{ disabled: !canMark }}
+                    disabled={!canMark}
+                    haptic="tap"
+                    onPress={() => {
+                      const name = nameOf(focusId);
+                      const sets = done.length + 1;
+                      void session.markSet().then(({ completed: closed }) => {
+                        if (closed) setDoneExercise({ name, sets });
+                      });
+                    }}
+                    style={[
+                      styles.setButton,
+                      canMark
+                        ? { backgroundColor: colors.selectedFill, borderColor: colors.gold }
+                        : { backgroundColor: 'transparent', borderColor: colors.hairlineSoft },
+                    ]}>
+                    <Icon name="check" size={20} color={canMark ? colors.goldHighlight : colors.success} />
+                    <AppText variant="button" tone={canMark ? 'goldHighlight' : 'success'}>{canMark ? 'Série feita' : 'Séries completas'}</AppText>
+                  </PressableScale>
+                  {done.length > 0 ? <Button label="Desfazer última série" variant="ghost" onPress={() => void session.removeLastSet(focusId)} /> : null}
+                </View>
+
+                {/* Anterior e Próximo dividem a linha; o que não cabe mais vai para a linha de cima. */}
+                <View style={styles.navRow}>
+                  <View style={styles.navCell}>
+                    <Button label="Anterior" icon="chevronLeft" variant="secondary" disabled={focusIndex <= 0} onPress={() => goTo(focusIndex - 1)} />
+                  </View>
+                  <View style={styles.navCell}>
+                    <Button
+                      label="Próximo"
+                      icon="chevronRight"
+                      variant="secondary"
+                      disabled={focusIndex + 1 >= exerciseIds.length}
+                      onPress={() => goTo(focusIndex + 1)}
+                    />
+                  </View>
+                </View>
+
                 {/* Último filho do cartão: assim o selo pinta por cima de tudo, em qualquer plataforma. */}
-                {doneExercise?.id === focusId ? <ExerciseDone name={nameOf(focusId)} sets={done.length} /> : null}
+                {doneExercise ? <ExerciseDone name={doneExercise.name} sets={doneExercise.sets} /> : null}
               </Card>
 
               {exerciseIds.length > 1 ? (
@@ -660,7 +712,7 @@ export default function LiveSessionScreen() {
                         accessibilityLabel={`${nameOf(id)}, ${sets} séries feitas`}
                         onPress={() => {
                           tapFeedback();
-                          setFocusIndex(index);
+                          goTo(index);
                         }}
                         style={[styles.lapRow, { borderBottomColor: colors.hairlineSoft }]}>
                         <AppText
@@ -795,7 +847,17 @@ export default function LiveSessionScreen() {
           />
           {!isEndurance && totalSets === 0 ? <Notice message="Marque ao menos uma série antes de registrar." /> : null}
           {finish.isError ? <Notice tone="danger" message={errorMessage(finish.error)} /> : null}
-          <Button label="Voltar ao treino" variant="ghost" onPress={() => setFinishing(false)} disabled={finish.isPending} />
+          <Button
+            label="Voltar ao treino"
+            variant="ghost"
+            onPress={() => {
+              // O relógio só volta a correr se foi o "Finalizar" que o parou.
+              if (pausedToFinish) void session.resume();
+              setPausedToFinish(false);
+              setFinishing(false);
+            }}
+            disabled={finish.isPending}
+          />
         </View>
       ) : (
         <>
@@ -808,6 +870,12 @@ export default function LiveSessionScreen() {
               if (distanceM === null && gps >= DISTANCE.min) {
                 setDistanceM(Math.min(DISTANCE.max, Math.round(gps / 10) * 10));
                 setDistanceFromGps(true);
+              }
+              // Ao finalizar, o relógio para: a duração registrada é a de quando a pessoa encerrou,
+              // não a de quando terminou de preencher (teste de 27/09).
+              if (!current.pausedAt) {
+                void session.pause();
+                setPausedToFinish(true);
               }
               setFinishing(true);
             }}
@@ -895,6 +963,13 @@ const styles = StyleSheet.create({
   },
   control: {
     gap: space.xs,
+  },
+  navRow: {
+    flexDirection: 'row',
+    gap: space.sm,
+  },
+  navCell: {
+    flex: 1,
   },
   stepper: {
     flexDirection: 'row',

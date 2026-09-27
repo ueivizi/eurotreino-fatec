@@ -43,6 +43,8 @@ type Props = {
    */
   snap?: number;
   disabled?: boolean;
+  /** Ocupa a largura toda (o número estica entre os botões), para caber em tela estreita. */
+  fill?: boolean;
 };
 
 /**
@@ -64,6 +66,7 @@ export function NumberField({
   decimals = false,
   snap = decimals ? 0.5 : 1,
   disabled = false,
+  fill = false,
 }: Props) {
   const { colors } = useTheme();
   const [text, setText] = useState<string | null>(null);
@@ -82,7 +85,7 @@ export function NumberField({
   }
 
   return (
-    <View style={styles.row}>
+    <View style={[styles.row, fill && styles.rowFill]}>
       <StepButton icon="menos" label={`Diminuir ${label.toLowerCase()}`} disabled={disabled || value <= min} onPress={() => onChange(byStep(value - step))} />
 
       {text === null ? (
@@ -91,8 +94,8 @@ export function NumberField({
           accessibilityLabel={`${label}: ${format(value)}. Toque para digitar.`}
           disabled={disabled}
           onPress={() => setText(decimals ? String(value).replace('.', ',') : String(value))}
-          style={styles.value}>
-          <AppText variant="bodyMedium" style={styles.centered} accessibilityLiveRegion="polite">{format(value)}</AppText>
+          style={[styles.value, fill && styles.valueFill]}>
+          <AppText variant="bodyMedium" style={styles.centered} accessibilityLiveRegion="polite" numberOfLines={1}>{format(value)}</AppText>
         </Pressable>
       ) : (
         <TextInput
@@ -111,7 +114,7 @@ export function NumberField({
           maxLength={7}
           accessibilityLabel={label}
           maxFontSizeMultiplier={1.4}
-          style={[styles.value, styles.input, { color: colors.text, borderColor: colors.gold }]}
+          style={[styles.value, fill && styles.valueFill, styles.input, { color: colors.text, borderColor: colors.gold }]}
         />
       )}
 
@@ -133,6 +136,13 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  rowFill: {
+    alignSelf: 'stretch',
+  },
+  valueFill: {
+    flex: 1,
+    minWidth: 0,
   },
   value: {
     minWidth: 92,
