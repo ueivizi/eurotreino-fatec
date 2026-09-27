@@ -21,22 +21,27 @@ class TreinoBloqueioModule : Module() {
       CardActionReceiver.listener = null
     }
 
+    // Sem retorno antecipado (return@Function): no compilador do Kotlin 2 ele não fecha o tipo.
     Function("show") { json: String ->
-      val context = appContext.reactContext ?: return@Function
-      val state = CardState.fromApp(json, System.currentTimeMillis()) ?: return@Function
-      CardStore.writeState(context, state)
-      CardNotifier.show(context, state)
+      val context = appContext.reactContext
+      val state = CardState.fromApp(json, System.currentTimeMillis())
+      if (context != null && state != null) {
+        CardStore.writeState(context, state)
+        CardNotifier.show(context, state)
+      }
     }
 
     Function("hide") {
-      val context = appContext.reactContext ?: return@Function
-      CardStore.writeState(context, null)
-      CardNotifier.hide(context)
+      val context = appContext.reactContext
+      if (context != null) {
+        CardStore.writeState(context, null)
+        CardNotifier.hide(context)
+      }
     }
 
     Function("drainEvents") {
-      val context = appContext.reactContext ?: return@Function "[]"
-      CardStore.drainEvents(context)
+      val context = appContext.reactContext
+      if (context != null) CardStore.drainEvents(context) else "[]"
     }
   }
 }
