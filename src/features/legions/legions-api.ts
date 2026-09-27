@@ -1,8 +1,6 @@
 import { toApiError, unexpectedResponse } from '@/lib/rpc-errors';
 import { getSupabase } from '@/lib/supabase';
 
-import type { EmblemName } from '@/features/profile/emblems';
-
 import {
   parseCreatedLegion,
   parseInvite,
@@ -13,8 +11,12 @@ import {
   type Invite,
   type InvitePreview,
   type JoinResult,
+  type LegionStyle,
   type LegionSummary,
 } from './legions-parsers';
+
+/** O que o fundador escolhe: estandarte, modo e, na competitiva, o mínimo semanal. */
+export type LegionChoices = Omit<LegionStyle, 'modeSince'>;
 
 function orUnexpected<T>(value: T | null): T {
   if (value === null) throw unexpectedResponse();
@@ -27,11 +29,29 @@ export async function fetchMyLegions(): Promise<LegionSummary[]> {
   return orUnexpected(parseMyLegions(data));
 }
 
-/** RF003 */
-export async function createLegion(name: string, emblem: EmblemName): Promise<CreatedLegion> {
-  const { data, error } = await getSupabase().rpc('create_group', { p_name: name, p_emblem: emblem });
+/** RF003, com estandarte e modo. */
+export async function createLegion(name: string, choices: LegionChoices): Promise<CreatedLegion> {
+  const { data, error } = await getSupabase().rpc('create_group', {
+    p_name: name,
+    p_emblem: choices.emblem,
+    p_banner_color: choices.bannerColor,
+    p_mode: choices.mode,
+    ...(choices.mode === 'competitiva' && choices.weeklyMinimum !== null ? { p_weekly_minimum: choices.weeklyMinimum } : {}),
+  });
   if (error) throw toApiError(error);
   return orUnexpected(parseCreatedLegion(data));
+}
+
+/** Só o fundador. Virar competitiva começa a temporada na segunda seguinte. */
+export async function updateLegion(legionId: string, choices: LegionChoices): Promise<void> {
+  const { error } = await getSupabase().rpc('update_group', {
+    p_group_id: legionId,
+    p_emblem: choices.emblem,
+    p_banner_color: choices.bannerColor,
+    p_mode: choices.mode,
+    ...(choices.mode === 'competitiva' && choices.weeklyMinimum !== null ? { p_weekly_minimum: choices.weeklyMinimum } : {}),
+  });
+  if (error) throw toApiError(error);
 }
 
 /** RF004: convite aberto da Legião (um novo é emitido se o anterior venceu). */

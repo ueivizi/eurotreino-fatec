@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { BackHandler, StyleSheet } from 'react-native';
 import Animated, { FadeOut } from 'react-native-reanimated';
 
+import { TROPHY_LABELS } from '@/features/legions/louros';
 import * as haptics from '@/lib/haptics';
 import { duration } from '@/theme/motion';
 
@@ -41,6 +42,15 @@ export function CelebrationScene({ celebration, onContinue }: { celebration: Cel
       return <MedalScene title={celebration.title} description={celebration.description} icon="arena" onContinue={onContinue} />;
     case 'record':
       return <RecordScene celebration={celebration} onContinue={onContinue} />;
+    case 'trophy':
+      return (
+        <MedalScene
+          title={TROPHY_LABELS[celebration.trophy].title}
+          description={`${TROPHY_LABELS[celebration.trophy].description}${celebration.legionName ? ` da ${celebration.legionName}` : ''}, com ${celebration.louros} Louros. Ele fica no seu perfil.`}
+          icon="trofeu"
+          onContinue={onContinue}
+        />
+      );
   }
 }
 

@@ -3,6 +3,7 @@ import { StyleSheet } from 'react-native';
 
 import { TabBar } from '@/components/tab-bar';
 import { CelebrationHost } from '@/features/celebrations/celebration-host';
+import { TrophyWatcher } from '@/features/legions/trophy-watcher';
 
 /**
  * Abas do app.
@@ -26,6 +27,8 @@ export default function TabsLayout() {
       <TabBar />
       {/* Cerimônias de conquista tocam por cima das abas, depois que a folha de registro fecha. */}
       <CelebrationHost />
+      {/* Apura as temporadas competitivas e enfileira a cerimônia dos Triunfos novos. */}
+      <TrophyWatcher />
     </Tabs>
   );
 }

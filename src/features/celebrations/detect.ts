@@ -28,6 +28,7 @@ const PRIORITY: Record<CelebrationKind, number> = {
   'first-workout': 4,
   medal: 5,
   record: 6,
+  trophy: 7,
 };
 
 /** Quantas pessoas ultrapassadas aparecem no mini ranking, além de você. */

@@ -6,13 +6,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { PressableScale } from '@/components/motion/pressable-scale';
 import { TabFade } from '@/components/motion/tab-fade';
-import { EmblemAvatar } from '@/components/rank/emblem-avatar';
+import { LegionHero } from '@/components/legion/legion-hero';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Notice } from '@/components/ui/notice';
 import { AppText } from '@/components/ui/text';
 import { LegionPanel, refetchLegionPanel } from '@/features/legions/legion-panel';
 import { fetchMyLegions } from '@/features/legions/legions-api';
+import { SeasonSummary } from '@/features/legions/season-summary';
 import { queryKeys } from '@/lib/query-client';
 import { errorMessage } from '@/lib/rpc-errors';
 import { useTheme } from '@/theme/theme';
@@ -112,15 +113,8 @@ export default function LegionScreen() {
             </ScrollView>
           ) : null}
 
-          <View style={styles.legionHead}>
-            <EmblemAvatar emblem={legion.emblem} size={56} />
-            <View style={styles.legionText}>
-              <AppText variant="heading" numberOfLines={1}>{legion.name}</AppText>
-              <AppText variant="caption" tone="muted">
-                {`${legion.role === 'owner' ? 'Você é o fundador · ' : ''}${legion.memberCount} de 50 membros`}
-              </AppText>
-            </View>
-          </View>
+          <LegionHero key={`topo-${legion.id}`} legion={legion} />
+          <SeasonSummary legion={legion} />
 
           <LegionPanel key={legion.id} legion={legion}>
             {moreLegions}
@@ -172,14 +166,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.lg,
     borderWidth: 1,
     borderRadius: radius.full,
-  },
-  legionHead: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.md,
-  },
-  legionText: {
-    flex: 1,
-    gap: space.xxs,
   },
 });

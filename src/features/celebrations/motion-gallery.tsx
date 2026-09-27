@@ -1,8 +1,10 @@
+import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useState, type ReactNode } from 'react';
 import { ScrollView, StyleSheet, Switch, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { LegionBanner } from '@/components/legion/legion-banner';
 import { Halo } from '@/components/motion/halo';
 import { PressableScale } from '@/components/motion/pressable-scale';
 import { setSimulatedReducedMotion, useReducedMotionPreference } from '@/components/motion/reduced-motion';
@@ -18,10 +20,16 @@ import { Icon } from '@/components/ui/icon';
 import { ProgressBar } from '@/components/ui/progress-bar';
 import { SegmentedControl } from '@/components/ui/segmented-control';
 import { AppText } from '@/components/ui/text';
+import type { LegionSummary } from '@/features/legions/legions-parsers';
+import type { SeasonTable, Trophy } from '@/features/legions/season-parsers';
+import { SeasonTableView } from '@/features/legions/season-table';
+import { TrophyShelf } from '@/features/legions/trophy-shelf';
+import { EMBLEM_COLORS } from '@/features/profile/emblems';
 import { shareLayout, type ShareWorkout } from '@/features/share/layouts';
 import { ShareCard } from '@/features/share/share-card';
 import { INTENSITIES, type IntensityId } from '@/features/workouts/workout-types';
 import type { LoggedWorkout } from '@/features/workouts/workouts-parsers';
+import { queryKeys } from '@/lib/query-client';
 import { useTheme } from '@/theme/theme';
 import { radius, space, touchTarget } from '@/theme/tokens';
 
@@ -110,6 +118,11 @@ const SAMPLES: { label: string; description: string; celebrations: Celebration[]
     celebrations: [{ kind: 'record', exercise: 'Supino reto', previous: 80, current: 82.5, unit: 'kg' }],
   },
   {
+    label: 'Triunfo',
+    description: 'Ouro da temporada competitiva',
+    celebrations: [{ kind: 'trophy', trophy: 'triunfo_ouro', legionName: 'Legião Fênix', louros: 95 }],
+  },
+  {
     label: 'Sequência completa',
     description: 'Ascensão, pódio e constância em fila',
     celebrations: [ASCENSION, PODIUM, { kind: 'constancy', bonus: 10, weekGlory: 106 }],
@@ -143,6 +156,66 @@ const SAMPLE_SHARE: ShareWorkout = {
   performedAt: new Date(2026, 8, 23, 19, 30),
 };
 
+/** Legião competitiva de exemplo, com a tabela e os Triunfos já no cache: nada é buscado. */
+const SAMPLE_LEGION: LegionSummary = {
+  id: 'exemplo',
+  name: 'Legião Fênix',
+  emblem: 'fenix',
+  bannerColor: 'porfiro',
+  mode: 'competitiva',
+  weeklyMinimum: 3,
+  modeSince: '2026-08-31',
+  role: 'owner',
+  memberCount: 5,
+  joinedAt: '2026-08-20T12:00:00Z',
+};
+
+function seasonEntry(
+  displayName: string,
+  emblem: 'raio' | 'aguia' | 'coruja' | 'tridente' | 'leao',
+  louros: number,
+  lastDelta: number,
+  weekScored: number,
+  place: number,
+  isMe = false,
+) {
+  return {
+    userId: displayName,
+    displayName,
+    emblem,
+    emblemColor: 'ouro' as const,
+    role: 'member' as const,
+    louros,
+    lastDelta,
+    weeksCounted: 2,
+    weeksMet: lastDelta > 0 ? 2 : 1,
+    podiums: place <= 3 ? 1 : 0,
+    seasonGlory: louros * 2,
+    weekScored,
+    place,
+    isMe,
+  };
+}
+
+const SAMPLE_SEASON: SeasonTable = {
+  seasonStart: '2026-09-14',
+  seasonWeek: 3,
+  weeklyMinimum: 3,
+  entries: [
+    seasonEntry('Digão', 'raio', 70, 35, 3, 1),
+    seasonEntry('Lucas', 'aguia', 45, 20, 2, 2, true),
+    seasonEntry('Camila', 'coruja', 25, 10, 1, 3),
+    seasonEntry('Bia', 'tridente', 10, -15, 0, 4),
+    seasonEntry('Rafa', 'leao', 0, -15, 0, 5),
+  ],
+};
+
+const SAMPLE_TROPHIES: Trophy[] = [
+  { kind: 'triunfo_ouro', groupName: 'Legião Fênix', seasonStart: '2026-08-17', louros: 95, awardedAt: '2026-09-14T10:00:00Z' },
+  { kind: 'invicto', groupName: 'Legião Fênix', seasonStart: '2026-08-17', louros: 95, awardedAt: '2026-09-14T10:00:00Z' },
+  { kind: 'triunfo_prata', groupName: null, seasonStart: '2026-07-20', louros: 60, awardedAt: '2026-08-17T10:00:00Z' },
+];
+
 function Section({ title, children }: { title: string; children: ReactNode }) {
   const { colors } = useTheme();
   return (
@@ -167,6 +240,16 @@ export function MotionGallery() {
   const [glory, setGlory] = useState(468);
   const [replay, setReplay] = useState(0);
   const [intensity, setIntensity] = useState<IntensityId>('moderado');
+  const queryClient = useQueryClient();
+  // Semeia o cache uma vez: a tabela e a estante de exemplo nunca vão ao servidor.
+  useState(() => {
+    for (const key of [queryKeys.season('exemplo', 0), queryKeys.trophies('exemplo')]) {
+      queryClient.setQueryDefaults(key, { staleTime: Infinity, gcTime: Infinity });
+    }
+    queryClient.setQueryData(queryKeys.season('exemplo', 0), SAMPLE_SEASON);
+    queryClient.setQueryData(queryKeys.trophies('exemplo'), SAMPLE_TROPHIES);
+    return true;
+  });
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
@@ -221,6 +304,18 @@ export function MotionGallery() {
               </PressableScale>
             </Reveal>
           ))}
+        </Section>
+
+        <Section title="Legião competitiva">
+          <View style={styles.kitBlock}>
+            <View style={styles.banners}>
+              {EMBLEM_COLORS.map((color, index) => (
+                <LegionBanner key={color} emblem={index % 2 === 0 ? 'fenix' : 'leao'} color={color} width={48} delay={index * 90} />
+              ))}
+            </View>
+            <SeasonTableView legion={SAMPLE_LEGION} />
+            <TrophyShelf userId="exemplo" />
+          </View>
         </Section>
 
         <Section title="Treino registrado">
@@ -308,6 +403,12 @@ export function MotionGallery() {
 }
 
 const styles = StyleSheet.create({
+  banners: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    rowGap: space.md,
+  },
   content: {
     paddingHorizontal: space.xl,
     gap: space.xl,

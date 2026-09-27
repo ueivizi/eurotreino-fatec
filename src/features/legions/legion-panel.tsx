@@ -144,6 +144,15 @@ export function LegionPanel({ legion, children }: { legion: LegionSummary; child
         )
       ) : null}
 
+      {isOwner ? (
+        <Button
+          label="Estandarte e modo"
+          icon="legiao"
+          variant="ghost"
+          onPress={() => router.push({ pathname: '/legioes/estandarte/[id]', params: { id: legion.id } })}
+        />
+      ) : null}
+
       <Button
         label="Abrir o Mural"
         icon="mural"

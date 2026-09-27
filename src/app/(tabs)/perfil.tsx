@@ -16,6 +16,7 @@ import { ProgressBar } from '@/components/ui/progress-bar';
 import { AppText } from '@/components/ui/text';
 import { useSession } from '@/features/auth/session';
 import { fetchMyLegions } from '@/features/legions/legions-api';
+import { TrophyShelf } from '@/features/legions/trophy-shelf';
 import { rankFromGlory } from '@/features/ranks/tiers';
 import { fetchMyProgress } from '@/features/workouts/workouts-api';
 import { profileShareMessage } from '@/features/workouts/share-workout';
@@ -112,6 +113,8 @@ export default function ProfileScreen() {
           </>
         )}
       </Card>
+
+      <TrophyShelf />
 
       {/* Quadro 4.1: o que é seu fica em linhas com seta, não numa pilha de botões soltos. */}
       <View style={styles.section}>

@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { Fragment, useRef, useState } from 'react';
 import { Pressable, StyleSheet, TextInput, View, type TextInputProps } from 'react-native';
 
 import { OTP_LENGTH, digitsForCode } from '@/features/auth/credentials';
@@ -78,11 +78,11 @@ export function CodeField({
                 : filled
                   ? colors.hairlineStrong
                   : colors.hairlineSoft;
+            // O traço fica entre os quadrados, fora deles: dentro, ele roubava a largura do 4º.
             return (
-              <View
+              <Fragment
                 // A posição é a identidade do quadrado: o de número 3 continua sendo o terceiro.
-                key={index}
-                style={styles.slot}>
+                key={index}>
                 <View style={[styles.box, { borderColor, backgroundColor: filled ? colors.surface : 'transparent' }]}>
                   {/* O quadrado não pode crescer, então o símbolo cresce menos que o resto do texto. */}
                   <AppText style={[styles.symbol, { color: colors.text }]} maxFontSizeMultiplier={1.3}>{symbol}</AppText>
@@ -90,7 +90,7 @@ export function CodeField({
                 {separatorAfter === index + 1 ? (
                   <View style={[styles.separator, { backgroundColor: colors.hairlineStrong }]} />
                 ) : null}
-              </View>
+              </Fragment>
             );
           })}
         </View>
@@ -141,12 +141,8 @@ const styles = StyleSheet.create({
   },
   row: {
     flexDirection: 'row',
-    gap: BOX_GAP,
-  },
-  slot: {
-    flex: 1,
-    flexDirection: 'row',
     alignItems: 'center',
+    gap: BOX_GAP,
   },
   box: {
     flex: 1,
@@ -157,9 +153,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   separator: {
-    width: BOX_GAP,
+    width: BOX_GAP * 1.5,
     height: 1.5,
-    marginLeft: BOX_GAP,
   },
   symbol: {
     fontFamily: fonts.displayBold,

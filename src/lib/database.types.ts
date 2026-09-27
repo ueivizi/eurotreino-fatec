@@ -218,22 +218,34 @@ export type Database = {
       }
       groups: {
         Row: {
+          banner_color: string
           created_at: string
           emblem: string
           id: string
+          mode: string
+          mode_since: string | null
           name: string
+          weekly_minimum: number | null
         }
         Insert: {
+          banner_color?: string
           created_at?: string
           emblem: string
           id?: string
+          mode?: string
+          mode_since?: string | null
           name: string
+          weekly_minimum?: number | null
         }
         Update: {
+          banner_color?: string
           created_at?: string
           emblem?: string
           id?: string
+          mode?: string
+          mode_since?: string | null
           name?: string
+          weekly_minimum?: number | null
         }
         Relationships: []
       }
@@ -486,6 +498,54 @@ export type Database = {
           },
         ]
       }
+      trophies: {
+        Row: {
+          awarded_at: string
+          group_id: string | null
+          group_name: string
+          id: string
+          kind: string
+          louros: number
+          season_start: string
+          user_id: string
+        }
+        Insert: {
+          awarded_at?: string
+          group_id?: string | null
+          group_name: string
+          id?: string
+          kind: string
+          louros: number
+          season_start: string
+          user_id: string
+        }
+        Update: {
+          awarded_at?: string
+          group_id?: string | null
+          group_name?: string
+          id?: string
+          kind?: string
+          louros?: number
+          season_start?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trophies_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trophies_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       weekly_goals: {
         Row: {
           set_at: string
@@ -722,13 +782,23 @@ export type Database = {
         }
       }
       create_group: {
-        Args: { p_emblem: string; p_name: string }
+        Args: {
+          p_banner_color?: string
+          p_emblem: string
+          p_mode?: string
+          p_name: string
+          p_weekly_minimum?: number
+        }
         Returns: {
+          banner_color: string
           emblem: string
           group_id: string
           invite_code: string
           invite_expires_at: string
+          mode: string
+          mode_since: string
           name: string
+          weekly_minimum: number
         }[]
       }
       delete_message: { Args: { p_message_id: string }; Returns: undefined }
@@ -774,6 +844,28 @@ export type Database = {
           is_owner_message: boolean
           message_id: string
           reports_count: number
+        }[]
+      }
+      group_season_table: {
+        Args: { p_group_id: string; p_season_offset?: number }
+        Returns: {
+          display_name: string
+          emblem: string
+          emblem_color: string
+          is_me: boolean
+          last_delta: number
+          louros: number
+          place: number
+          podiums: number
+          role: string
+          season_glory: number
+          season_start: string
+          season_week: number
+          user_id: string
+          week_scored: number
+          weekly_minimum: number
+          weeks_counted: number
+          weeks_met: number
         }[]
       }
       group_weekly_ranking: {
@@ -843,12 +935,16 @@ export type Database = {
       my_groups: {
         Args: never
         Returns: {
+          banner_color: string
           emblem: string
           group_id: string
           joined_at: string
           member_count: number
+          mode: string
+          mode_since: string
           name: string
           role: string
+          weekly_minimum: number
         }[]
       }
       my_honor: {
@@ -951,11 +1047,24 @@ export type Database = {
       preview_invite: {
         Args: { p_code: string }
         Returns: {
+          banner_color: string
           group_emblem: string
           group_name: string
           is_member: boolean
           member_count: number
+          mode: string
           status: string
+          weekly_minimum: number
+        }[]
+      }
+      profile_trophies: {
+        Args: { p_user_id?: string }
+        Returns: {
+          awarded_at: string
+          group_name: string
+          kind: string
+          louros: number
+          season_start: string
         }[]
       }
       regenerate_invite: {
@@ -1000,6 +1109,32 @@ export type Database = {
           target: number
           week_start: string
           weeks_in_a_row: number
+        }[]
+      }
+      settle_group_seasons: {
+        Args: { p_group_id: string }
+        Returns: {
+          group_name: string
+          kind: string
+          louros: number
+          season_start: string
+        }[]
+      }
+      update_group: {
+        Args: {
+          p_banner_color: string
+          p_emblem: string
+          p_group_id: string
+          p_mode: string
+          p_weekly_minimum?: number
+        }
+        Returns: {
+          banner_color: string
+          emblem: string
+          group_id: string
+          mode: string
+          mode_since: string
+          weekly_minimum: number
         }[]
       }
     }
