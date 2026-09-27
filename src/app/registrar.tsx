@@ -3,6 +3,7 @@ import { randomUUID } from 'expo-crypto';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button, tapFeedback } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -278,6 +279,7 @@ function QueuedResult({ draft, performedAt, onClose }: { draft: Draft; performed
 export default function RegisterWorkoutScreen() {
   const { colors } = useTheme();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
   const queue = useOfflineQueue();
   const profile = useProfile();
@@ -456,7 +458,8 @@ export default function RegisterWorkoutScreen() {
         : null;
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: colors.surfaceRaised }} contentContainerStyle={styles.content}>
+    <View style={[styles.flex, { backgroundColor: colors.surfaceRaised }]}>
+    <ScrollView style={styles.flex} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <View style={styles.header}>
         <View style={styles.headerText}>
           <AppText variant="heading">{save.isSuccess ? 'Treino registrado' : 'Registrar treino'}</AppText>
@@ -672,25 +675,35 @@ export default function RegisterWorkoutScreen() {
             ) : null}
           </View>
 
-          {warnings.map((warning) => (
-            <Notice key={warning} message={warning} />
-          ))}
-
-          <Button
-            label={save.isPending ? 'Registrando…' : save.isError ? 'Tentar de novo' : 'Concluí'}
-            icon="check"
-            onPress={() => save.mutate()}
-            disabled={disabled}
-          />
-          {saveError ? <Notice tone="danger" message={saveError} /> : null}
-          {queue.pending.length > 0 ? (
-            <AppText variant="caption" tone="muted" style={styles.center}>
-              {`${queue.pending.length} ${queue.pending.length === 1 ? 'treino aguarda' : 'treinos aguardam'} envio neste aparelho.`}
-            </AppText>
-          ) : null}
         </>
       )}
     </ScrollView>
+
+    {/*
+      * O Concluí fica fora da rolagem: são três toques (Registrar → tipo → Concluí) seja qual for
+      * a modalidade. Dentro dela, as linhas opcionais da musculação empurravam o botão para fora
+      * da tela. Os avisos de coerência vêm junto, para serem lidos antes de confirmar.
+      */}
+    {save.isSuccess ? null : (
+      <View style={[styles.footer, { borderTopColor: colors.hairlineSoft, paddingBottom: insets.bottom + space.lg }]}>
+        {warnings.map((warning) => (
+          <Notice key={warning} message={warning} />
+        ))}
+        <Button
+          label={save.isPending ? 'Registrando…' : save.isError ? 'Tentar de novo' : 'Concluí'}
+          icon="check"
+          onPress={() => save.mutate()}
+          disabled={disabled}
+        />
+        {saveError ? <Notice tone="danger" message={saveError} /> : null}
+        {queue.pending.length > 0 ? (
+          <AppText variant="caption" tone="muted" style={styles.center}>
+            {`${queue.pending.length} ${queue.pending.length === 1 ? 'treino aguarda' : 'treinos aguardam'} envio neste aparelho.`}
+          </AppText>
+        ) : null}
+      </View>
+    )}
+    </View>
   );
 }
 
@@ -698,8 +711,14 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: space.xl,
     paddingTop: space.xxl,
-    paddingBottom: space.xxxl,
+    paddingBottom: space.xl,
     gap: space.xl,
+  },
+  footer: {
+    paddingHorizontal: space.xl,
+    paddingTop: space.md,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    gap: space.sm,
   },
   header: {
     flexDirection: 'row',
