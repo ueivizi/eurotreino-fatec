@@ -6,6 +6,7 @@ import { RankMedallion } from '@/components/rank/rank-medallion';
 import { ScreenHeader } from '@/components/screen-header';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { StepProgress } from '@/components/ui/step-progress';
 import { AppText } from '@/components/ui/text';
 import { takePendingInvite } from '@/features/legions/pending-invite';
 import { SCORING } from '@/features/ranks/scoring';
@@ -53,15 +54,19 @@ export default function GloryScreen() {
       style={{ flex: 1, backgroundColor: colors.background }}
       contentContainerStyle={[styles.content, { paddingTop: insets.top + space.md, paddingBottom: insets.bottom + space.xxxl }]}>
       {onboarding ? (
-        <AppText variant="overline" tone="muted" style={styles.step}>2 de 3</AppText>
+        <>
+          <StepProgress step={2} total={3} />
+          <View style={styles.header}>
+            <AppText variant="title">Como conquistar Glória</AppText>
+            <AppText variant="motto" tone="gold">Cada treino conta. A constância conta mais.</AppText>
+          </View>
+        </>
       ) : (
-        <ScreenHeader title="Glória" subtitle="Como a pontuação funciona" />
+        <>
+          <ScreenHeader title="Glória" subtitle="Como conquistar" />
+          <AppText variant="motto" tone="gold">Cada treino conta. A constância conta mais.</AppText>
+        </>
       )}
-
-      <View style={styles.header}>
-        <AppText variant="title">Como conquistar Glória</AppText>
-        <AppText variant="motto" tone="gold">Cada treino conta. A constância conta mais.</AppText>
-      </View>
 
       <View style={styles.rules}>
         {RULES.map((rule) => (
@@ -109,9 +114,6 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: space.xl,
     gap: space.xl,
-  },
-  step: {
-    marginTop: space.md,
   },
   header: {
     gap: space.xs,

@@ -147,7 +147,7 @@ export default function HomeScreen() {
               weekRestarted && startedToday ? 'começou hoje' : `termina em ${formatRemaining(week.remainingMs)}`
             }`}
           </AppText>
-          <AppText variant="title" numberOfLines={1}>{`Ave, ${profile.displayName}`}</AppText>
+          <AppText variant="title" numberOfLines={1}>{`Ave, ${profile.displayName.trim().split(/\s+/)[0] ?? profile.displayName}`}</AppText>
         </View>
         <EmblemAvatar emblem={profile.emblem} color={profile.emblemColor} size={46} />
       </Reveal>

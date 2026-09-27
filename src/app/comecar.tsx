@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, tapFeedback } from '@/components/ui/button';
 import { Icon, type IconName } from '@/components/ui/icon';
 import { AppText } from '@/components/ui/text';
+import { StepProgress } from '@/components/ui/step-progress';
 import { useTheme } from '@/theme/theme';
 import { radius, space, touchTarget } from '@/theme/tokens';
 
@@ -45,7 +46,7 @@ export default function FirstLegionScreen() {
     <ScrollView
       style={{ flex: 1, backgroundColor: colors.background }}
       contentContainerStyle={[styles.content, { paddingTop: insets.top + space.xxl, paddingBottom: insets.bottom + space.xxxl }]}>
-      <AppText variant="overline" tone="muted">3 de 3</AppText>
+      <StepProgress step={3} total={3} />
       <View style={styles.header}>
         <AppText variant="title">Treine com sua Legião</AppText>
         <AppText variant="motto" tone="gold">O Coliseu é privado: só participa quem você convidar.</AppText>
