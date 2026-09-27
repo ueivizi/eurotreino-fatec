@@ -1,0 +1,9 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <application>
+    <!-- Botões do cartão da tela bloqueada: só o próprio app dispara (exported=false). -->
+    <receiver
+      android:name="expo.modules.treinobloqueio.CardActionReceiver"
+      android:enabled="true"
+      android:exported="false" />
+  </application>
+</manifest>

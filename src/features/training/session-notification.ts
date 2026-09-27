@@ -123,7 +123,8 @@ type Labels = {
 export function notificationText(session: Session, labels: Labels, now: Date): { title: string; body: string } {
   const clock = formatElapsed(elapsedMs(session, now));
   const heading = labels.routineName ?? workoutTypeLabel(session.workoutType);
-  const title = session.pausedAt ? `${heading} · pausado em ${clock}` : `${heading} · ${clock}`;
+  // Sem repintar de minuto em minuto, um relógio no título ficaria parado: correndo, diz só que está.
+  const title = session.pausedAt ? `${heading} · pausado em ${clock}` : `${heading} · em andamento`;
 
   if (workoutModule(session.workoutType) === 'forca') {
     if (!session.focus || !labels.exerciseName) {

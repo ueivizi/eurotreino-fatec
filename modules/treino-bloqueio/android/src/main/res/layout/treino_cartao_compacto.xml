@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Cartão recolhido: o exercício, a série e o botão principal, que já dá para tocar na tela bloqueada. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+  android:layout_width="match_parent"
+  android:layout_height="wrap_content"
+  android:gravity="center_vertical"
+  android:orientation="horizontal">
+
+  <LinearLayout
+    android:layout_width="0dp"
+    android:layout_height="wrap_content"
+    android:layout_weight="1"
+    android:orientation="vertical">
+
+    <TextView
+      android:id="@+id/titulo"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:ellipsize="end"
+      android:singleLine="true"
+      android:textAppearance="@android:style/TextAppearance.Material.Notification.Title" />
+
+    <TextView
+      android:id="@+id/detalhe"
+      android:layout_width="match_parent"
+      android:layout_height="wrap_content"
+      android:ellipsize="end"
+      android:singleLine="true"
+      android:textAppearance="@android:style/TextAppearance.Material.Notification" />
+  </LinearLayout>
+
+  <Button
+    android:id="@+id/botao_serie"
+    android:layout_width="wrap_content"
+    android:layout_height="36dp"
+    android:layout_marginStart="8dp"
+    android:background="@drawable/treino_botao_principal"
+    android:minWidth="0dp"
+    android:minHeight="0dp"
+    android:paddingStart="14dp"
+    android:paddingEnd="14dp"
+    android:textAllCaps="false"
+    android:textColor="#FF0B0A08"
+    android:textSize="13sp"
+    android:textStyle="bold" />
+</LinearLayout>
