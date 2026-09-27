@@ -7,7 +7,14 @@ import { LOAD } from '@/features/workouts/workout-types';
 import { deviceStorage } from '@/lib/device-storage';
 
 import { applyCardEvents, cardState } from './lock-card';
-import { LOCK_CARD_AVAILABLE, drainLockCardEvents, hideLockCard, onLockCardAction, showLockCard } from './lock-card-native';
+import {
+  LOCK_CARD_AVAILABLE,
+  drainLockCardEvents,
+  hideLockCard,
+  onLockCardAction,
+  setShowWhenLocked,
+  showLockCard,
+} from './lock-card-native';
 import {
   SESSION_STORAGE_KEY,
   addLap,
@@ -146,6 +153,12 @@ export function TrainingSessionProvider({ children }: { children: ReactNode }) {
       routineName: current.routineName,
     }).catch(() => undefined);
   }, [current]);
+
+  // Só com sessão aberta o app aparece por cima da tela bloqueada; sem sessão, o bloqueio é o comum.
+  const active = current !== null;
+  useEffect(() => {
+    setShowWhenLocked(active);
+  }, [active]);
 
   // A notificação antiga (de versões anteriores) não pode ficar ao lado do cartão novo.
   useEffect(() => {

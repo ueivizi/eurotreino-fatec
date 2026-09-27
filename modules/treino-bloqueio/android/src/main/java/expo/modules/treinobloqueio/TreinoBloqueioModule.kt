@@ -8,17 +8,41 @@ import expo.modules.kotlin.modules.ModuleDefinition
  * feitos enquanto o app estava fechado. O estado chega em JSON e é conferido campo a campo.
  */
 class TreinoBloqueioModule : Module() {
+  private var watcher: LockScreenWatcher? = null
+
   override fun definition() = ModuleDefinition {
     Name("TreinoBloqueio")
 
-    Events("onAction")
+    Events("onAction", "onLockChange")
 
     OnCreate {
       CardActionReceiver.listener = { sendEvent("onAction", mapOf("pendente" to true)) }
+      val context = appContext.reactContext
+      if (context != null) {
+        val created = LockScreenWatcher(context) { locked -> sendEvent("onLockChange", mapOf("locked" to locked)) }
+        created.start()
+        watcher = created
+      }
     }
 
     OnDestroy {
       CardActionReceiver.listener = null
+      watcher?.stop()
+      watcher = null
+    }
+
+    Function("isLocked") {
+      watcher?.isLocked() ?: false
+    }
+
+    Function("setShowWhenLocked") { enabled: Boolean ->
+      val activity = appContext.currentActivity
+      if (activity != null) LockScreenWatcher.setShowWhenLocked(activity, enabled)
+    }
+
+    Function("requestUnlock") {
+      val activity = appContext.currentActivity
+      if (activity != null) LockScreenWatcher.requestUnlock(activity)
     }
 
     // Sem retorno antecipado (return@Function): no compilador do Kotlin 2 ele não fecha o tipo.
