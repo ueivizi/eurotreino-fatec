@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { TabFade } from '@/components/motion/tab-fade';
@@ -9,6 +9,7 @@ import { EmblemAvatar } from '@/components/rank/emblem-avatar';
 import { RankMedallion } from '@/components/rank/rank-medallion';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Icon } from '@/components/ui/icon';
 import { LinkRow } from '@/components/ui/link-row';
 import { Notice } from '@/components/ui/notice';
 import { ProgressBar } from '@/components/ui/progress-bar';
@@ -22,7 +23,7 @@ import { queryKeys } from '@/lib/query-client';
 import { errorMessage } from '@/lib/rpc-errors';
 import { SHARE_FEEDBACK, shareText } from '@/lib/share';
 import { useTheme } from '@/theme/theme';
-import { space } from '@/theme/tokens';
+import { space, touchTarget } from '@/theme/tokens';
 
 function workoutCount(total: number): string {
   if (total === 0) return 'Nenhum treino registrado ainda';
@@ -68,23 +69,20 @@ export default function ProfileScreen() {
       <View style={styles.identity}>
         <EmblemAvatar emblem={profile.emblem} color={profile.emblemColor} size={64} />
         <View style={styles.identityText}>
-          <AppText variant="heading" numberOfLines={1}>{profile.displayName}</AppText>
+          <AppText variant="heading" numberOfLines={2}>{profile.displayName}</AppText>
           <AppText variant="label" tone="secondary">
             {progress.data ? workoutCount(progress.data.totalWorkouts) : ' '}
           </AppText>
           {email ? <AppText variant="caption" tone="muted" numberOfLines={1}>{email}</AppText> : null}
         </View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Editar nome e emblema"
+          onPress={() => router.push('/editar-perfil')}
+          style={styles.edit}>
+          <Icon name="editar" size={20} color={colors.gold} />
+        </Pressable>
       </View>
-      <Button label="Editar nome e emblema" icon="editar" variant="secondary" onPress={() => router.push('/editar-perfil')} />
-      {progress.data ? (
-        <Button
-          label="Compartilhar meu progresso"
-          icon="compartilhar"
-          variant="ghost"
-          onPress={() => void share(profileShareMessage(profile.displayName, progress.data.totalGlory, progress.data.totalWorkouts))}
-        />
-      ) : null}
-      {shareNote ? <Notice message={shareNote} /> : null}
 
       <Card style={styles.rankCard}>
         {progress.isError ? (
@@ -113,14 +111,25 @@ export default function ProfileScreen() {
             </AppText>
           </>
         )}
-        <View style={styles.rankLinks}>
-          <Button label="Anais: meus treinos" icon="pergaminho" variant="ghost" onPress={() => router.push('/anais')} />
-          <Button label="Ver todos os ranks" variant="ghost" onPress={() => router.push('/ranks')} />
-          <Button label="Meus recordes" variant="ghost" onPress={() => router.push('/recordes')} />
-          <Button label="Minha Honra" variant="ghost" onPress={() => router.push('/honra')} />
-          <Button label="Como conquistar Glória" variant="ghost" onPress={() => router.push('/gloria')} />
-        </View>
       </Card>
+
+      {/* Quadro 4.1: o que é seu fica em linhas com seta, não numa pilha de botões soltos. */}
+      <View style={styles.section}>
+        <AppText variant="overline" tone="muted">Sua jornada</AppText>
+        <LinkRow label="Anais" icon="pergaminho" description="Seus treinos, mês a mês" onPress={() => router.push('/anais')} />
+        <LinkRow label="Juramento da semana" icon="chama" description="Sua meta e a Chama de Vesta" onPress={() => router.push('/meta')} />
+        <LinkRow label="Honra e recordes" icon="musculacao" description="Seu domínio e seus números" onPress={() => router.push('/honra')} />
+        <LinkRow label="Todos os ranks" icon="arena" description="Da Legião ao Olimpo" onPress={() => router.push('/ranks')} />
+        <LinkRow label="Como conquistar Glória" icon="info" onPress={() => router.push('/gloria')} />
+        {progress.data ? (
+          <LinkRow
+            label="Compartilhar meu progresso"
+            icon="compartilhar"
+            onPress={() => void share(profileShareMessage(profile.displayName, progress.data.totalGlory, progress.data.totalWorkouts))}
+          />
+        ) : null}
+        {shareNote ? <Notice message={shareNote} /> : null}
+      </View>
 
       <View style={styles.section}>
         <AppText variant="overline" tone="muted">Legiões</AppText>
@@ -182,9 +191,6 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 2,
   },
-  rankLinks: {
-    marginHorizontal: -space.lg,
-  },
   tabular: {
     fontVariant: ['tabular-nums'],
   },
@@ -194,18 +200,11 @@ const styles = StyleSheet.create({
   section: {
     gap: space.xs,
   },
-  consent: {
-    flexDirection: 'row',
+  edit: {
+    width: touchTarget,
+    height: touchTarget,
     alignItems: 'center',
-    gap: space.md,
-  },
-  privacy: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: space.sm,
-    marginBottom: space.xs,
-  },
-  flex: {
-    flex: 1,
+    justifyContent: 'center',
+    marginRight: -space.md,
   },
 });

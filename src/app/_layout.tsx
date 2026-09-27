@@ -129,7 +129,6 @@ function RootNavigator() {
         <Stack.Screen name="meta" />
         <Stack.Screen name="excluir-conta" />
         <Stack.Screen name="ranks" />
-        <Stack.Screen name="recordes" />
         <Stack.Screen name="honra" />
         <Stack.Screen name="dispositivos" />
         <Stack.Screen name="fichas" />
