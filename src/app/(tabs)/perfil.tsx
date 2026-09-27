@@ -20,6 +20,7 @@ import { TrophyShelf } from '@/features/legions/trophy-shelf';
 import { rankFromGlory } from '@/features/ranks/tiers';
 import { fetchMyProgress } from '@/features/workouts/workouts-api';
 import { profileShareMessage } from '@/features/workouts/share-workout';
+import { useMyPhoto } from '@/features/profile/photo';
 import { queryKeys } from '@/lib/query-client';
 import { errorMessage } from '@/lib/rpc-errors';
 import { SHARE_FEEDBACK, shareText } from '@/lib/share';
@@ -44,6 +45,8 @@ export default function ProfileScreen() {
   }
 
   const progress = useQuery({ queryKey: queryKeys.progress, queryFn: fetchMyProgress });
+  const ready = state.status === 'ready' ? state.profile : null;
+  const myPhoto = useMyPhoto(ready?.id, ready?.avatarUpdatedAt);
   const legions = useQuery({ queryKey: queryKeys.legions, queryFn: fetchMyLegions });
 
   if (state.status !== 'ready') return null;
@@ -68,7 +71,7 @@ export default function ProfileScreen() {
       <AppText variant="title">Perfil</AppText>
 
       <View style={styles.identity}>
-        <EmblemAvatar emblem={profile.emblem} color={profile.emblemColor} size={64} />
+        <EmblemAvatar emblem={profile.emblem} color={profile.emblemColor} size={64} photoUri={myPhoto} />
         <View style={styles.identityText}>
           <AppText variant="heading" numberOfLines={2}>{profile.displayName}</AppText>
           <AppText variant="label" tone="secondary">

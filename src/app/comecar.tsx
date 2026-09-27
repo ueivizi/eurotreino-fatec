@@ -46,7 +46,7 @@ export default function FirstLegionScreen() {
     <ScrollView
       style={{ flex: 1, backgroundColor: colors.background }}
       contentContainerStyle={[styles.content, { paddingTop: insets.top + space.xxl, paddingBottom: insets.bottom + space.xxxl }]}>
-      <StepProgress step={3} total={3} />
+      <StepProgress step={4} total={4} />
       <View style={styles.header}>
         <AppText variant="title">Treine com sua Legião</AppText>
         <AppText variant="motto" tone="gold">O Coliseu é privado: só participa quem você convidar.</AppText>
@@ -60,7 +60,7 @@ export default function FirstLegionScreen() {
           onPress={() => router.replace('/legioes/nova')}
         />
         <Choice
-          icon="compartilhar"
+          icon="chave"
           title="Entrar com código"
           description="Recebeu um convite? Digite o código da Legião."
           onPress={() => router.replace('/legioes/entrar')}

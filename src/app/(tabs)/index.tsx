@@ -32,6 +32,8 @@ import { formatDistance, formatLoad } from '@/features/workouts/metrics';
 import { useOfflineQueue } from '@/features/workouts/offline-queue-provider';
 import { intensityLabel, workoutTypeLabel } from '@/features/workouts/workout-types';
 import { fetchMyProgress } from '@/features/workouts/workouts-api';
+import { ChoicesInvite } from '@/features/profile/choices-invite';
+import { useMyPhoto } from '@/features/profile/photo';
 import { queryKeys } from '@/lib/query-client';
 import { errorMessage } from '@/lib/rpc-errors';
 import { formatRemaining, toRoman, weekInfo } from '@/lib/week';
@@ -69,6 +71,7 @@ export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const profile = useProfile();
+  const myPhoto = useMyPhoto(profile?.id, profile?.avatarUpdatedAt);
   const queue = useOfflineQueue();
 
   const progress = useQuery({ queryKey: queryKeys.progress, queryFn: fetchMyProgress });
@@ -149,8 +152,10 @@ export default function HomeScreen() {
           </AppText>
           <AppText variant="title" numberOfLines={1}>{`Ave, ${profile.displayName.trim().split(/\s+/)[0] ?? profile.displayName}`}</AppText>
         </View>
-        <EmblemAvatar emblem={profile.emblem} color={profile.emblemColor} size={46} />
+        <EmblemAvatar emblem={profile.emblem} color={profile.emblemColor} size={46} photoUri={myPhoto} />
       </Reveal>
+
+      <ChoicesInvite profile={profile} />
 
       {progress.isError ? (
         <View style={styles.actions}>

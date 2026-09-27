@@ -138,6 +138,7 @@ function RootNavigator() {
         <Stack.Screen name="sessao" />
         <Stack.Screen name="gloria" />
         <Stack.Screen name="comecar" />
+        <Stack.Screen name="escolhas" />
         {/* Modal de tela cheia: abre por cima do sheet do Registrar nas duas plataformas. */}
         <Stack.Screen name="rota" options={{ presentation: 'fullScreenModal' }} />
       </Stack.Protected>

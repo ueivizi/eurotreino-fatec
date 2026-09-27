@@ -53,6 +53,14 @@ Deno.serve(async (request) => {
   // O método é conferido depois da autenticação: só um POST de quem acabou de confirmar exclui.
   if (request.method !== 'POST') return reply(405, { error: 'method_not_allowed' });
 
+  // A foto de perfil mora no Storage, fora da cascata do banco: sai antes da conta. Se não sair,
+  // a exclusão para aqui e a pessoa tenta de novo — conta apagada com foto esquecida não serve.
+  const { error: photoError } = await admin.storage.from('avatars').remove([`${decision.userId}/avatar.jpg`]);
+  if (photoError) {
+    console.error('delete-account: falha ao apagar a foto de perfil');
+    return reply(500, { error: 'delete_failed' });
+  }
+
   const { error: deleteError } = await admin.auth.admin.deleteUser(decision.userId);
   if (deleteError) {
     if (deleteError.status === 404) return reply(401, { error: 'not_authenticated' });

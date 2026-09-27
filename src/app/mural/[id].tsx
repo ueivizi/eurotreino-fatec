@@ -25,6 +25,7 @@ import { Icon } from '@/components/ui/icon';
 import { Notice } from '@/components/ui/notice';
 import { AppText, textVariantStyle } from '@/components/ui/text';
 import { fetchMyLegions } from '@/features/legions/legions-api';
+import { useLegionPhotos } from '@/features/profile/photo';
 import {
   MESSAGE_MAX_LENGTH,
   clearMessageReports,
@@ -68,7 +69,7 @@ type Actions = {
  * como o desenho pede. Quem escreveu apaga a própria; o fundador apaga qualquer uma e ainda pode
  * liberar o que foi retido por denúncias.
  */
-function Message({ message, now, actions, index }: { message: MuralMessage; now: Date; actions: Actions; index: number }) {
+function Message({ message, now, actions, index, photoUri }: { message: MuralMessage; now: Date; actions: Actions; index: number; photoUri?: string }) {
   const { colors } = useTheme();
   const [open, setOpen] = useState(false);
   const canDelete = message.isMine || actions.isOwner;
@@ -88,7 +89,7 @@ function Message({ message, now, actions, index }: { message: MuralMessage; now:
             backgroundColor: message.isMine ? colors.selectedFill : colors.surface,
           },
         ]}>
-        <EmblemAvatar emblem={message.emblem} color={message.emblemColor} size={32} />
+        <EmblemAvatar emblem={message.emblem} color={message.emblemColor} size={32} photoUri={photoUri} />
         <View style={styles.flex}>
           <View style={styles.messageHead}>
             <AppText variant="bodyMedium" numberOfLines={1} style={styles.flex}>
@@ -142,6 +143,7 @@ export default function MuralScreen() {
 
   const legions = useQuery({ queryKey: queryKeys.legions, queryFn: fetchMyLegions });
   const legion = legions.data?.find((item) => item.id === legionId) ?? null;
+  const photos = useLegionPhotos(legionId);
 
   const mural = useQuery({
     queryKey: queryKeys.mural(legionId ?? ''),
@@ -213,6 +215,7 @@ export default function MuralScreen() {
                 message={message}
                 now={now}
                 index={index}
+                photoUri={photos[message.authorId]}
                 actions={{
                   isOwner: legion?.role === 'owner',
                   busy,

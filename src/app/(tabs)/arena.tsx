@@ -28,6 +28,7 @@ import { RivalCard } from '@/features/arena/rival-card';
 import { fetchMyLegions } from '@/features/legions/legions-api';
 import { SeasonTableView } from '@/features/legions/season-table';
 import { rankFromGlory } from '@/features/ranks/tiers';
+import { useLegionPhotos } from '@/features/profile/photo';
 import { queryKeys } from '@/lib/query-client';
 import { errorMessage } from '@/lib/rpc-errors';
 import { formatRemaining, toRoman, weekInfo } from '@/lib/week';
@@ -201,6 +202,7 @@ export default function ArenaScreen() {
   const { podium, rest } = splitPodium(entries);
   // Trocar de Legião ou de semana remonta o pódio: a cerimônia de subida acompanha o novo ranking.
   const podiumKey = `${legion?.id ?? ''}:${weekOffset}`;
+  const photos = useLegionPhotos(legion?.id);
   // Setas de quem subiu ou desceu desde a última visita, só na semana corrente.
   const changes = usePlaceChanges(
     legion && weekOffset === 0 && ranking.data?.weekStart ? `${legion.id}.${ranking.data.weekStart}` : null,
@@ -341,6 +343,7 @@ export default function ArenaScreen() {
                             size={slot.index === 0 ? 88 : 76}
                             laurel={hasGlory ? style.laurel : undefined}
                             crownDelay={riseDelay + 320}
+                            photoUri={photos[entry.userId]}
                           />
                           <AppText variant="bodyMedium" numberOfLines={1}>{entry.isMe ? `${entry.displayName} · você` : entry.displayName}</AppText>
                           <AppText variant="caption" tone="muted" numberOfLines={1}>{rankFromGlory(entry.totalGlory).label}</AppText>
@@ -380,7 +383,7 @@ export default function ArenaScreen() {
                           <AppText variant="bodyMedium" tone="muted" style={styles.position}>{String(entry.place)}</AppText>
                           <PlaceChange change={changes[entry.userId]} />
                         </View>
-                        <EmblemAvatar emblem={entry.emblem} color={entry.emblemColor} size={36} />
+                        <EmblemAvatar emblem={entry.emblem} color={entry.emblemColor} size={36} photoUri={photos[entry.userId]} />
                         <View style={styles.rowText}>
                           <AppText variant="bodyMedium" numberOfLines={1}>{entry.isMe ? `${entry.displayName} · você` : entry.displayName}</AppText>
                           <AppText variant="caption" tone="muted">{rankFromGlory(entry.totalGlory).label}</AppText>

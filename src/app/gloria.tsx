@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { StepProgress } from '@/components/ui/step-progress';
 import { AppText } from '@/components/ui/text';
-import { takePendingInvite } from '@/features/legions/pending-invite';
 import { SCORING } from '@/features/ranks/scoring';
 import { TIERS } from '@/features/ranks/tiers';
 import { toRoman } from '@/lib/week';
@@ -42,11 +41,9 @@ export default function GloryScreen() {
   const params = useLocalSearchParams<{ primeiro?: string }>();
   const onboarding = params.primeiro === '1';
 
+  // Depois da Glória, as escolhas de dados; o convite guardado é usado lá, na última etapa.
   function next() {
-    // Convite aberto antes do login tem prioridade: a pessoa já sabe em qual Legião quer entrar.
-    const code = takePendingInvite();
-    if (code) router.replace({ pathname: '/legioes/entrar', params: { codigo: code } });
-    else router.replace('/comecar');
+    router.replace({ pathname: '/escolhas', params: { primeiro: '1' } });
   }
 
   return (
@@ -55,7 +52,7 @@ export default function GloryScreen() {
       contentContainerStyle={[styles.content, { paddingTop: insets.top + space.md, paddingBottom: insets.bottom + space.xxxl }]}>
       {onboarding ? (
         <>
-          <StepProgress step={2} total={3} />
+          <StepProgress step={2} total={4} />
           <View style={styles.header}>
             <AppText variant="title">Como conquistar Glória</AppText>
             <AppText variant="motto" tone="gold">Cada treino conta. A constância conta mais.</AppText>
