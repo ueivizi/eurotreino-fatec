@@ -10,6 +10,7 @@ import { Icon } from '@/components/ui/icon';
 import { LinkRow } from '@/components/ui/link-row';
 import { Notice } from '@/components/ui/notice';
 import { AppText } from '@/components/ui/text';
+import { StepProgress } from '@/components/ui/step-progress';
 import { TextField } from '@/components/ui/text-field';
 import { useSession } from '@/features/auth/session';
 import { startFirstSteps } from '@/features/onboarding/first-steps';
@@ -71,7 +72,7 @@ export default function InitialProfileScreen() {
           { paddingTop: insets.top + space.xxl, paddingBottom: insets.bottom + space.xxxl },
         ]}>
         <View style={styles.header}>
-          <AppText variant="overline" tone="muted">1 de 3</AppText>
+          <StepProgress step={1} total={3} />
           <AppText variant="title">Como sua Legião vai te chamar?</AppText>
           <AppText variant="motto" tone="gold">É assim que sua Legião vai te ver.</AppText>
         </View>
