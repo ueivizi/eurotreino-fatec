@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, Path, Pattern, Rect } from 'react-native-svg';
 
@@ -15,6 +15,7 @@ import { PasswordField } from '@/components/ui/password-field';
 import { Separator } from '@/components/ui/separator';
 import { AppText } from '@/components/ui/text';
 import { TextField } from '@/components/ui/text-field';
+import { FormScrollView } from '@/components/ui/form-scroll';
 import { takeAccountDeleted } from '@/features/account/deletion-notice';
 import { AUTH_MESSAGES, authErrorMessage } from '@/features/auth/auth-errors';
 import {
@@ -277,131 +278,129 @@ export default function SignInScreen() {
   );
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: colors.background }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView
-        keyboardShouldPersistTaps="handled"
-        contentContainerStyle={[
-          styles.content,
-          !roomy && styles.contentCompact,
-          { paddingTop: insets.top + (roomy ? space.xxl : space.lg), paddingBottom: insets.bottom + (roomy ? space.xxl : space.lg) },
-        ]}>
-        <View style={styles.hero}>
-          <Monogram size={compact ? 56 : step.kind === 'senha' && roomy ? 104 : 76} />
-          <AppText variant="title" tone="goldHighlight" style={styles.brand}>EUROTREINO</AppText>
-          <Meander />
-          {step.kind === 'senha' && roomy ? (
-            <View style={styles.motto}>
-              <AppText variant="motto" style={styles.center}>Mens sana in corpore sano</AppText>
-              <AppText variant="label" tone="muted" style={styles.center}>Mente sã em corpo são</AppText>
+    <FormScrollView
+      style={{ flex: 1, backgroundColor: colors.background }}
+      contentContainerStyle={[
+        styles.content,
+        !roomy && styles.contentCompact,
+        { paddingTop: insets.top + (roomy ? space.xxl : space.lg), paddingBottom: insets.bottom + (roomy ? space.xxl : space.lg) },
+      ]}>
+      <View style={styles.hero}>
+        <Monogram size={compact ? 56 : step.kind === 'senha' && roomy ? 104 : 76} />
+        <AppText variant="title" tone="goldHighlight" style={styles.brand}>EUROTREINO</AppText>
+        <Meander />
+        {step.kind === 'senha' && roomy ? (
+          <View style={styles.motto}>
+            <AppText variant="motto" style={styles.center}>Mens sana in corpore sano</AppText>
+            <AppText variant="label" tone="muted" style={styles.center}>Mente sã em corpo são</AppText>
+          </View>
+        ) : null}
+      </View>
+
+      {step.kind === 'senha' ? (
+        <View style={[styles.form, styles.formTight]}>
+          {info ? <Notice message={info} /> : null}
+          {emailField}
+          <PasswordField
+            label="Senha"
+            value={password}
+            onChangeText={(text) => {
+      setPassword(text);
+      setPasswordError(null);
+            }}
+            placeholder="Sua senha"
+            autoComplete="current-password"
+            textContentType="password"
+            returnKeyType="go"
+            onSubmitEditing={submitPassword}
+            error={passwordError}
+          />
+          <Button label={busy ? 'Entrando…' : 'Entrar'} onPress={submitPassword} disabled={busy} />
+          {error ? <Notice tone="danger" message={error} /> : null}
+          <Button label="Criar conta" variant="secondary" icon="perfil" onPress={() => router.push('/criar-conta')} disabled={busy} />
+          {/* Os dois caminhos de apoio dividem uma linha: são um toque, não uma lista. */}
+          <View style={styles.linkRow}>
+            <TextLink label="Esqueci a senha" onPress={() => router.push('/recuperar-senha')} disabled={busy} />
+            <TextLink label="Entrar com código" onPress={() => goTo({ kind: 'email' })} disabled={busy} />
+          </View>
+
+          {providers.isPending ? (
+            <ActivityIndicator color={colors.gold} />
+          ) : enabledProviders.length > 0 ? (
+            <View style={styles.social}>
+      <View style={styles.dividerRow}>
+                <Separator style={styles.divider} />
+                <AppText variant="caption" tone="muted">ou</AppText>
+                <Separator style={styles.divider} />
+      </View>
+      {enabledProviders.map((provider) => (
+                <Button
+                  key={provider}
+                  label={`Continuar com ${PROVIDER_LABELS[provider]}`}
+                  variant="secondary"
+                  onPress={() => continueWithProvider(provider)}
+                  disabled={busy}
+                />
+      ))}
             </View>
           ) : null}
         </View>
-
-        {step.kind === 'senha' ? (
-          <View style={[styles.form, styles.formTight]}>
-            {info ? <Notice message={info} /> : null}
-            {emailField}
-            <PasswordField
-              label="Senha"
-              value={password}
-              onChangeText={(text) => {
-                setPassword(text);
-                setPasswordError(null);
-              }}
-              placeholder="Sua senha"
-              autoComplete="current-password"
-              textContentType="password"
-              returnKeyType="go"
-              onSubmitEditing={submitPassword}
-              error={passwordError}
-            />
-            <Button label={busy ? 'Entrando…' : 'Entrar'} onPress={submitPassword} disabled={busy} />
-            {error ? <Notice tone="danger" message={error} /> : null}
-            <Button label="Criar conta" variant="secondary" icon="perfil" onPress={() => router.push('/criar-conta')} disabled={busy} />
-            {/* Os dois caminhos de apoio dividem uma linha: são um toque, não uma lista. */}
-            <View style={styles.linkRow}>
-              <TextLink label="Esqueci a senha" onPress={() => router.push('/recuperar-senha')} disabled={busy} />
-              <TextLink label="Entrar com código" onPress={() => goTo({ kind: 'email' })} disabled={busy} />
-            </View>
-
-            {providers.isPending ? (
-              <ActivityIndicator color={colors.gold} />
-            ) : enabledProviders.length > 0 ? (
-              <View style={styles.social}>
-                <View style={styles.dividerRow}>
-                  <Separator style={styles.divider} />
-                  <AppText variant="caption" tone="muted">ou</AppText>
-                  <Separator style={styles.divider} />
-                </View>
-                {enabledProviders.map((provider) => (
-                  <Button
-                    key={provider}
-                    label={`Continuar com ${PROVIDER_LABELS[provider]}`}
-                    variant="secondary"
-                    onPress={() => continueWithProvider(provider)}
-                    disabled={busy}
-                  />
-                ))}
-              </View>
-            ) : null}
+      ) : step.kind === 'confirmar' ? (
+        <View style={styles.form}>
+          <View style={styles.intro}>
+            <AppText variant="heading">Confirme seu e-mail</AppText>
+            <AppText tone="secondary">{`Enviamos um código de ${OTP_LENGTH} dígitos para ${step.email}.`}</AppText>
           </View>
-        ) : step.kind === 'confirmar' ? (
-          <View style={styles.form}>
-            <View style={styles.intro}>
-              <AppText variant="heading">Confirme seu e-mail</AppText>
-              <AppText tone="secondary">{`Enviamos um código de ${OTP_LENGTH} dígitos para ${step.email}.`}</AppText>
-            </View>
-            {info ? <Notice message={info} /> : null}
-            {codeField}
-            <Button label={busy ? 'Confirmando…' : 'Confirmar e entrar'} onPress={submitConfirmation} disabled={busy} />
-            {error ? <Notice tone="danger" message={error} /> : null}
-            {codeActions}
-          </View>
-        ) : step.kind === 'email' ? (
-          <View style={styles.form}>
-            <View style={styles.intro}>
-              <AppText variant="heading">Entrar com código</AppText>
-              <AppText tone="secondary">Receba um código no e-mail da sua conta, sem digitar a senha.</AppText>
-            </View>
-            {info ? <Notice message={info} /> : null}
-            {emailField}
-            <Button label={busy ? 'Enviando…' : 'Receber código'} onPress={submitEmail} disabled={busy} />
-            {error ? <Notice tone="danger" message={error} /> : null}
-            <Button label="Voltar" variant="ghost" onPress={() => goTo({ kind: 'senha' })} disabled={busy} />
-          </View>
-        ) : (
-          <View style={styles.form}>
-            <View style={styles.intro}>
-              <AppText variant="heading">Digite o código</AppText>
-              <AppText tone="secondary">{`Enviamos um código de ${OTP_LENGTH} dígitos para ${step.email}.`}</AppText>
-            </View>
-            {info ? <Notice message={info} /> : null}
-            {codeField}
-            <Button label={busy ? 'Entrando…' : 'Entrar'} onPress={submitCode} disabled={busy} />
-            {error ? <Notice tone="danger" message={error} /> : null}
-            {codeActions}
-          </View>
-        )}
-
-        <View style={styles.footer}>
-          <View style={styles.inline}>
-            <Icon name="escudo" size={16} color={colors.gold} />
-            <AppText variant="label" tone="secondary">Sua Glória só é vista pela sua Legião.</AppText>
-          </View>
-          <AppText variant="caption" tone="muted" style={styles.center}>
-            {'Ao continuar, você aceita os '}
-            <AppText variant="caption" tone="gold" accessibilityRole="link" onPress={() => router.push('/termos')}>
-              Termos de Uso
-            </AppText>
-            {' e a '}
-            <AppText variant="caption" tone="gold" accessibilityRole="link" onPress={() => router.push('/privacidade')}>
-              Política de Privacidade
-            </AppText>
-            {', e declara ter 16 anos ou mais.'}
-          </AppText>
+          {info ? <Notice message={info} /> : null}
+          {codeField}
+          <Button label={busy ? 'Confirmando…' : 'Confirmar e entrar'} onPress={submitConfirmation} disabled={busy} />
+          {error ? <Notice tone="danger" message={error} /> : null}
+          {codeActions}
         </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      ) : step.kind === 'email' ? (
+        <View style={styles.form}>
+          <View style={styles.intro}>
+            <AppText variant="heading">Entrar com código</AppText>
+            <AppText tone="secondary">Receba um código no e-mail da sua conta, sem digitar a senha.</AppText>
+          </View>
+          {info ? <Notice message={info} /> : null}
+          {emailField}
+          <Button label={busy ? 'Enviando…' : 'Receber código'} onPress={submitEmail} disabled={busy} />
+          {error ? <Notice tone="danger" message={error} /> : null}
+          <Button label="Voltar" variant="ghost" onPress={() => goTo({ kind: 'senha' })} disabled={busy} />
+        </View>
+      ) : (
+        <View style={styles.form}>
+          <View style={styles.intro}>
+            <AppText variant="heading">Digite o código</AppText>
+            <AppText tone="secondary">{`Enviamos um código de ${OTP_LENGTH} dígitos para ${step.email}.`}</AppText>
+          </View>
+          {info ? <Notice message={info} /> : null}
+          {codeField}
+          <Button label={busy ? 'Entrando…' : 'Entrar'} onPress={submitCode} disabled={busy} />
+          {error ? <Notice tone="danger" message={error} /> : null}
+          {codeActions}
+        </View>
+      )}
+
+      <View style={styles.footer}>
+        <View style={styles.inline}>
+          <Icon name="escudo" size={16} color={colors.gold} />
+          <AppText variant="label" tone="secondary">Sua Glória só é vista pela sua Legião.</AppText>
+        </View>
+        <AppText variant="caption" tone="muted" style={styles.center}>
+          {'Ao continuar, você aceita os '}
+          <AppText variant="caption" tone="gold" accessibilityRole="link" onPress={() => router.push('/termos')}>
+            Termos de Uso
+          </AppText>
+          {' e a '}
+          <AppText variant="caption" tone="gold" accessibilityRole="link" onPress={() => router.push('/privacidade')}>
+            Política de Privacidade
+          </AppText>
+          {', e declara ter 16 anos ou mais.'}
+        </AppText>
+      </View>
+    </FormScrollView>
   );
 }
 

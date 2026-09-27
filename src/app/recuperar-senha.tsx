@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ScreenHeader } from '@/components/screen-header';
@@ -10,6 +10,7 @@ import { Notice } from '@/components/ui/notice';
 import { PasswordField } from '@/components/ui/password-field';
 import { AppText } from '@/components/ui/text';
 import { TextField } from '@/components/ui/text-field';
+import { FormScrollView } from '@/components/ui/form-scroll';
 import { AUTH_MESSAGES } from '@/features/auth/auth-errors';
 import {
   EMAIL_MAX_LENGTH,
@@ -113,90 +114,88 @@ export default function ResetPasswordScreen() {
   }
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: colors.background }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView
-        keyboardShouldPersistTaps="handled"
-        contentContainerStyle={[styles.content, { paddingTop: insets.top + space.md, paddingBottom: insets.bottom + space.xxxl }]}>
-        <ScreenHeader title="Esqueci minha senha" subtitle="Troque a senha com um código do e-mail" />
+    <FormScrollView
+      style={{ flex: 1, backgroundColor: colors.background }}
+      contentContainerStyle={[styles.content, { paddingTop: insets.top + space.md, paddingBottom: insets.bottom + space.xxxl }]}>
+      <ScreenHeader title="Esqueci minha senha" subtitle="Troque a senha com um código do e-mail" />
 
-        {sent ? (
-          <View style={styles.form}>
-            <View style={styles.intro}>
-              <AppText variant="heading">Escolha a senha nova</AppText>
-              <AppText tone="secondary">
-                {`Se houver conta com este e-mail, enviamos um código de ${OTP_LENGTH} dígitos para ${sent}.`}
-              </AppText>
-            </View>
-            {info ? <Notice message={info} /> : null}
-            <CodeField
-              label="Código"
-              value={code}
-              onChangeText={(text) => {
-                setCode(text);
-                setCodeError(null);
-              }}
-              autoFocus
-              returnKeyType="next"
-              error={codeError}
-            />
-            <PasswordField
-              label="Senha nova"
-              value={password}
-              onChangeText={(text) => {
-                setPassword(text);
-                setPasswordError(null);
-              }}
-              placeholder="Crie uma senha"
-              autoComplete="new-password"
-              textContentType="newPassword"
-              returnKeyType="go"
-              onSubmitEditing={submitNewPassword}
-              hint={`Pelo menos ${PASSWORD_MIN_LENGTH} caracteres.`}
-              error={passwordError}
-            />
-            <Button label={busy ? 'Trocando…' : 'Trocar senha e entrar'} onPress={submitNewPassword} disabled={busy} />
-            {error ? <Notice tone="danger" message={error} /> : null}
-            <View style={styles.secondaryActions}>
-              <Button
-                variant="ghost"
-                label={cooldown > 0 ? `Reenviar código em ${cooldown} s` : 'Reenviar código'}
-                onPress={() => (cooldown > 0 ? undefined : request(sent, true))}
-                disabled={busy || cooldown > 0}
-              />
-              <Button variant="ghost" label="Voltar para a entrada" onPress={() => router.replace('/entrar')} disabled={busy} />
-            </View>
-          </View>
-        ) : (
-          <View style={styles.form}>
+      {sent ? (
+        <View style={styles.form}>
+          <View style={styles.intro}>
+            <AppText variant="heading">Escolha a senha nova</AppText>
             <AppText tone="secondary">
-              Digite o e-mail da sua conta. Enviamos um código para você escolher uma senha nova.
+      {`Se houver conta com este e-mail, enviamos um código de ${OTP_LENGTH} dígitos para ${sent}.`}
             </AppText>
-            <TextField
-              label="E-mail"
-              value={email}
-              onChangeText={(text) => {
-                setEmail(text);
-                setEmailError(null);
-              }}
-              placeholder="voce@exemplo.com"
-              keyboardType="email-address"
-              inputMode="email"
-              autoCapitalize="none"
-              autoCorrect={false}
-              autoComplete="email"
-              textContentType="emailAddress"
-              maxLength={EMAIL_MAX_LENGTH}
-              returnKeyType="send"
-              onSubmitEditing={submitEmail}
-              error={emailError}
-            />
-            <Button label={busy ? 'Enviando…' : 'Enviar código'} onPress={submitEmail} disabled={busy} />
-            {error ? <Notice tone="danger" message={error} /> : null}
-            <Button label="Voltar para a entrada" variant="ghost" onPress={() => router.replace('/entrar')} disabled={busy} />
           </View>
-        )}
-      </ScrollView>
-    </KeyboardAvoidingView>
+          {info ? <Notice message={info} /> : null}
+          <CodeField
+            label="Código"
+            value={code}
+            onChangeText={(text) => {
+      setCode(text);
+      setCodeError(null);
+            }}
+            autoFocus
+            returnKeyType="next"
+            error={codeError}
+          />
+          <PasswordField
+            label="Senha nova"
+            value={password}
+            onChangeText={(text) => {
+      setPassword(text);
+      setPasswordError(null);
+            }}
+            placeholder="Crie uma senha"
+            autoComplete="new-password"
+            textContentType="newPassword"
+            returnKeyType="go"
+            onSubmitEditing={submitNewPassword}
+            hint={`Pelo menos ${PASSWORD_MIN_LENGTH} caracteres.`}
+            error={passwordError}
+          />
+          <Button label={busy ? 'Trocando…' : 'Trocar senha e entrar'} onPress={submitNewPassword} disabled={busy} />
+          {error ? <Notice tone="danger" message={error} /> : null}
+          <View style={styles.secondaryActions}>
+            <Button
+      variant="ghost"
+      label={cooldown > 0 ? `Reenviar código em ${cooldown} s` : 'Reenviar código'}
+      onPress={() => (cooldown > 0 ? undefined : request(sent, true))}
+      disabled={busy || cooldown > 0}
+            />
+            <Button variant="ghost" label="Voltar para a entrada" onPress={() => router.replace('/entrar')} disabled={busy} />
+          </View>
+        </View>
+      ) : (
+        <View style={styles.form}>
+          <AppText tone="secondary">
+            Digite o e-mail da sua conta. Enviamos um código para você escolher uma senha nova.
+          </AppText>
+          <TextField
+            label="E-mail"
+            value={email}
+            onChangeText={(text) => {
+      setEmail(text);
+      setEmailError(null);
+            }}
+            placeholder="voce@exemplo.com"
+            keyboardType="email-address"
+            inputMode="email"
+            autoCapitalize="none"
+            autoCorrect={false}
+            autoComplete="email"
+            textContentType="emailAddress"
+            maxLength={EMAIL_MAX_LENGTH}
+            returnKeyType="send"
+            onSubmitEditing={submitEmail}
+            error={emailError}
+          />
+          <Button label={busy ? 'Enviando…' : 'Enviar código'} onPress={submitEmail} disabled={busy} />
+          {error ? <Notice tone="danger" message={error} /> : null}
+          <Button label="Voltar para a entrada" variant="ghost" onPress={() => router.replace('/entrar')} disabled={busy} />
+        </View>
+      )}
+    </FormScrollView>
   );
 }
 

@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ScreenHeader } from '@/components/screen-header';
@@ -11,6 +11,7 @@ import { Icon, type IconName } from '@/components/ui/icon';
 import { Notice } from '@/components/ui/notice';
 import { AppText } from '@/components/ui/text';
 import { TextField } from '@/components/ui/text-field';
+import { FormScrollView } from '@/components/ui/form-scroll';
 import { requestExercise, takePickedExercise } from '@/features/training/exercise-picker';
 import { fetchExerciseCatalog } from '@/features/training/exercises-api';
 import { ROUTINE_LIMITS, deleteRoutine, fetchMyRoutines, saveRoutine, type RoutineItem } from '@/features/training/routines-api';
@@ -149,109 +150,107 @@ export default function RoutineEditorScreen() {
   const canSave = currentName.trim().length >= 2 && currentItems.length >= 1 && !save.isPending;
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: colors.background }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView
-        keyboardShouldPersistTaps="handled"
-        contentContainerStyle={[styles.content, { paddingTop: insets.top + space.md, paddingBottom: insets.bottom + space.xxxl }]}>
-        <ScreenHeader title={isNew ? 'Nova ficha' : 'Editar ficha'} subtitle="Exercícios, séries e carga previstos" />
+    <FormScrollView
+      style={{ flex: 1, backgroundColor: colors.background }}
+      contentContainerStyle={[styles.content, { paddingTop: insets.top + space.md, paddingBottom: insets.bottom + space.xxxl }]}>
+      <ScreenHeader title={isNew ? 'Nova ficha' : 'Editar ficha'} subtitle="Exercícios, séries e carga previstos" />
 
-        {routines.isPending && !isNew ? <ActivityIndicator color={colors.gold} /> : null}
+      {routines.isPending && !isNew ? <ActivityIndicator color={colors.gold} /> : null}
 
-        <TextField
-          label="Nome da ficha"
-          value={currentName}
-          onChangeText={setName}
-          placeholder="Ex.: Treino A · Peito e tríceps"
-          maxLength={40}
-        />
+      <TextField
+        label="Nome da ficha"
+        value={currentName}
+        onChangeText={setName}
+        placeholder="Ex.: Treino A · Peito e tríceps"
+        maxLength={40}
+      />
 
-        {currentItems.map((item, index) => (
-          <Card key={item.exerciseId} style={styles.item}>
-            <View style={styles.itemHeader}>
-              <AppText variant="bodyMedium" style={styles.flex} numberOfLines={2}>{`${index + 1}. ${nameOf(item.exerciseId)}`}</AppText>
-              <StepButton icon="chevronDown" label="Descer na ordem" disabled={index === currentItems.length - 1} onPress={() => move(index, 1)} />
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={`Remover ${nameOf(item.exerciseId)}`}
-                onPress={() => {
-                  tapFeedback();
-                  setItems(currentItems.filter((_, position) => position !== index));
-                }}
-                style={styles.remove}>
-                <Icon name="fechar" size={18} color={colors.textMuted} />
-              </Pressable>
-            </View>
+      {currentItems.map((item, index) => (
+        <Card key={item.exerciseId} style={styles.item}>
+          <View style={styles.itemHeader}>
+            <AppText variant="bodyMedium" style={styles.flex} numberOfLines={2}>{`${index + 1}. ${nameOf(item.exerciseId)}`}</AppText>
+            <StepButton icon="chevronDown" label="Descer na ordem" disabled={index === currentItems.length - 1} onPress={() => move(index, 1)} />
+            <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`Remover ${nameOf(item.exerciseId)}`}
+      onPress={() => {
+                tapFeedback();
+                setItems(currentItems.filter((_, position) => position !== index));
+      }}
+      style={styles.remove}>
+      <Icon name="fechar" size={18} color={colors.textMuted} />
+            </Pressable>
+          </View>
 
-            <Stepper
-              label="Séries"
-              value={item.targetSets}
-              format={(value) => String(value)}
-              min={ROUTINE_LIMITS.sets.min}
-              max={ROUTINE_LIMITS.sets.max}
-              step={1}
-              onChange={(value) => update(index, { targetSets: value })}
-            />
-            <Stepper
-              label="Repetições"
-              value={item.targetReps}
-              format={(value) => String(value)}
-              min={ROUTINE_LIMITS.reps.min}
-              max={ROUTINE_LIMITS.reps.max}
-              step={1}
-              onChange={(value) => update(index, { targetReps: value })}
-            />
-            <Stepper
-              label="Carga"
-              value={item.targetLoadKg ?? 0}
-              format={(value) => (value > 0 ? formatLoad(value) : 'Livre')}
-              min={0}
-              max={ROUTINE_LIMITS.load.max}
-              step={ROUTINE_LIMITS.load.step}
-              onChange={(value) => update(index, { targetLoadKg: value > 0 ? value : null })}
-            />
-            <Stepper
-              label="Descanso"
-              value={item.restSeconds ?? 0}
-              format={(value) => (value > 0 ? `${value} s` : 'Sem marcar')}
-              min={0}
-              max={ROUTINE_LIMITS.rest.max}
-              step={ROUTINE_LIMITS.rest.step}
-              onChange={(value) => update(index, { restSeconds: value >= ROUTINE_LIMITS.rest.min ? value : null })}
-            />
-          </Card>
-        ))}
+          <Stepper
+            label="Séries"
+            value={item.targetSets}
+            format={(value) => String(value)}
+            min={ROUTINE_LIMITS.sets.min}
+            max={ROUTINE_LIMITS.sets.max}
+            step={1}
+            onChange={(value) => update(index, { targetSets: value })}
+          />
+          <Stepper
+            label="Repetições"
+            value={item.targetReps}
+            format={(value) => String(value)}
+            min={ROUTINE_LIMITS.reps.min}
+            max={ROUTINE_LIMITS.reps.max}
+            step={1}
+            onChange={(value) => update(index, { targetReps: value })}
+          />
+          <Stepper
+            label="Carga"
+            value={item.targetLoadKg ?? 0}
+            format={(value) => (value > 0 ? formatLoad(value) : 'Livre')}
+            min={0}
+            max={ROUTINE_LIMITS.load.max}
+            step={ROUTINE_LIMITS.load.step}
+            onChange={(value) => update(index, { targetLoadKg: value > 0 ? value : null })}
+          />
+          <Stepper
+            label="Descanso"
+            value={item.restSeconds ?? 0}
+            format={(value) => (value > 0 ? `${value} s` : 'Sem marcar')}
+            min={0}
+            max={ROUTINE_LIMITS.rest.max}
+            step={ROUTINE_LIMITS.rest.step}
+            onChange={(value) => update(index, { restSeconds: value >= ROUTINE_LIMITS.rest.min ? value : null })}
+          />
+        </Card>
+      ))}
 
-        <Button
-          label="Adicionar exercício"
-          icon="mais"
-          variant="secondary"
-          onPress={() => {
-            requestExercise({ kind: 'routine', routineId });
-            router.push('/exercicios');
-          }}
-          disabled={currentItems.length >= ROUTINE_LIMITS.maxItems}
-        />
-        {currentItems.length >= ROUTINE_LIMITS.maxItems ? (
-          <Notice message={`Uma ficha leva até ${ROUTINE_LIMITS.maxItems} exercícios.`} />
-        ) : null}
+      <Button
+        label="Adicionar exercício"
+        icon="mais"
+        variant="secondary"
+        onPress={() => {
+          requestExercise({ kind: 'routine', routineId });
+          router.push('/exercicios');
+        }}
+        disabled={currentItems.length >= ROUTINE_LIMITS.maxItems}
+      />
+      {currentItems.length >= ROUTINE_LIMITS.maxItems ? (
+        <Notice message={`Uma ficha leva até ${ROUTINE_LIMITS.maxItems} exercícios.`} />
+      ) : null}
 
-        <Button label={save.isPending ? 'Salvando…' : 'Salvar ficha'} icon="check" onPress={() => save.mutate()} disabled={!canSave} />
-        {save.isError ? <Notice tone="danger" message={errorMessage(save.error)} /> : null}
+      <Button label={save.isPending ? 'Salvando…' : 'Salvar ficha'} icon="check" onPress={() => save.mutate()} disabled={!canSave} />
+      {save.isError ? <Notice tone="danger" message={errorMessage(save.error)} /> : null}
 
-        {!isNew ? (
-          confirmDelete ? (
-            <View style={styles.block}>
-              <Notice message="A ficha será apagada. Os treinos que você já registrou por ela continuam no histórico." />
-              <Button label={remove.isPending ? 'Apagando…' : 'Apagar ficha'} variant="secondary" icon="excluir" onPress={() => remove.mutate()} disabled={remove.isPending} />
-              <Button label="Cancelar" variant="ghost" onPress={() => setConfirmDelete(false)} disabled={remove.isPending} />
-              {remove.isError ? <Notice tone="danger" message={errorMessage(remove.error)} /> : null}
-            </View>
-          ) : (
-            <Button label="Apagar ficha" variant="ghost" icon="excluir" onPress={() => setConfirmDelete(true)} />
-          )
-        ) : null}
-      </ScrollView>
-    </KeyboardAvoidingView>
+      {!isNew ? (
+        confirmDelete ? (
+          <View style={styles.block}>
+            <Notice message="A ficha será apagada. Os treinos que você já registrou por ela continuam no histórico." />
+            <Button label={remove.isPending ? 'Apagando…' : 'Apagar ficha'} variant="secondary" icon="excluir" onPress={() => remove.mutate()} disabled={remove.isPending} />
+            <Button label="Cancelar" variant="ghost" onPress={() => setConfirmDelete(false)} disabled={remove.isPending} />
+            {remove.isError ? <Notice tone="danger" message={errorMessage(remove.error)} /> : null}
+          </View>
+        ) : (
+          <Button label="Apagar ficha" variant="ghost" icon="excluir" onPress={() => setConfirmDelete(true)} />
+        )
+      ) : null}
+    </FormScrollView>
   );
 }
 

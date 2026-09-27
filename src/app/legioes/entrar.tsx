@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { LegionBanner } from '@/components/legion/legion-banner';
@@ -12,6 +12,7 @@ import { Card } from '@/components/ui/card';
 import { Notice } from '@/components/ui/notice';
 import { AppText } from '@/components/ui/text';
 import { CodeField } from '@/components/ui/code-field';
+import { FormScrollView } from '@/components/ui/form-scroll';
 import {
   INVITE_CODE_LENGTH,
   inviteCodeFromLink,
@@ -93,77 +94,73 @@ export default function JoinLegionScreen() {
   const problem = joinResult ? joinProblem(joinResult) : null;
 
   return (
-    <KeyboardAvoidingView
+    <FormScrollView
       style={{ flex: 1, backgroundColor: colors.background }}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView
-        keyboardShouldPersistTaps="handled"
-        contentContainerStyle={[styles.content, { paddingTop: insets.top + space.md, paddingBottom: insets.bottom + space.xxxl }]}>
-        <ScreenHeader title="Entrar com código" subtitle="Peça o código a quem fundou a Legião" />
+      contentContainerStyle={[styles.content, { paddingTop: insets.top + space.md, paddingBottom: insets.bottom + space.xxxl }]}>
+      <ScreenHeader title="Entrar com código" subtitle="Peça o código a quem fundou a Legião" />
 
-        <CodeField
-          label="Código de convite"
-          value={code}
-          onChangeText={(text) => {
-            setCode(text);
-            setFieldError(null);
-            preview.reset();
-            join.reset();
-          }}
-          length={INVITE_CODE_LENGTH}
-          sanitize={(text, length) => normalizeInviteCode(text).slice(0, length)}
-          separatorAfter={4}
-          keyboardType="default"
-          hint="Oito símbolos, sem os parecidos: nada de 0, O, 1 nem I."
-          returnKeyType="search"
-          onSubmitEditing={showPreview}
-          error={fieldError}
-        />
+      <CodeField
+        label="Código de convite"
+        value={code}
+        onChangeText={(text) => {
+          setCode(text);
+          setFieldError(null);
+          preview.reset();
+          join.reset();
+        }}
+        length={INVITE_CODE_LENGTH}
+        sanitize={(text, length) => normalizeInviteCode(text).slice(0, length)}
+        separatorAfter={4}
+        keyboardType="default"
+        hint="Oito símbolos, sem os parecidos: nada de 0, O, 1 nem I."
+        returnKeyType="search"
+        onSubmitEditing={showPreview}
+        error={fieldError}
+      />
 
-        {!previewData || previewData.status !== 'ok' ? (
-          <Button label={preview.isPending ? 'Buscando…' : 'Ver Legião'} onPress={showPreview} disabled={preview.isPending} />
-        ) : null}
+      {!previewData || previewData.status !== 'ok' ? (
+        <Button label={preview.isPending ? 'Buscando…' : 'Ver Legião'} onPress={showPreview} disabled={preview.isPending} />
+      ) : null}
 
-        {preview.isError ? <Notice tone="danger" message={errorMessage(preview.error)} /> : null}
-        {previewData?.status === 'invalid' ? <Notice tone="danger" message={INVALID_CODE} /> : null}
-        {previewData?.status === 'rate_limited' ? <Notice tone="danger" message={RATE_LIMITED} /> : null}
+      {preview.isError ? <Notice tone="danger" message={errorMessage(preview.error)} /> : null}
+      {previewData?.status === 'invalid' ? <Notice tone="danger" message={INVALID_CODE} /> : null}
+      {previewData?.status === 'rate_limited' ? <Notice tone="danger" message={RATE_LIMITED} /> : null}
 
-        {previewData?.status === 'ok' ? (
-          <View style={styles.previewBlock}>
-            {/* Quadro 2.3: o convite mostra o estandarte, e o modo aparece antes de a pessoa entrar. */}
-            <Card style={styles.preview}>
-              <LegionBanner emblem={previewData.emblem} color={previewData.bannerColor} width={64} />
-              <View style={styles.previewText}>
-                <AppText variant="caption" tone="muted">Convite para</AppText>
-                <AppText variant="heading" numberOfLines={2}>{previewData.name}</AppText>
-                <AppText variant="label" tone="muted">{`${previewData.memberCount} de 50 membros`}</AppText>
-                <ModeBadge mode={previewData.mode} weeklyMinimum={previewData.weeklyMinimum} />
-              </View>
-            </Card>
-            {previewData.mode === 'competitiva' && !previewData.isMember ? (
-              <Notice
-                message={`Legião competitiva: abaixo de ${previewData.weeklyMinimum} treinos por semana, você perde Louros da temporada. A sua Glória não cai.`}
-              />
-            ) : null}
+      {previewData?.status === 'ok' ? (
+        <View style={styles.previewBlock}>
+          {/* Quadro 2.3: o convite mostra o estandarte, e o modo aparece antes de a pessoa entrar. */}
+          <Card style={styles.preview}>
+            <LegionBanner emblem={previewData.emblem} color={previewData.bannerColor} width={64} />
+            <View style={styles.previewText}>
+      <AppText variant="caption" tone="muted">Convite para</AppText>
+      <AppText variant="heading" numberOfLines={2}>{previewData.name}</AppText>
+      <AppText variant="label" tone="muted">{`${previewData.memberCount} de 50 membros`}</AppText>
+      <ModeBadge mode={previewData.mode} weeklyMinimum={previewData.weeklyMinimum} />
+            </View>
+          </Card>
+          {previewData.mode === 'competitiva' && !previewData.isMember ? (
+            <Notice
+      message={`Legião competitiva: abaixo de ${previewData.weeklyMinimum} treinos por semana, você perde Louros da temporada. A sua Glória não cai.`}
+            />
+          ) : null}
 
-            {previewData.isMember ? (
-              <>
-                <Notice message="Você já faz parte desta Legião." />
-                <Button label="Ver minhas Legiões" variant="secondary" onPress={() => router.replace('/legiao')} />
-              </>
-            ) : (
-              <Button
-                label={join.isPending ? 'Entrando…' : 'Entrar na Legião'}
-                onPress={() => join.mutate(normalized)}
-                disabled={join.isPending}
-              />
-            )}
-            {join.isError ? <Notice tone="danger" message={errorMessage(join.error)} /> : null}
-            {problem ? <Notice tone="danger" message={problem} /> : null}
-          </View>
-        ) : null}
-      </ScrollView>
-    </KeyboardAvoidingView>
+          {previewData.isMember ? (
+            <>
+      <Notice message="Você já faz parte desta Legião." />
+      <Button label="Ver minhas Legiões" variant="secondary" onPress={() => router.replace('/legiao')} />
+            </>
+          ) : (
+            <Button
+      label={join.isPending ? 'Entrando…' : 'Entrar na Legião'}
+      onPress={() => join.mutate(normalized)}
+      disabled={join.isPending}
+            />
+          )}
+          {join.isError ? <Notice tone="danger" message={errorMessage(join.error)} /> : null}
+          {problem ? <Notice tone="danger" message={problem} /> : null}
+        </View>
+      ) : null}
+    </FormScrollView>
   );
 }
 

@@ -23,6 +23,7 @@ export default function TabsLayout() {
         <TabTrigger name="arena" href="/arena" />
         <TabTrigger name="mapa" href="/mapa" />
         <TabTrigger name="legiao" href="/legiao" />
+        {/* Sem botão na barra: o Perfil abre pela foto no topo das abas. */}
         <TabTrigger name="perfil" href="/perfil" />
       </TabList>
       <TabBar />
