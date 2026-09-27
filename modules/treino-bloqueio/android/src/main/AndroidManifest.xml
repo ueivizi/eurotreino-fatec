@@ -1,4 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <!-- Android 16: Atualização ao vivo (cartão no topo da tela bloqueada). Permissão comum, sem pedido. -->
+  <uses-permission android:name="android.permission.POST_PROMOTED_NOTIFICATIONS" />
+
   <application>
     <!-- Botões do cartão da tela bloqueada: só o próprio app dispara (exported=false). -->
     <receiver
