@@ -1,4 +1,4 @@
-import { MAX_POINTS, addRoutePoint, closeRoute, haversineMeters, routeBounds, routeDistanceM, routeProgress, routeShape, simplifyRoute } from './route';
+import { MAX_POINTS, addRoutePoint, closeRoute, haversineMeters, routeBounds, routeDistanceM, routeProgress, routeShape, simplifyRoute, trimEnds } from './route';
 
 const PRACA = { lat: -23.5329, lng: -46.7918 };
 
@@ -122,3 +122,21 @@ function line3() {
     { lat: 0.002, lng: 0.001 },
   ];
 }
+
+describe('zona de privacidade', () => {
+  // ~1,1 km numa reta norte-sul, pontos a cada ~111 m.
+  const straight = Array.from({ length: 11 }, (_, i) => ({ lat: -23.55 + i * 0.001, lng: -46.63 }));
+
+  it('tira 300 m do começo e do fim', () => {
+    const trimmed = trimEnds(straight);
+    expect(routeDistanceM(trimmed)).toBeGreaterThan(routeDistanceM(straight) - 600 - 2);
+    expect(routeDistanceM(trimmed)).toBeLessThan(routeDistanceM(straight) - 600 + 2);
+    expect(haversineMeters(straight[0] as { lat: number; lng: number }, trimmed[0] as { lat: number; lng: number })).toBeGreaterThan(299);
+  });
+
+  it('em rota curta, corta só um terço de cada lado', () => {
+    const short = straight.slice(0, 4);
+    const trimmed = trimEnds(short);
+    expect(routeDistanceM(trimmed)).toBeGreaterThan(routeDistanceM(short) / 3 - 2);
+  });
+});

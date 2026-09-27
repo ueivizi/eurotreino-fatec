@@ -147,6 +147,31 @@ async function checkSyncWithApp(db) {
   );
   check('nome da Legião: mesma regra no app e no banco', groupResults.rows[0].accepted, groupNames.map(isValidGroupName));
 
+  const { isValidRouteName } = await importApp('src/features/map/route-name.ts');
+  const routeNames = ['Volta da Paulista', 'Volta de 5,2 km', 'Pedal (domingo)', 'Ibirapuera/Obelisco', "D'Ávila", 'Vá', 'V',
+    ' Volta', 'Volta ', 'Volta  dupla', '<b>Volta</b>', 'Volta 💪', '-Volta', 'Volta-', 'a'.repeat(40), 'a'.repeat(41), decomposed];
+  const routeNameResults = await db.query(
+    'select array_agg(private.is_valid_route_name(n) order by ord) as accepted from unnest($1::text[]) with ordinality as t (n, ord)',
+    [routeNames],
+  );
+  check('nome de rota: mesma regra no app e no banco', routeNameResults.rows[0].accepted, routeNames.map(isValidRouteName));
+
+  const { routeDistanceM } = await importApp('src/features/map/route.ts');
+  const tracks = [
+    [[-46.63, -23.55], [-46.63, -23.5475], [-46.63, -23.545]],
+    [[-46.8, -23.6], [-46.4, -23.4], [-46.5, -23.7], [-46.8, -23.6]],
+    [[0, 0], [0.001, 0.001]],
+  ];
+  const distances = await db.query(
+    'select array_agg(private.route_distance_m(t.value) order by t.ord) as meters from jsonb_array_elements($1::jsonb) with ordinality as t (value, ord)',
+    [JSON.stringify(tracks)],
+  );
+  check(
+    'distância da rota: mesma conta no app e no banco',
+    distances.rows[0].meters,
+    tracks.map((track) => routeDistanceM(track.map(([lng, lat]) => ({ lat, lng })))),
+  );
+
   const { workoutPoints } = await importApp('src/features/ranks/scoring.ts');
   const samples = INTENSITIES.flatMap(({ id }) => [1, 9, 10, 45, 59, 60, 61, 300].map((minutes) => ({ minutes, intensity: id })));
   const points = await db.query(
