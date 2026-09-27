@@ -7,9 +7,11 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.os.SystemClock
 import android.view.View
 import android.widget.RemoteViews
+import androidx.core.app.NotificationCompat
 import java.util.Locale
 
 /**
@@ -22,6 +24,9 @@ internal object CardNotifier {
   private const val OLD_CHANNEL_ID = "sessao"
   private const val NOTIFICATION_ID = 4207
   private const val GOLD = 0xFFC9A24A.toInt()
+  private const val GOLD_LIGHT = 0xFFE6C878.toInt()
+  /** Android 16: a partir dele o cartão vira Atualização ao vivo (topo da tela bloqueada, sempre aberta). */
+  private const val LIVE_UPDATES_SDK = 36
   private val PT_BR: Locale = Locale.forLanguageTag("pt-BR")
 
   private fun manager(context: Context): NotificationManager =
@@ -48,9 +53,71 @@ internal object CardNotifier {
     val now = System.currentTimeMillis()
     val elapsed = state.elapsedMs(now)
     val texts = content(state)
+    val notification =
+      if (Build.VERSION.SDK_INT >= LIVE_UPDATES_SDK) liveUpdate(context, state, texts, elapsed, now) else customCard(context, state, texts, elapsed, now)
+    manager.notify(NOTIFICATION_ID, notification)
+  }
+
+  /**
+   * Android 16+: Atualização ao vivo. O sistema põe no topo da tela bloqueada, aberta e sem recolher,
+   * abaixo do player de música, e mostra o relógio num selo na barra de status. Exige o estilo padrão
+   * (sem layout próprio): barra de progresso da ficha, textos e até três botões.
+   */
+  private fun liveUpdate(context: Context, state: CardState, texts: Content, elapsed: Long, now: Long): Notification {
+    val builder = NotificationCompat.Builder(context, CHANNEL_ID)
+      .setSmallIcon(R.drawable.treino_icone)
+      .setColor(GOLD)
+      .setOngoing(true)
+      .setOnlyAlertOnce(true)
+      .setSilent(true)
+      .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+      .setCategory(NotificationCompat.CATEGORY_WORKOUT)
+      .setContentTitle(texts.title)
+      .setContentText("${texts.series} · ${texts.detail}")
+      .setSubText(state.title)
+      .setContentIntent(openApp(context))
+      .setRequestPromotedOngoing(true)
+      .setShowWhen(!state.paused)
+    if (state.paused) {
+      builder.setShortCriticalText("Pausa")
+    } else {
+      builder.setWhen(now - elapsed).setUsesChronometer(true)
+    }
+    val progress = workoutProgress(state)
+    if (progress != null) builder.setStyle(progress)
+
+    val main = texts.main
+    if (texts.loadButtons) builder.addAction(R.drawable.treino_icone, "− 2,5", action(context, CardActions.LOAD_DOWN, 3))
+    if (main != null) builder.addAction(R.drawable.treino_icone, main.first, action(context, main.second, 2))
+    if (texts.loadButtons) {
+      builder.addAction(R.drawable.treino_icone, "+ 2,5", action(context, CardActions.LOAD_UP, 4))
+    } else {
+      val pause = if (state.paused) "Retomar" to CardActions.RESUME else "Pausar" to CardActions.PAUSE
+      builder.addAction(R.drawable.treino_icone, pause.first, action(context, pause.second, 1))
+    }
+    return builder.build()
+  }
+
+  /** A ficha inteira numa barra: um trecho por exercício, do tamanho da meta de séries. */
+  private fun workoutProgress(state: CardState): NotificationCompat.ProgressStyle? {
+    if (state.kind != "forca") return null
+    val planned = state.exercises.filter { it.targetSets > 0 }
+    if (planned.isEmpty()) return null
+    val style = NotificationCompat.ProgressStyle().setStyledByProgress(true)
+    planned.forEachIndexed { position, exercise ->
+      style.addProgressSegment(
+        NotificationCompat.ProgressStyle.Segment(exercise.targetSets).setColor(if (position % 2 == 0) GOLD else GOLD_LIGHT),
+      )
+    }
+    style.setProgress(planned.sumOf { minOf(it.done, it.targetSets) })
+    return style
+  }
+
+  /** Android 15 e anteriores: cartão com layout próprio; o recolhido já traz os botões. */
+  private fun customCard(context: Context, state: CardState, texts: Content, elapsed: Long, now: Long): Notification {
     val compact = RemoteViews(context.packageName, R.layout.treino_cartao_compacto)
     val expanded = RemoteViews(context.packageName, R.layout.treino_cartao)
-    fillCompact(context, compact, texts)
+    fillCompact(context, compact, state, texts)
     fillExpanded(context, expanded, state, texts, elapsed)
 
     val builder = Notification.Builder(context, CHANNEL_ID)
@@ -69,7 +136,7 @@ internal object CardNotifier {
     if (!state.paused) {
       builder.setWhen(now - elapsed).setUsesChronometer(true)
     }
-    manager.notify(NOTIFICATION_ID, builder.build())
+    return builder.build()
   }
 
   fun hide(context: Context) {
@@ -124,15 +191,23 @@ internal object CardNotifier {
    * Cada tamanho só recebe os campos que o layout dele tem: mexer num campo que não existe faz o
    * Android recusar a notificação inteira.
    */
-  private fun fillCompact(context: Context, views: RemoteViews, content: Content) {
-    views.setTextViewText(R.id.titulo, content.title)
-    views.setTextViewText(R.id.detalhe, "${content.series} · ${content.detail}")
+  private fun fillCompact(context: Context, views: RemoteViews, state: CardState, content: Content) {
+    views.setTextViewText(R.id.detalhe, "${content.title} · ${content.series} · ${content.detail}")
     val main = content.main
     views.setViewVisibility(R.id.botao_serie, if (main != null) View.VISIBLE else View.GONE)
     if (main != null) {
       views.setTextViewText(R.id.botao_serie, main.first)
       views.setOnClickPendingIntent(R.id.botao_serie, action(context, main.second, 10))
     }
+    val load = if (content.loadButtons) View.VISIBLE else View.GONE
+    views.setViewVisibility(R.id.botao_menos, load)
+    views.setViewVisibility(R.id.botao_mais, load)
+    views.setOnClickPendingIntent(R.id.botao_menos, action(context, CardActions.LOAD_DOWN, 13))
+    views.setOnClickPendingIntent(R.id.botao_mais, action(context, CardActions.LOAD_UP, 14))
+    // Sem os botões de carga, sobra lugar para pausar direto do cartão recolhido.
+    views.setViewVisibility(R.id.botao_pausa, if (content.loadButtons) View.GONE else View.VISIBLE)
+    views.setTextViewText(R.id.botao_pausa, if (state.paused) "Retomar" else "Pausar")
+    views.setOnClickPendingIntent(R.id.botao_pausa, action(context, if (state.paused) CardActions.RESUME else CardActions.PAUSE, 11))
   }
 
   private fun fillExpanded(context: Context, views: RemoteViews, state: CardState, content: Content, elapsed: Long) {
