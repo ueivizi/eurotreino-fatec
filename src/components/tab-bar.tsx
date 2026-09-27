@@ -15,15 +15,16 @@ import { spring } from '@/theme/motion';
 import { useTheme } from '@/theme/theme';
 import { goldGradient, space, touchTarget } from '@/theme/tokens';
 
-const SLOTS = 5;
+const SLOTS = 6;
 const INDICATOR = 28;
 
-/** Posição de cada aba na barra (o medalhão Registrar ocupa a do meio). */
+/** Posição de cada aba na barra (o medalhão Registrar ocupa a terceira). */
 function slotOf(pathname: string): number | null {
   if (pathname === '/') return 0;
   if (pathname.startsWith('/arena')) return 1;
-  if (pathname.startsWith('/legiao')) return 3;
-  if (pathname.startsWith('/perfil')) return 4;
+  if (pathname.startsWith('/mapa')) return 3;
+  if (pathname.startsWith('/legiao')) return 4;
+  if (pathname.startsWith('/perfil')) return 5;
   return null;
 }
 
@@ -137,6 +138,9 @@ export function TabBar() {
         <TabButton label="Coliseu" icon="arena" />
       </TabTrigger>
       <RegisterButton />
+      <TabTrigger name="mapa" asChild>
+        <TabButton label="Mapa" icon="mapa" />
+      </TabTrigger>
       <TabTrigger name="legiao" asChild>
         <TabButton label="Legião" icon="legiao" />
       </TabTrigger>

@@ -21,7 +21,7 @@ export type LegalDocument = {
 
 export const PRIVACY_POLICY: LegalDocument = {
   title: 'Política de Privacidade',
-  updatedAt: '26 de setembro de 2026',
+  updatedAt: '27 de setembro de 2026',
   intro:
     'O EuroTreino é um aplicativo de treino com ranking privado entre amigos, criado como projeto acadêmico por estudantes da Fatec Osasco. Esta política explica quais dados usamos, para quê e como você controla seus dados, de acordo com a Lei Geral de Proteção de Dados (Lei nº 13.709/2018).',
   sections: [
@@ -37,7 +37,7 @@ export const PRIVACY_POLICY: LegalDocument = {
         'Conta: seu e-mail e sua senha, usados para entrar (a senha fica com o serviço de autenticação só como resumo criptográfico, nunca em texto; também dá para entrar com código por e-mail). Se você entrar com o Google, o serviço de autenticação também recebe o nome e a foto da conta Google; eles não aparecem no app.',
         'Perfil: nome de exibição, emblema e a cor escolhida. Não pedimos idade, peso nem medidas.',
         'Foto de perfil (só se você ligar em Suas escolhas): uma foto quadrada de 512 px, reduzida no aparelho e sem a localização da imagem, guardada no servidor em São Paulo. Desligar a escolha tira a foto de todos na hora e apaga o arquivo.',
-        'Localização (só se você ligar em Suas escolhas): o GPS mede o percurso da sessão de corrida, caminhada ou bike enquanto o app está aberto. O trajeto fica no aparelho; para o registro vai só a distância. O servidor guarda apenas que a escolha está ligada.',
+        'Localização (só se você ligar em Suas escolhas): com o app aberto, mostra onde você está no mapa e o GPS mede o percurso da sessão de corrida, caminhada ou bike. Posição e trajeto ficam no aparelho; para o registro vai só a distância. O servidor guarda apenas que a escolha está ligada.',
         'Treinos: tipo, duração, intensidade, dia e horário de cada treino, e a Glória calculada. Se você quiser, também a distância percorrida, as séries feitas com repetições e carga, e os exercícios da sua ficha.',
         'Medidas de saúde (só com seu consentimento): frequência cardíaca média e máxima que você digitar ou que vier do relógio conectado. Sem o consentimento, o app recusa o envio.',
         'Relógio (só se você conectar): com a sua permissão no Health Connect, o app lê no próprio aparelho os treinos das últimas 48 horas gravados pelo app do relógio — tipo, início, fim e distância — e, com o consentimento de saúde ligado, a frequência cardíaca. De um arquivo GPX que você escolher, lê o mesmo resumo; o trajeto serve só para calcular a distância no aparelho e não é enviado. Só vira registro o treino que você confirmar, e o app nunca grava nada no Health Connect.',
@@ -75,7 +75,7 @@ export const PRIVACY_POLICY: LegalDocument = {
       items: [
         'Supabase: hospeda o banco de dados, a autenticação e as funções do servidor. O banco de dados fica na região de São Paulo.',
         'Google: entrega os e-mails com código e, se você escolher, faz a entrada com a conta Google.',
-        'OpenFreeMap: entrega as imagens do mapa quando você abre a tela de desenhar rota. Recebe o endereço IP e a área do mapa que está na tela, nunca o seu trajeto.',
+        'OpenFreeMap: entrega as imagens do mapa (aba Mapa, desenhar rota e o mapa da sessão). Recebe o endereço IP e a área do mapa que está na tela. Quando o mapa acompanha você durante o treino, essa área é a região onde você está; o trajeto em si nunca é enviado.',
       ],
       paragraphs: [
         'Esses serviços podem tratar dados também fora do Brasil, com as garantias previstas na LGPD. Nunca vendemos nem alugamos dados pessoais.',
@@ -159,7 +159,7 @@ export const PRIVACY_POLICY: LegalDocument = {
 
 export const TERMS_OF_USE: LegalDocument = {
   title: 'Termos de Uso',
-  updatedAt: '26 de setembro de 2026',
+  updatedAt: '27 de setembro de 2026',
   intro:
     'Ao usar o EuroTreino, você concorda com estes termos. Eles são curtos de propósito: leia com atenção.',
   sections: [
@@ -173,6 +173,12 @@ export const TERMS_OF_USE: LegalDocument = {
       heading: 'Não é orientação profissional',
       paragraphs: [
         'O EuroTreino não prescreve treinos e não substitui profissional de educação física nem médico. Respeite seus limites e procure orientação antes de começar atividades intensas.',
+      ],
+    },
+    {
+      heading: 'Mapa e rotas',
+      paragraphs: [
+        'O mapa, as ciclovias, os lugares e as rotas vêm de dados abertos (OpenStreetMap e Prefeitura de São Paulo) e podem estar desatualizados ou errados. Siga sempre a sinalização, as leis de trânsito e o seu bom senso: uma rota no app não garante que o caminho é seguro ou permitido.',
       ],
     },
     {

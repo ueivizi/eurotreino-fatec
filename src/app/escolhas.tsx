@@ -225,15 +225,15 @@ export default function ChoicesScreen() {
       <Reveal index={1}>
         <ChoiceCard
           icon="local"
-          title="GPS no treino"
-          promise={gpsAvailable ? 'Mede o percurso da corrida, caminhada ou bike.' : 'Só no app instalado no celular.'}
+          title="Localização"
+          promise={gpsAvailable ? 'Mostra onde você está no mapa e mede o percurso da corrida, caminhada ou bike.' : 'Só no app instalado no celular.'}
           value={location}
           onChange={toggleLocation}
           busy={change.isPending}
           disabled={!gpsAvailable}
           details={[
-            { label: 'Quando', text: 'Só durante a sessão, com o app aberto. Com a tela apagada, a gravação pausa.' },
-            { label: 'Onde fica', text: 'O trajeto fica neste aparelho. Para o registro vai só a distância.' },
+            { label: 'Quando', text: 'Só com o app aberto: no mapa e durante a sessão. Com a tela apagada, a gravação pausa.' },
+            { label: 'Onde fica', text: 'Posição e trajeto ficam neste aparelho. Para o registro vai só a distância. O mapa recebe só a área que aparece na tela.' },
             { label: 'Desligar', text: 'O app para de pedir a localização. Dá para tirar a permissão no celular também.' },
           ]}
         />

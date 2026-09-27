@@ -21,10 +21,10 @@ import { useProfile } from '@/features/auth/session';
 import { healthConnect } from '@/features/devices/health-connect';
 import { matchingWorkout } from '@/features/devices/imported-workout';
 import { clearTrack, currentTrack } from '@/features/map/gps-store';
-import { decimate } from '@/features/map/gps-track';
 import { GPS_AVAILABLE, GpsTracker } from '@/features/map/gps-tracker';
-import { MAX_POINTS } from '@/features/map/route';
-import { loadRoutes, storeRoutes, withRoute } from '@/features/map/saved-routes';
+import { LIVE_MAP_AVAILABLE, LiveMap } from '@/features/map/live-map';
+import { simplifyRoute } from '@/features/map/route';
+import { loadRoutes, storeRoutes, withRoute, type SavedRoute } from '@/features/map/saved-routes';
 import { requestExercise, takePickedExercise } from '@/features/training/exercise-picker';
 import { fetchExerciseCatalog } from '@/features/training/exercises-api';
 import { fetchMyRoutines } from '@/features/training/routines-api';
@@ -107,7 +107,7 @@ export default function LiveSessionScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const params = useLocalSearchParams<{ ficha?: string }>();
+  const params = useLocalSearchParams<{ ficha?: string; rota?: string }>();
   const session = useTrainingSession();
   const profile = useProfile();
   const healthConsent = profile?.healthConsentAt !== null && profile?.healthConsentAt !== undefined;
@@ -116,7 +116,10 @@ export default function LiveSessionScreen() {
   const catalog = useQuery({ queryKey: queryKeys.exercises, queryFn: fetchExerciseCatalog, staleTime: 10 * 60_000 });
 
   const [now, setNow] = useState(() => new Date());
-  const [type, setType] = useState<WorkoutTypeId>('musculacao');
+  // Vindo do mapa com uma rota, o treino é de resistência: começa na corrida.
+  const [type, setType] = useState<WorkoutTypeId>(() => (params.rota ? 'corrida' : 'musculacao'));
+  const [savedRoutes, setSavedRoutes] = useState<SavedRoute[]>([]);
+  const [routeDropped, setRouteDropped] = useState(false);
   const [distanceM, setDistanceM] = useState<number | null>(null);
   /** A distância do fim veio do GPS: a tela avisa para conferir. */
   const [distanceFromGps, setDistanceFromGps] = useState(false);
@@ -135,6 +138,22 @@ export default function LiveSessionScreen() {
   const [outcome, setOutcome] = useState<StrengthOutcome | null>(null);
 
   const current = session.current;
+
+  // As rotas moram no aparelho; a sessão guarda só qual foi escolhida.
+  useEffect(() => {
+    let alive = true;
+    void loadRoutes()
+      .then((routes) => {
+        if (alive) setSavedRoutes(routes);
+      })
+      .catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const plannedRouteId = current ? current.routeId : routeDropped ? null : (params.rota ?? null);
+  const plannedRoute = plannedRouteId ? (savedRoutes.find((route) => route.id === plannedRouteId) ?? null) : null;
 
   // O selo de exercício concluído fica um instante e passa a vez ao próximo da ficha.
   useEffect(() => {
@@ -188,7 +207,7 @@ export default function LiveSessionScreen() {
 
   async function saveTrackAsRoute() {
     if (!current) return;
-    const points = decimate(currentTrack(current.requestId).points, MAX_POINTS).map(({ lat, lng }) => ({ lat, lng }));
+    const points = simplifyRoute(currentTrack(current.requestId).points.map(({ lat, lng }) => ({ lat, lng })));
     try {
       const routes = await loadRoutes();
       const day = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit' }).format(new Date());
@@ -275,7 +294,8 @@ export default function LiveSessionScreen() {
 
   async function begin(routineId: string | null) {
     const routineName = routineId ? routines.data?.find((item) => item.id === routineId)?.name ?? null : null;
-    await session.start({ workoutType: type, requestId: randomUUID(), routineId, routineName });
+    const routeId = workoutModule(type) === 'resistencia' ? (plannedRoute?.id ?? null) : null;
+    await session.start({ workoutType: type, requestId: randomUUID(), routineId, routineName, routeId });
     setNow(new Date());
   }
 
@@ -387,8 +407,21 @@ export default function LiveSessionScreen() {
               </>
             ) : (
               <>
+                {plannedRoute ? (
+                  <Card style={styles.block}>
+                    <AppText variant="overline" tone="gold">Rota para seguir</AppText>
+                    <AppText variant="bodyMedium">{`${plannedRoute.name} · ${formatDistance(plannedRoute.distanceM)}`}</AppText>
+                    <Button label="Treinar sem a rota" variant="ghost" onPress={() => setRouteDropped(true)} />
+                  </Card>
+                ) : null}
                 <Button label="Começar agora" icon="registrar" onPress={() => void begin(null)} />
-                <Notice message="Marque voltas durante o treino e informe a distância no fim. O app não usa GPS: nada de localização é coletado." />
+                <Notice
+                  message={
+                    profile?.locationConsentAt
+                      ? 'Com a Localização ligada, o GPS mede o percurso e o mapa acompanha você ao vivo. O trajeto fica neste aparelho.'
+                      : 'Marque voltas durante o treino e informe a distância no fim. Para medir pelo GPS e ver o mapa ao vivo, ligue a Localização em Suas escolhas.'
+                  }
+                />
               </>
             )}
             <Notice message="O cronômetro fica no aparelho: pode trancar a tela ou fechar o app que a sessão continua de pé." />
@@ -438,6 +471,9 @@ export default function LiveSessionScreen() {
       {isEndurance ? (
         <>
           {gpsEnabled ? <GpsTracker sessionKey={current.requestId} paused={current.pausedAt !== null} /> : null}
+          {LIVE_MAP_AVAILABLE && (gpsEnabled || plannedRoute) ? (
+            <LiveMap sessionKey={current.requestId} route={plannedRoute?.points ?? null} showPosition={gpsEnabled} />
+          ) : null}
           <PressableScale
             accessibilityRole="button"
             accessibilityLabel="Marcar volta"

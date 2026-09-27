@@ -39,7 +39,7 @@ function Pulse({ active }: { active: boolean }) {
 
 /**
  * GPS da sessão de resistência: grava o percurso com o app aberto e mostra a distância. Só existe
- * com a escolha "GPS no treino" ligada. O trajeto fica no aparelho.
+ * com a escolha "Localização" ligada. O trajeto fica no aparelho.
  */
 export function GpsTracker({ sessionKey, paused }: { sessionKey: string; paused: boolean }) {
   const { colors } = useTheme();

@@ -21,6 +21,7 @@ export default function TabsLayout() {
       <TabList style={styles.none}>
         <TabTrigger name="inicio" href="/" />
         <TabTrigger name="arena" href="/arena" />
+        <TabTrigger name="mapa" href="/mapa" />
         <TabTrigger name="legiao" href="/legiao" />
         <TabTrigger name="perfil" href="/perfil" />
       </TabList>

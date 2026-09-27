@@ -1,4 +1,4 @@
-import { MAX_POINTS, addRoutePoint, closeRoute, haversineMeters, routeBounds, routeDistanceM, routeShape } from './route';
+import { MAX_POINTS, addRoutePoint, closeRoute, haversineMeters, routeBounds, routeDistanceM, routeProgress, routeShape, simplifyRoute } from './route';
 
 const PRACA = { lat: -23.5329, lng: -46.7918 };
 
@@ -67,3 +67,58 @@ describe('rota desenhada', () => {
     ).toEqual([-46.8, -23.6, -46.7, -23.5]);
   });
 });
+
+describe('progresso na rota', () => {
+  // Três pontos numa reta norte-sul, ~111 m entre eles.
+  const line = [
+    { lat: -23.55, lng: -46.63 },
+    { lat: -23.549, lng: -46.63 },
+    { lat: -23.548, lng: -46.63 },
+  ];
+
+  it('mede o que foi feito, o que falta e o afastamento', () => {
+    const progress = routeProgress({ lat: -23.5495, lng: -46.63 }, line);
+    expect(progress?.offRouteM).toBe(0);
+    expect(progress?.doneM).toBeGreaterThan(50);
+    expect(progress?.doneM).toBeLessThan(60);
+    expect((progress?.doneM ?? 0) + (progress?.remainingM ?? 0)).toBe(routeDistanceM(line));
+  });
+
+  it('diz quando a pessoa saiu da rota', () => {
+    const progress = routeProgress({ lat: -23.549, lng: -46.629 }, line);
+    expect(progress?.offRouteM).toBeGreaterThan(90);
+  });
+
+  it('em volta fechada, quem está no começo ainda tem a volta toda pela frente', () => {
+    const loop = [...line, { lat: -23.548, lng: -46.629 }, { lat: -23.55, lng: -46.63 }];
+    const progress = routeProgress({ lat: -23.55, lng: -46.63 }, loop);
+    expect(progress?.doneM).toBe(0);
+    expect(progress?.remainingM).toBe(routeDistanceM(loop));
+  });
+
+  it('sem traçado não há progresso', () => {
+    expect(routeProgress({ lat: 0, lng: 0 }, [{ lat: 0, lng: 0 }])).toBeNull();
+  });
+});
+
+describe('simplificar traçado', () => {
+  it('mantém começo e fim e respeita o teto', () => {
+    const wiggle = Array.from({ length: 1000 }, (_, i) => ({ lat: -23.55 + i * 0.00005, lng: -46.63 + (i % 2) * 0.00001 }));
+    const simple = simplifyRoute(wiggle, 200);
+    expect(simple.length).toBeLessThanOrEqual(200);
+    expect(simple[0]).toEqual(wiggle[0]);
+    expect(simple[simple.length - 1]).toEqual(wiggle[wiggle.length - 1]);
+  });
+
+  it('não mexe no que já cabe', () => {
+    expect(simplifyRoute(line3(), 200)).toHaveLength(3);
+  });
+});
+
+function line3() {
+  return [
+    { lat: 0, lng: 0 },
+    { lat: 0.001, lng: 0 },
+    { lat: 0.002, lng: 0.001 },
+  ];
+}
