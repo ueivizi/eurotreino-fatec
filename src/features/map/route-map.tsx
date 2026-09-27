@@ -1,4 +1,4 @@
-import { Camera, GeoJSONSource, Layer, Map, type CameraRef } from '@maplibre/maplibre-react-native';
+import { Camera, GeoJSONSource, Layer, Map, NativeUserLocation, type CameraRef } from '@maplibre/maplibre-react-native';
 import { useEffect, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
 
@@ -6,41 +6,40 @@ import { AppText } from '@/components/ui/text';
 import { useTheme } from '@/theme/theme';
 import { space } from '@/theme/tokens';
 
+import { CyclewayLayers } from './map-layers';
+import { DEFAULT_CENTER, EMPTY_SHAPE, MAP_CREDIT, MAP_STYLES } from './map-style';
 import { pointsShape, routeBounds, routeShape, type RoutePoint } from './route';
 
 export const ROUTE_MAP_AVAILABLE = true;
-
-/**
- * Estilos do OpenFreeMap: dados do OpenStreetMap, sem chave de API. O servidor de mapa recebe só o
- * endereço IP e a área que está na tela; o traçado nunca sai do aparelho.
- */
-const MAP_STYLES = {
-  onix: 'https://tiles.openfreemap.org/styles/dark',
-  marmore: 'https://tiles.openfreemap.org/styles/positron',
-} as const;
-
-/** Sem GPS, o mapa abre no centro de São Paulo (fuso e público do app) ou no traçado carregado. */
-const DEFAULT_CENTER: [number, number] = [-46.6333, -23.5505];
-
-const EMPTY = { type: 'FeatureCollection' as const, features: [] };
 
 type Props = {
   points: RoutePoint[];
   onAddPoint: (point: RoutePoint) => void;
   /** Traçado a enquadrar: muda quando uma rota salva é carregada. */
   frame: readonly RoutePoint[] | null;
+  /** Posição da pessoa (com a escolha "Localização" ligada): o mapa abre nela e mostra o ponto. */
+  myPosition?: RoutePoint | null;
 };
 
 /** Mapa de desenhar rota (quadro 8.4): cada toque vira um ponto do traçado. */
-export function RouteMap({ points, onAddPoint, frame }: Props) {
+export function RouteMap({ points, onAddPoint, frame, myPosition = null }: Props) {
   const { colors, name } = useTheme();
   const camera = useRef<CameraRef>(null);
+  const centered = useRef(false);
 
   useEffect(() => {
     const bounds = frame ? routeBounds(frame) : null;
     if (!bounds) return;
+    centered.current = true;
     camera.current?.fitBounds(bounds, { padding: { top: 48, right: 48, bottom: 48, left: 48 }, duration: 600 });
   }, [frame]);
+
+  // Sem rota carregada, o desenho começa de onde a pessoa está.
+  useEffect(() => {
+    if (!myPosition || centered.current) return;
+    centered.current = true;
+    camera.current?.flyTo({ center: [myPosition.lng, myPosition.lat], zoom: 15, duration: 600 });
+  }, [myPosition]);
 
   return (
     <View style={styles.wrap}>
@@ -57,7 +56,8 @@ export function RouteMap({ points, onAddPoint, frame }: Props) {
           onAddPoint({ lat, lng });
         }}>
         <Camera ref={camera} initialViewState={{ center: DEFAULT_CENTER, zoom: 12 }} />
-        <GeoJSONSource id="rota" data={points.length >= 2 ? routeShape(points) : EMPTY}>
+        <CyclewayLayers visible />
+        <GeoJSONSource id="rota" data={points.length >= 2 ? routeShape(points) : EMPTY_SHAPE}>
           <Layer
             id="rota-halo"
             type="line"
@@ -83,10 +83,11 @@ export function RouteMap({ points, onAddPoint, frame }: Props) {
             }}
           />
         </GeoJSONSource>
+        {myPosition ? <NativeUserLocation /> : null}
       </Map>
       {/* Crédito à vista, como pede a licença do OpenStreetMap; o estilo não traz o texto embutido. */}
       <View style={[styles.credit, { backgroundColor: colors.background }]} pointerEvents="none">
-        <AppText variant="caption" tone="muted">© OpenStreetMap · OpenMapTiles · OpenFreeMap</AppText>
+        <AppText variant="caption" tone="muted">{`${MAP_CREDIT} · CET/SP`}</AppText>
       </View>
     </View>
   );

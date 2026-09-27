@@ -47,6 +47,7 @@ type SessionContextValue = {
     requestId: string;
     routineId?: string | null;
     routineName?: string | null;
+    routeId?: string | null;
   }) => Promise<Session | null>;
   /** O exercício e os números da vez, que a notificação da tela bloqueada usa. */
   setFocus: (focus: SessionFocus | null) => Promise<void>;
@@ -166,9 +167,9 @@ export function TrainingSessionProvider({ children }: { children: ReactNode }) {
     () => ({
       current,
       loading,
-      start: async ({ workoutType, requestId, routineId, routineName }) => {
+      start: async ({ workoutType, requestId, routineId, routineName, routeId }) => {
         if (!userId) return null;
-        const session = startSession({ userId, workoutType, requestId, routineId, routineName });
+        const session = startSession({ userId, workoutType, requestId, routineId, routineName, routeId });
         await persist(session);
         // A permissão é pedida no começo do treino, que é quando a notificação passa a servir.
         void ensureSessionNotificationPermission().catch(() => false);

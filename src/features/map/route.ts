@@ -104,3 +104,87 @@ export function routeBounds(points: readonly RoutePoint[]): [number, number, num
   const lats = points.map((point) => point.lat);
   return [Math.min(...lngs), Math.min(...lats), Math.max(...lngs), Math.max(...lats)];
 }
+
+export type RouteProgress = {
+  /** Distância da pessoa até o traçado. */
+  offRouteM: number;
+  /** Quanto do traçado já ficou para trás, medido ao longo dele. */
+  doneM: number;
+  remainingM: number;
+};
+
+/**
+ * Onde a pessoa está em relação à rota a seguir: o ponto mais próximo do traçado diz quanto já foi
+ * feito e quanto falta. Em volta fechada (fim no começo), o empate favorece o começo: quem acabou
+ * de sair não aparece como quem está chegando.
+ */
+export function routeProgress(position: RoutePoint, route: readonly RoutePoint[]): RouteProgress | null {
+  if (route.length < 2) return null;
+  // Plano local em metros (equiretangular): para distâncias de rua, o erro é desprezível.
+  const k = Math.cos(toRadians(position.lat));
+  const toXY = (point: RoutePoint): [number, number] => [
+    toRadians(point.lng - position.lng) * EARTH_RADIUS_M * k,
+    toRadians(point.lat - position.lat) * EARTH_RADIUS_M,
+  ];
+
+  let walked = 0;
+  let best: { off: number; done: number } | null = null;
+  for (let i = 1; i < route.length; i += 1) {
+    const a = route[i - 1] as RoutePoint;
+    const b = route[i] as RoutePoint;
+    const [ax, ay] = toXY(a);
+    const [bx, by] = toXY(b);
+    const dx = bx - ax;
+    const dy = by - ay;
+    const lengthSq = dx * dx + dy * dy;
+    const t = lengthSq === 0 ? 0 : Math.max(0, Math.min(1, -(ax * dx + ay * dy) / lengthSq));
+    const off = Math.hypot(ax + t * dx, ay + t * dy);
+    const segment = haversineMeters(a, b);
+    // Meio metro de folga: num empate, fica o trecho que vem antes.
+    if (!best || off < best.off - 0.5) best = { off, done: walked + t * segment };
+    walked += segment;
+  }
+  if (!best) return null;
+  const doneM = Math.round(best.done);
+  return { offRouteM: Math.round(best.off), doneM, remainingM: Math.max(0, Math.round(walked) - doneM) };
+}
+
+/**
+ * Reduz um traçado longo (vindo do GPS ou do roteador) ao teto de pontos guardados, tirando primeiro
+ * os pontos que menos mudam o desenho (Douglas-Peucker com tolerância crescente).
+ */
+export function simplifyRoute(points: readonly RoutePoint[], maxPoints = MAX_POINTS): RoutePoint[] {
+  if (points.length <= maxPoints || maxPoints < 2) return [...points];
+  let tolerance = 2;
+  let result = [...points];
+  while (result.length > maxPoints && tolerance < 5000) {
+    result = douglasPeucker(points, tolerance);
+    tolerance *= 1.6;
+  }
+  return result.length > maxPoints ? [points[0] as RoutePoint, points[points.length - 1] as RoutePoint] : result;
+}
+
+function douglasPeucker(points: readonly RoutePoint[], toleranceM: number): RoutePoint[] {
+  const keep = new Array<boolean>(points.length).fill(false);
+  keep[0] = true;
+  keep[points.length - 1] = true;
+  const stack: [number, number][] = [[0, points.length - 1]];
+  while (stack.length > 0) {
+    const [first, last] = stack.pop() as [number, number];
+    let farthest = -1;
+    let max = 0;
+    for (let i = first + 1; i < last; i += 1) {
+      const progress = routeProgress(points[i] as RoutePoint, [points[first] as RoutePoint, points[last] as RoutePoint]);
+      const distance = progress?.offRouteM ?? 0;
+      if (distance > max) {
+        max = distance;
+        farthest = i;
+      }
+    }
+    if (farthest !== -1 && max > toleranceM) {
+      keep[farthest] = true;
+      stack.push([first, farthest], [farthest, last]);
+    }
+  }
+  return points.filter((_, index) => keep[index]);
+}

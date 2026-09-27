@@ -47,6 +47,8 @@ export type Session = {
   routineId: string | null;
   /** Nome da ficha, guardado junto: a notificação precisa dele sem consultar nada. */
   routineName: string | null;
+  /** Rota do aparelho escolhida para seguir na resistência; nula quando não há. */
+  routeId: string | null;
   sets: SessionSet[];
   /** Voltas marcadas na resistência: tempo decorrido, em ms, no momento de cada toque. */
   laps: number[];
@@ -65,6 +67,7 @@ export function startSession(input: {
   requestId: string;
   routineId?: string | null;
   routineName?: string | null;
+  routeId?: string | null;
   now?: Date;
 }): Session {
   return {
@@ -76,6 +79,7 @@ export function startSession(input: {
     elapsedBeforePauseMs: 0,
     routineId: input.routineId ?? null,
     routineName: input.routineName ?? null,
+    routeId: input.routeId ?? null,
     sets: [],
     laps: [],
     focus: null,
@@ -242,6 +246,8 @@ export function parseSession(raw: string | null): Session | null {
     elapsedBeforePauseMs,
     routineId: typeof routineId === 'string' ? routineId : null,
     routineName: typeof value.routineName === 'string' && value.routineName.length <= 60 ? value.routineName : null,
+    // Sessão gravada antes de 27/09 não tem rota: entra como nula.
+    routeId: typeof value.routeId === 'string' && value.routeId.length > 0 && value.routeId.length <= 64 ? value.routeId : null,
     sets: parsedSets,
     laps: parsedLaps,
     focus,

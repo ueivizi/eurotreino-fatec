@@ -10,10 +10,12 @@ import { Button } from '@/components/ui/button';
 import { Notice } from '@/components/ui/notice';
 import { AppText } from '@/components/ui/text';
 import { TextField } from '@/components/ui/text-field';
+import { useProfile } from '@/features/auth/session';
 import { rememberDistance } from '@/features/map/pending-distance';
 import { MAX_POINTS, addRoutePoint, closeRoute, routeDistanceM, type RoutePoint } from '@/features/map/route';
 import { ROUTE_MAP_AVAILABLE, RouteMap } from '@/features/map/route-map';
 import { MAX_ROUTES, ROUTE_NAME_MAX, loadRoutes, normalizeRouteName, storeRoutes, withRoute, type SavedRoute } from '@/features/map/saved-routes';
+import { useMyLocation } from '@/features/map/use-my-location';
 import { formatDistance } from '@/features/workouts/metrics';
 import { DISTANCE } from '@/features/workouts/workout-types';
 import { useTheme } from '@/theme/theme';
@@ -29,7 +31,10 @@ export default function RouteScreen() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const fromRegister = useLocalSearchParams<{ de?: string }>().de === 'registrar';
+  const params = useLocalSearchParams<{ de?: string; id?: string }>();
+  const fromRegister = params.de === 'registrar';
+  const profile = useProfile();
+  const location = useMyLocation(Boolean(profile?.locationConsentAt) && ROUTE_MAP_AVAILABLE);
 
   const [points, setPoints] = useState<RoutePoint[]>([]);
   const [frame, setFrame] = useState<RoutePoint[] | null>(null);
@@ -42,7 +47,16 @@ export default function RouteScreen() {
     let alive = true;
     void loadRoutes()
       .then((saved) => {
-        if (alive) setRoutes(saved);
+        if (!alive) return;
+        setRoutes(saved);
+        // Vindo do mapa com uma rota escolhida, ela já abre para editar.
+        const asked = saved.find((route) => route.id === params.id);
+        if (asked) {
+          setPoints(asked.points);
+          setFrame(asked.points);
+          setLoadedId(asked.id);
+          setName(asked.name);
+        }
       })
       .catch(() => {
         if (alive) setStoreError(true);
@@ -50,7 +64,7 @@ export default function RouteScreen() {
     return () => {
       alive = false;
     };
-  }, []);
+  }, [params.id]);
 
   if (!ROUTE_MAP_AVAILABLE) {
     return (
@@ -130,7 +144,12 @@ export default function RouteScreen() {
         />
       </View>
 
-      <RouteMap points={points} frame={frame} onAddPoint={(point) => edit(addRoutePoint(points, point))} />
+      <RouteMap
+        points={points}
+        frame={frame}
+        myPosition={location.status === 'ativa' ? location.position : null}
+        onAddPoint={(point) => edit(addRoutePoint(points, point))}
+      />
 
       <ScrollView
         style={[styles.panel, { backgroundColor: colors.surfaceRaised, borderTopColor: colors.hairlineSoft }]}
@@ -202,7 +221,7 @@ export default function RouteScreen() {
         {loaded ? <Button label="Excluir esta rota" variant="ghost" onPress={() => void remove()} /> : null}
 
         <AppText variant="caption" tone="muted">
-          {`O traçado fica só neste aparelho, até ${MAX_ROUTES} rotas. O mapa vem do OpenFreeMap, que recebe a área que está na tela, nunca o seu trajeto.`}
+          {`O traçado fica só neste aparelho, até ${MAX_ROUTES} rotas. O mapa vem do OpenFreeMap, que recebe a área que está na tela, nunca o seu trajeto. Ciclovias de São Paulo: CET/Prefeitura (dados abertos).`}
         </AppText>
       </ScrollView>
     </View>

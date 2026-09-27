@@ -56,7 +56,7 @@ export function ChoicesInvite({ profile }: { profile: Profile }) {
           <View style={styles.text}>
             <AppText variant="overline" tone="gold">Novo · suas escolhas</AppText>
             <AppText variant="label" tone="secondary">
-              Foto no perfil, GPS no treino e frequência cardíaca agora são escolhas suas. Tudo fica desligado até você ligar.
+              Foto no perfil, localização (mapa e GPS no treino) e frequência cardíaca agora são escolhas suas. Tudo fica desligado até você ligar.
             </AppText>
           </View>
         </View>
