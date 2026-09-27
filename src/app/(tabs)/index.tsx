@@ -152,7 +152,13 @@ export default function HomeScreen() {
           </AppText>
           <AppText variant="title" numberOfLines={1}>{`Ave, ${profile.displayName.trim().split(/\s+/)[0] ?? profile.displayName}`}</AppText>
         </View>
-        <EmblemAvatar emblem={profile.emblem} color={profile.emblemColor} size={46} photoUri={myPhoto} />
+        <PressableScale
+          accessibilityRole="button"
+          accessibilityLabel="Abrir meu perfil"
+          hitSlop={8}
+          onPress={() => router.navigate('/perfil')}>
+          <EmblemAvatar emblem={profile.emblem} color={profile.emblemColor} size={46} photoUri={myPhoto} />
+        </PressableScale>
       </Reveal>
 
       <ChoicesInvite profile={profile} />
@@ -192,6 +198,7 @@ export default function HomeScreen() {
             <ProgressBar
               value={rank.progress}
               delay={180}
+              wrapOnDecrease
               accessibilityLabel={rank.next ? `Progresso até ${rank.next.label}` : 'Rank máximo alcançado'}
             />
             <View style={styles.progressLabels}>

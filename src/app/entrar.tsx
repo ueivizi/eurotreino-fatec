@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, Path, Pattern, Rect } from 'react-native-svg';
 
 import { Monogram } from '@/components/brand/monogram';
+import { PressableScale } from '@/components/motion/pressable-scale';
 import { Button } from '@/components/ui/button';
 import { CodeField } from '@/components/ui/code-field';
 import { Icon } from '@/components/ui/icon';
@@ -29,7 +30,7 @@ import { PROVIDER_LABELS, SOCIAL_PROVIDERS, fetchAuthProviders, oauthCancelledMe
 import { confirmSignUp, resendSignUpCode, signInWithPassword } from '@/features/auth/password-auth';
 import { getSupabase } from '@/lib/supabase';
 import { useTheme } from '@/theme/theme';
-import { space } from '@/theme/tokens';
+import { space, touchTarget } from '@/theme/tokens';
 
 /**
  * Portões (RF001). Quem já tem conta entra direto com e-mail e senha — é o caminho principal.
@@ -58,15 +59,25 @@ function Meander() {
   );
 }
 
+/** Caminho de apoio em texto: metade da linha, mas com a mesma área de toque de um botão. */
+function TextLink({ label, onPress, disabled }: { label: string; onPress: () => void; disabled: boolean }) {
+  return (
+    <PressableScale accessibilityRole="button" onPress={onPress} disabled={disabled} style={styles.link}>
+      <AppText variant="label" tone="gold" style={styles.center}>{label}</AppText>
+    </PressableScale>
+  );
+}
+
 export default function SignInScreen() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
 
   const { height } = useWindowDimensions();
-  /* Em tela curta (os 360x640 da vida real) o brasão encolhe e o lema sai: a entrada tem de
-     caber sem rolagem, porque rolar para achar o campo de senha é o primeiro atrito do app. */
+  /* A entrada tem de caber sem rolagem, porque rolar para achar o campo de senha é o primeiro
+     atrito do app. O lema só aparece em tela alta; em tela curta (360x640) o brasão encolhe. */
   const compact = height < 700;
+  const roomy = height >= 880;
   const providers = useQuery({ queryKey: ['auth-providers'], queryFn: fetchAuthProviders, staleTime: 5 * 60_000 });
   const enabledProviders = SOCIAL_PROVIDERS.filter((provider) => providers.data?.[provider] === true);
 
@@ -271,14 +282,14 @@ export default function SignInScreen() {
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={[
           styles.content,
-          compact && styles.contentCompact,
-          { paddingTop: insets.top + (compact ? space.lg : space.xxl), paddingBottom: insets.bottom + space.xxl },
+          !roomy && styles.contentCompact,
+          { paddingTop: insets.top + (roomy ? space.xxl : space.lg), paddingBottom: insets.bottom + (roomy ? space.xxl : space.lg) },
         ]}>
         <View style={styles.hero}>
-          <Monogram size={step.kind === 'senha' ? (compact ? 76 : 112) : compact ? 60 : 88} />
+          <Monogram size={compact ? 56 : step.kind === 'senha' && roomy ? 104 : 76} />
           <AppText variant="title" tone="goldHighlight" style={styles.brand}>EUROTREINO</AppText>
           <Meander />
-          {step.kind === 'senha' && !compact ? (
+          {step.kind === 'senha' && roomy ? (
             <View style={styles.motto}>
               <AppText variant="motto" style={styles.center}>Mens sana in corpore sano</AppText>
               <AppText variant="label" tone="muted" style={styles.center}>Mente sã em corpo são</AppText>
@@ -287,11 +298,7 @@ export default function SignInScreen() {
         </View>
 
         {step.kind === 'senha' ? (
-          <View style={styles.form}>
-            <View style={styles.intro}>
-              <AppText variant="heading">Entrar</AppText>
-              <AppText tone="secondary">Use o e-mail e a senha da sua conta.</AppText>
-            </View>
+          <View style={[styles.form, styles.formTight]}>
             {info ? <Notice message={info} /> : null}
             {emailField}
             <PasswordField
@@ -310,9 +317,11 @@ export default function SignInScreen() {
             />
             <Button label={busy ? 'Entrando…' : 'Entrar'} onPress={submitPassword} disabled={busy} />
             {error ? <Notice tone="danger" message={error} /> : null}
-            <View style={styles.secondaryActions}>
-              <Button label="Esqueci minha senha" variant="ghost" onPress={() => router.push('/recuperar-senha')} disabled={busy} />
-              <Button label="Criar conta" variant="secondary" icon="perfil" onPress={() => router.push('/criar-conta')} disabled={busy} />
+            <Button label="Criar conta" variant="secondary" icon="perfil" onPress={() => router.push('/criar-conta')} disabled={busy} />
+            {/* Os dois caminhos de apoio dividem uma linha: são um toque, não uma lista. */}
+            <View style={styles.linkRow}>
+              <TextLink label="Esqueci a senha" onPress={() => router.push('/recuperar-senha')} disabled={busy} />
+              <TextLink label="Entrar com código" onPress={() => goTo({ kind: 'email' })} disabled={busy} />
             </View>
 
             {providers.isPending ? (
@@ -335,8 +344,6 @@ export default function SignInScreen() {
                 ))}
               </View>
             ) : null}
-
-            <Button label="Entrar com código por e-mail" icon="email" variant="ghost" onPress={() => goTo({ kind: 'email' })} disabled={busy} />
           </View>
         ) : step.kind === 'confirmar' ? (
           <View style={styles.form}>
@@ -422,6 +429,19 @@ const styles = StyleSheet.create({
   },
   form: {
     gap: space.lg,
+  },
+  formTight: {
+    gap: space.md,
+  },
+  linkRow: {
+    flexDirection: 'row',
+    gap: space.xs,
+  },
+  link: {
+    flex: 1,
+    minHeight: touchTarget,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   intro: {
     gap: space.xs,

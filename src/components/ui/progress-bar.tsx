@@ -1,5 +1,5 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, {
   cancelAnimation,
@@ -25,6 +25,11 @@ type Props = {
   gainFrom?: number;
   /** Atraso da animação, em ms. */
   delay?: number;
+  /**
+   * Para medidas que nunca caem (Glória, Honra): se o valor diminuiu, o nível virou, então a barra
+   * completa e recomeça. Sem isso, a barra só anda até o novo ponto.
+   */
+  wrapOnDecrease?: boolean;
 };
 
 function clamp(value: number | undefined): number {
@@ -32,10 +37,9 @@ function clamp(value: number | undefined): number {
 }
 
 /** Barra de progresso que enche com a curva padrão; quando o valor muda, anda até o novo ponto. */
-export function ProgressBar({ value, accessibilityLabel, gainFrom, delay = 0 }: Props) {
+export function ProgressBar({ value, accessibilityLabel, gainFrom, delay = 0, wrapOnDecrease = false }: Props) {
   const { colors } = useTheme();
   const reduced = useReducedMotionPreference();
-  const [width, setWidth] = useState(0);
   const target = clamp(value);
   const hasGain = gainFrom !== undefined && clamp(gainFrom) < target;
   const start = hasGain ? clamp(gainFrom) : 0;
@@ -46,7 +50,6 @@ export function ProgressBar({ value, accessibilityLabel, gainFrom, delay = 0 }: 
   const shown = useRef(reduced ? target : start);
 
   useEffect(() => {
-    if (width === 0) return;
     const from = shown.current;
     shown.current = target;
     if (reduced) {
@@ -55,8 +58,7 @@ export function ProgressBar({ value, accessibilityLabel, gainFrom, delay = 0 }: 
       return;
     }
     const config = { duration: duration.slow + 240, easing: easing.standard };
-    // A Glória nunca cai: se o valor diminuiu, a divisão virou. A barra completa e recomeça.
-    const wraps = !hasGain && target < from - 0.001;
+    const wraps = wrapOnDecrease && !hasGain && target < from - 0.001;
     const run = (to: number) =>
       wraps
         ? withSequence(withTiming(1, config), withTiming(0, { duration: 0 }), withTiming(to, config))
@@ -68,15 +70,12 @@ export function ProgressBar({ value, accessibilityLabel, gainFrom, delay = 0 }: 
       cancelAnimation(fill);
       cancelAnimation(gain);
     };
-  }, [width, target, hasGain, delay, reduced, fill, gain]);
+  }, [target, hasGain, delay, reduced, wrapOnDecrease, fill, gain]);
 
-  const fillStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: -(1 - fill.get()) * width }],
-  }));
-
-  const gainStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: -(1 - gain.get()) * width }],
-  }));
+  // Largura em porcentagem da trilha. Antes a barra se deslocava pela largura medida, e o estilo
+  // inicial era calculado com largura 0: a barra aparecia cheia até a próxima mudança de valor.
+  const fillStyle = useAnimatedStyle(() => ({ width: `${fill.get() * 100}%` }));
+  const gainStyle = useAnimatedStyle(() => ({ width: `${gain.get() * 100}%` }));
 
   const percent = Math.round(target * 100);
 
@@ -85,22 +84,17 @@ export function ProgressBar({ value, accessibilityLabel, gainFrom, delay = 0 }: 
       accessibilityRole="progressbar"
       accessibilityLabel={accessibilityLabel}
       accessibilityValue={{ min: 0, max: 100, now: percent }}
-      onLayout={(event) => setWidth(event.nativeEvent.layout.width)}
       style={[styles.track, { backgroundColor: colors.track }]}>
-      {width > 0 ? (
-        <>
-          {hasGain ? <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: '#F2D98A' }, gainStyle]} /> : null}
-          <Animated.View style={[StyleSheet.absoluteFill, fillStyle]}>
-            <LinearGradient
-              colors={[colors.goldDeep, colors.gold, colors.goldHighlight]}
-              locations={[0, 0.7, 1]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={StyleSheet.absoluteFill}
-            />
-          </Animated.View>
-        </>
-      ) : null}
+      {hasGain ? <Animated.View style={[styles.bar, { backgroundColor: '#F2D98A' }, gainStyle]} /> : null}
+      <Animated.View style={[styles.bar, fillStyle]}>
+        <LinearGradient
+          colors={[colors.goldDeep, colors.gold, colors.goldHighlight]}
+          locations={[0, 0.7, 1]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 0 }}
+          style={StyleSheet.absoluteFill}
+        />
+      </Animated.View>
     </View>
   );
 }
@@ -110,5 +104,11 @@ const styles = StyleSheet.create({
     height: 6,
     borderRadius: 3,
     overflow: 'hidden',
+  },
+  bar: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
   },
 });

@@ -11,6 +11,7 @@ import { RollingNumber } from '@/components/motion/rolling-number';
 import { Sparks } from '@/components/motion/sparks';
 import { EmblemAvatar } from '@/components/rank/emblem-avatar';
 import { AppText } from '@/components/ui/text';
+import { useLegionPhotos } from '@/features/profile/photo';
 import { arenaShareMessage } from '@/features/workouts/share-workout';
 import * as haptics from '@/lib/haptics';
 import { shareText } from '@/lib/share';
@@ -35,7 +36,9 @@ function joinNames(names: readonly string[]): string {
   return rest > 0 ? `${shown.join(', ')} e mais ${rest}` : `${head} e ${last}`;
 }
 
-function StandingRow({ row, from, to, delay }: { row: ArenaStanding; from: number; to: number; delay: number }) {
+type RowProps = { row: ArenaStanding; from: number; to: number; delay: number; photoUri?: string };
+
+function StandingRow({ row, from, to, delay, photoUri }: RowProps) {
   const { colors } = useTheme();
   const reduced = useReducedMotionPreference();
   const y = useSharedValue(reduced ? to * ROW : from * ROW);
@@ -81,7 +84,7 @@ function StandingRow({ row, from, to, delay }: { row: ArenaStanding; from: numbe
         delay={delay}
         containerStyle={styles.place}
       />
-      <EmblemAvatar emblem={row.emblem} color={row.emblemColor} size={34} />
+      <EmblemAvatar emblem={row.emblem} color={row.emblemColor} size={34} photoUri={photoUri} />
       <AppText variant="bodyMedium" numberOfLines={1} style={styles.name}>
         {row.isMe ? `${row.displayName} · você` : row.displayName}
       </AppText>
@@ -93,7 +96,9 @@ function StandingRow({ row, from, to, delay }: { row: ArenaStanding; from: numbe
 }
 
 /** Mini ranking: as linhas começam na ordem de antes e trocam de lugar com mola. */
-function MiniStandings({ standings, delay }: { standings: readonly ArenaStanding[]; delay: number }) {
+type StandingsProps = { standings: readonly ArenaStanding[]; delay: number; photos: Record<string, string> };
+
+function MiniStandings({ standings, delay, photos }: StandingsProps) {
   const before = [...standings].sort((a, b) => a.beforePlace - b.beforePlace || Number(a.isMe) - Number(b.isMe));
   const after = [...standings].sort((a, b) => a.afterPlace - b.afterPlace || Number(b.isMe) - Number(a.isMe));
   return (
@@ -105,6 +110,7 @@ function MiniStandings({ standings, delay }: { standings: readonly ArenaStanding
           from={before.findIndex((item) => item.userId === row.userId)}
           to={after.findIndex((item) => item.userId === row.userId)}
           delay={delay}
+          photoUri={photos[row.userId]}
         />
       ))}
     </View>
@@ -120,7 +126,11 @@ export function ArenaScene({ celebration, onContinue }: Props) {
   const podium = celebration.toPlace <= 3;
   const tone = PODIUM_TONES[celebration.toPlace];
   const passedLine = `Você passou ${joinNames(celebration.passed)}.`;
-  const myWeekGlory = celebration.standings.find((standing) => standing.isMe)?.weekGlory ?? 0;
+  const mine = celebration.standings.find((standing) => standing.isMe);
+  const myWeekGlory = mine?.weekGlory ?? 0;
+  // As mesmas fotos do Coliseu: só vem quem consentiu, e a sua sempre que você tiver uma.
+  const photos = useLegionPhotos(celebration.legionId);
+  const myPhoto = mine ? photos[mine.userId] : undefined;
 
   useEffect(() => {
     const timer = setTimeout(() => (podium ? haptics.ceremony() : haptics.success()), reduced ? 0 : 620);
@@ -132,7 +142,7 @@ export function ArenaScene({ celebration, onContinue }: Props) {
 
   const actions = [
     {
-      label: 'Ver Arena',
+      label: 'Ver Coliseu',
       onPress: () => {
         onContinue();
         router.navigate({ pathname: '/arena', params: { legiao: celebration.legionId } });
@@ -160,7 +170,7 @@ export function ArenaScene({ celebration, onContinue }: Props) {
           <AppText variant="heading">Você subiu para </AppText>
           <RollingNumber value={celebration.toPlace} from={celebration.fromPlace} suffix="º" variant="heading" tone="goldHighlight" delay={520} />
         </View>
-        <MiniStandings standings={celebration.standings} delay={520} />
+        <MiniStandings standings={celebration.standings} delay={520} photos={photos} />
         <Reveal delay={900}>
           <AppText tone="secondary" style={styles.center}>
             {passedLine}
@@ -178,7 +188,7 @@ export function ArenaScene({ celebration, onContinue }: Props) {
         <RippleRing size={150} delay={640} />
         <Sparks size={320} count={30} seed={celebration.toPlace * 17} delay={640} style={{ top: -70, left: -70 }} />
         <LaurelCrown size={180} tone={tone} delay={560} />
-        <EmblemAvatar emblem={celebration.emblem} color={celebration.emblemColor} size={112} />
+        <EmblemAvatar emblem={celebration.emblem} color={celebration.emblemColor} size={112} photoUri={myPhoto} />
       </View>
       <RollingNumber
         value={celebration.toPlace}
@@ -194,7 +204,7 @@ export function ArenaScene({ celebration, onContinue }: Props) {
         </AppText>
       </Reveal>
       <Reveal delay={1100} style={styles.fullStandings}>
-        <MiniStandings standings={celebration.standings} delay={1250} />
+        <MiniStandings standings={celebration.standings} delay={1250} photos={photos} />
       </Reveal>
       <Reveal delay={1450}>
         <AppText tone="secondary" style={styles.center}>

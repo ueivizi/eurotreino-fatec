@@ -31,7 +31,7 @@ type Props = {
   children: ReactNode;
 };
 
-/** Moldura comum das cerimônias: fundo escuro, filete de ouro e ações claras no fim. */
+/** Moldura comum das cerimônias: fundo do tema, filete de ouro e ações claras no fim. */
 export function SceneFrame({ layout, announcement, onSkip, actions, actionsDelay, children }: Props) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
@@ -54,7 +54,8 @@ export function SceneFrame({ layout, announcement, onSkip, actions, actionsDelay
       <Animated.View
         style={[
           StyleSheet.absoluteFill,
-          { backgroundColor: layout === 'full' ? 'rgba(8,7,5,0.985)' : colors.scrim },
+          // O fundo segue o tema: no Mármore, um fundo escuro fixo deixava o texto escuro sem contraste.
+          { backgroundColor: layout === 'full' ? colors.background : colors.scrim },
           { animationName: fadeIn, animationDuration: 220, animationFillMode: 'backwards' },
         ]}
       />
