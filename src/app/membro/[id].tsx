@@ -14,6 +14,7 @@ import { Notice } from '@/components/ui/notice';
 import { AppText } from '@/components/ui/text';
 import { fetchWeeklyRanking } from '@/features/arena/arena-api';
 import { fetchMyLegions } from '@/features/legions/legions-api';
+import { TrophyShelf } from '@/features/legions/trophy-shelf';
 import { rankFromGlory } from '@/features/ranks/tiers';
 import { isUuid } from '@/lib/parse';
 import { queryKeys } from '@/lib/query-client';
@@ -112,12 +113,14 @@ export default function MemberProfileScreen() {
             </Card>
           </View>
 
+          <TrophyShelf userId={member.isMe ? undefined : member.userId} />
+
           <View style={styles.privacy}>
             <Icon name="escudo" size={16} color={colors.gold} />
             <AppText variant="label" tone="secondary" style={styles.flex}>
               {member.isMe
                 ? 'É assim que os membros da Legião veem você. Seus treinos continuam privados.'
-                : `Os treinos de ${member.displayName} são privados. Na Legião aparecem só o rank, a Glória da semana e a posição no Coliseu.`}
+                : `Os treinos de ${member.displayName} são privados. Na Legião aparecem só o rank, a Glória da semana, a posição no Coliseu e os Triunfos.`}
             </AppText>
           </View>
         </>
