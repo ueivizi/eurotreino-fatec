@@ -13,6 +13,7 @@ import { Platform } from 'react-native';
 import { useReducedMotionPreference } from '@/components/motion/reduced-motion';
 import { LoadingScreen, StatusScreen } from '@/components/status-screen';
 import { SessionProvider, useSession } from '@/features/auth/session';
+import { LockScreenWorkout } from '@/features/training/lock-screen-workout';
 import { TrainingSessionProvider } from '@/features/training/session-provider';
 import { OfflineQueueProvider } from '@/features/workouts/offline-queue-provider';
 import { queryClient } from '@/lib/query-client';
@@ -194,6 +195,8 @@ export default function RootLayout() {
               <OfflineQueueProvider>
                 <TrainingSessionProvider>
                   <RootNavigator />
+                  {/* Com o aparelho bloqueado e uma sessão aberta, só o treino fica à mão. */}
+                  <LockScreenWorkout />
                 </TrainingSessionProvider>
               </OfflineQueueProvider>
             </SessionProvider>

@@ -48,6 +48,7 @@ export const PRIVACY_POLICY: LegalDocument = {
         'Segurança: tentativas de código de convite inválido e registros de ações como fundar, entrar e sair de Legiões, trocar código, editar o perfil, escrever, apagar e denunciar no Mural e pedir rotas ao roteador. Esses registros não guardam códigos, nomes, senhas nem coordenadas.',
         'Rotas pelas ruas e voltas geradas (só quando você pede): os pontos que você tocou no mapa, ou o ponto de partida da volta, passam pelo nosso servidor até o roteador, que devolve o caminho. Nosso servidor não guarda os pontos; conta só quantos pedidos você fez, para o limite de uso.',
         'No aparelho: a sessão de acesso fica no armazenamento seguro do celular (ou no navegador, na versão Web), e treinos registrados sem internet ficam guardados até o envio.',
+        'Tela bloqueada: com um treino em andamento, o cartão do treino (exercício, série, carga e tempo) aparece na tela bloqueada e o app pode abrir por cima dela, sem desbloquear. Quem estiver com o celular vê e mexe só no treino; qualquer outra parte do app pede o desbloqueio.',
         'Só no aparelho: as rotas que você guarda (a distância é calculada ali) e a foto que você escolher para a imagem de compartilhar, que é montada no próprio celular.',
         'Dados técnicos: os provedores do serviço registram dados das conexões, como o endereço IP, por tempo limitado, para operar e proteger o serviço.',
       ],
