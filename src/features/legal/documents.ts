@@ -21,7 +21,7 @@ export type LegalDocument = {
 
 export const PRIVACY_POLICY: LegalDocument = {
   title: 'Política de Privacidade',
-  updatedAt: '17 de setembro de 2026',
+  updatedAt: '26 de setembro de 2026',
   intro:
     'O EuroTreino é um aplicativo de treino com ranking privado entre amigos, criado como projeto acadêmico por estudantes da Fatec Osasco. Esta política explica quais dados usamos, para quê e como você controla seus dados, de acordo com a Lei Geral de Proteção de Dados (Lei nº 13.709/2018).',
   sections: [
@@ -34,14 +34,17 @@ export const PRIVACY_POLICY: LegalDocument = {
     {
       heading: 'Quais dados usamos',
       items: [
-        'Conta: seu e-mail, usado para entrar com código. Se você entrar com o Google, o serviço de autenticação também recebe o nome e a foto da conta Google; eles não aparecem no app.',
+        'Conta: seu e-mail e sua senha, usados para entrar (a senha fica com o serviço de autenticação só como resumo criptográfico, nunca em texto; também dá para entrar com código por e-mail). Se você entrar com o Google, o serviço de autenticação também recebe o nome e a foto da conta Google; eles não aparecem no app.',
         'Perfil: nome de exibição, emblema e a cor escolhida. Não pedimos foto, idade, peso, medidas nem localização.',
         'Treinos: tipo, duração, intensidade, dia e horário de cada treino, e a Glória calculada. Se você quiser, também a distância percorrida, as séries feitas com repetições e carga, e os exercícios da sua ficha.',
         'Medidas de saúde (só com seu consentimento): frequência cardíaca média e máxima que você digitar ou que vier do relógio conectado. Sem o consentimento, o app recusa o envio.',
         'Relógio (só se você conectar): com a sua permissão no Health Connect, o app lê no próprio aparelho os treinos das últimas 48 horas gravados pelo app do relógio — tipo, início, fim e distância — e, com o consentimento de saúde ligado, a frequência cardíaca. De um arquivo GPX que você escolher, lê o mesmo resumo; o trajeto serve só para calcular a distância no aparelho e não é enviado. Só vira registro o treino que você confirmar, e o app nunca grava nada no Health Connect.',
+        'Juramento da semana (se você fizer): quantos dias por semana você se comprometeu a treinar, guardado na semana em que foi feito. Ele não muda a Glória nem o Coliseu.',
         'Legiões: as Legiões que você fundou ou em que entrou, seu papel, a data de entrada e os códigos de convite gerados.',
-        'Segurança: tentativas de código de convite inválido e registros de ações como fundar, entrar e sair de Legiões, trocar código e editar o perfil. Esses registros não guardam códigos, nomes nem senhas.',
+        'Mural da Legião: as mensagens que você escreve (só texto, até 500 caracteres, sem link) com a data, e as denúncias que você faz.',
+        'Segurança: tentativas de código de convite inválido e registros de ações como fundar, entrar e sair de Legiões, trocar código, editar o perfil e escrever, apagar e denunciar no Mural. Esses registros não guardam códigos, nomes nem senhas.',
         'No aparelho: a sessão de acesso fica no armazenamento seguro do celular (ou no navegador, na versão Web), e treinos registrados sem internet ficam guardados até o envio.',
+        'Só no aparelho, nunca enviados: as rotas que você desenha no mapa (a distância é calculada ali) e a foto que você escolher para a imagem de compartilhar, que é montada no próprio celular.',
         'Dados técnicos: os provedores do serviço registram dados das conexões, como o endereço IP, por tempo limitado, para operar e proteger o serviço.',
       ],
       paragraphs: ['Não usamos publicidade nem ferramentas de rastreamento de comportamento.'],
@@ -59,7 +62,8 @@ export const PRIVACY_POLICY: LegalDocument = {
     {
       heading: 'Quem vê o quê',
       items: [
-        'Membros das suas Legiões: nome de exibição, emblema, rank, Glória da semana e posição no Coliseu.',
+        'Membros das suas Legiões: nome de exibição, emblema, rank, Glória da semana e posição no Coliseu, e as mensagens que você escreve no Mural daquela Legião.',
+        'Fundador da Legião: também vê quantas denúncias cada mensagem do Mural recebeu, sem saber quem denunciou.',
         'Só você: seu e-mail e os detalhes de cada treino.',
         'Quem não está em nenhuma Legião com você não vê nada do seu perfil.',
       ],
@@ -69,6 +73,7 @@ export const PRIVACY_POLICY: LegalDocument = {
       items: [
         'Supabase: hospeda o banco de dados, a autenticação e as funções do servidor. O banco de dados fica na região de São Paulo.',
         'Google: entrega os e-mails com código e, se você escolher, faz a entrada com a conta Google.',
+        'OpenFreeMap: entrega as imagens do mapa quando você abre a tela de desenhar rota. Recebe o endereço IP e a área do mapa que está na tela, nunca o seu trajeto.',
       ],
       paragraphs: [
         'Esses serviços podem tratar dados também fora do Brasil, com as garantias previstas na LGPD. Nunca vendemos nem alugamos dados pessoais.',
@@ -78,24 +83,25 @@ export const PRIVACY_POLICY: LegalDocument = {
       heading: 'Por quanto tempo guardamos',
       items: [
         'Perfil, treinos, Glória e Legiões: enquanto sua conta existir.',
+        'Mensagens do Mural: até quem escreveu ou o fundador apagar, a Legião deixar de existir ou a conta ser excluída.',
         'Tentativas de código de convite inválido: 1 dia.',
         'Registros de segurança: 90 dias.',
-        'Ao excluir a conta, perfil, treinos, Glória e vínculos com Legiões são apagados na hora, e os registros de segurança deixam de apontar para você.',
+        'Ao excluir a conta, perfil, treinos, Glória, juramentos, mensagens do Mural e vínculos com Legiões são apagados na hora, e os registros de segurança deixam de apontar para você.',
       ],
     },
     {
       heading: 'Com que base usamos',
       paragraphs: [
         'Usamos seus dados para prestar o serviço que você pediu ao criar a conta (entrar, perfil, Legiões e Coliseu) e, no caso dos registros de segurança, para proteger o serviço e as pessoas que o usam. Você escolhe o que registrar, e pode apagar tudo a qualquer momento excluindo a conta.',
-        'A frequência cardíaca é a única exceção: por ser dado sensível de saúde, ela só é tratada mediante o seu consentimento específico, ligado e desligado por você no Perfil.',
+        'A frequência cardíaca é a única exceção: por ser dado sensível de saúde, ela só é tratada mediante o seu consentimento específico, ligado e desligado por você em Configurações.',
       ],
     },
     {
       heading: 'Seus direitos',
       items: [
         'Ver seus dados: o Perfil, o Início e o Coliseu mostram o que guardamos sobre você.',
-        'Corrigir: Perfil › Editar nome e emblema.',
-        'Excluir: Perfil › Excluir conta e dados, quando quiser.',
+        'Corrigir: no Perfil, o lápis ao lado do nome; um treino da semana, em Anais › Corrigir treino.',
+        'Excluir: Configurações › Excluir conta e dados, quando quiser. Uma mensagem sua do Mural: toque nela e apague.',
         'Desconectar o relógio: retire a permissão do EuroTreino no Health Connect, a qualquer momento.',
         `Pedir uma cópia dos seus dados ou mais informações sobre o tratamento: escreva para ${CONTACT_EMAIL}. Respondemos em até 15 dias.`,
         'Você também pode reclamar à Autoridade Nacional de Proteção de Dados (ANPD).',
@@ -113,7 +119,7 @@ export const PRIVACY_POLICY: LegalDocument = {
     {
       heading: 'Frequência cardíaca: consentimento específico',
       paragraphs: [
-        'A frequência cardíaca é dado pessoal sensível de saúde pela Lei Geral de Proteção de Dados (art. 5º, II). Por isso ela não entra junto com o resto: só é registrada depois de você ligar esse consentimento no Perfil, de forma separada e específica (art. 11, I).',
+        'A frequência cardíaca é dado pessoal sensível de saúde pela Lei Geral de Proteção de Dados (art. 5º, II). Por isso ela não entra junto com o resto: só é registrada depois de você ligar esse consentimento em Configurações, de forma separada e específica (art. 11, I).',
         'Você pode desligar a qualquer momento. Ao desligar, apagamos na mesma hora todas as frequências cardíacas já guardadas nos seus treinos — o treino continua no histórico, sem a medida.',
       ],
       items: [
@@ -132,8 +138,8 @@ export const PRIVACY_POLICY: LegalDocument = {
       ],
       items: [
         'A Legião é fechada e só se entra por convite: não existe busca por pessoas, perfil público nem sugestão de amigos.',
-        'Não há mensagens nem chat entre membros: o que se troca é treino e posição no Coliseu.',
-        'Não pedimos foto, localização, peso, medidas nem data de nascimento.',
+        'A única conversa é o Mural de cada Legião, visto só pelos membros: só texto, sem link, sem foto e sem mensagem privada. Quem escreve apaga a própria mensagem, o fundador apaga qualquer uma, e três denúncias escondem a mensagem até o fundador decidir.',
+        'Não pedimos foto, localização, peso, medidas nem data de nascimento. O mapa de rota funciona sem permissão de localização.',
         'Seu perfil só é visto por quem está em uma Legião com você.',
         'Não há publicidade, rastreamento, compras nem qualquer cobrança.',
       ],
@@ -147,7 +153,7 @@ export const PRIVACY_POLICY: LegalDocument = {
 
 export const TERMS_OF_USE: LegalDocument = {
   title: 'Termos de Uso',
-  updatedAt: '16 de setembro de 2026',
+  updatedAt: '26 de setembro de 2026',
   intro:
     'Ao usar o EuroTreino, você concorda com estes termos. Eles são curtos de propósito: leia com atenção.',
   sections: [
@@ -167,8 +173,8 @@ export const TERMS_OF_USE: LegalDocument = {
       heading: 'Sua conta',
       items: [
         'A conta é pessoal: não compartilhe o acesso.',
-        'Mantenha seu e-mail seguro, porque é por ele que você entra.',
-        'Você pode excluir a conta a qualquer momento em Perfil › Excluir conta e dados.',
+        'Mantenha seu e-mail e sua senha seguros, porque é por eles que você entra.',
+        'Você pode excluir a conta a qualquer momento em Configurações › Excluir conta e dados.',
       ],
     },
     {
@@ -183,6 +189,7 @@ export const TERMS_OF_USE: LegalDocument = {
       heading: 'Respeito na Legião',
       items: [
         'Use nome de exibição e nome de Legião respeitosos: nada de ofensas, discriminação ou se passar por outra pessoa.',
+        'No Mural, a mesma regra: nada de ofensa, assédio, discriminação ou conteúdo impróprio. O fundador pode apagar mensagens, e os membros podem denunciar.',
         'Contas usadas para abuso podem ser excluídas pela equipe.',
       ],
     },
