@@ -19,6 +19,7 @@ import { SegmentedControl } from '@/components/ui/segmented-control';
 import { AppText } from '@/components/ui/text';
 import { fetchWeeklyRanking } from '@/features/arena/arena-api';
 import type { RankingEntry } from '@/features/arena/arena-parsers';
+import { splitPodium } from '@/features/arena/podium';
 import { fetchMyLegions } from '@/features/legions/legions-api';
 import { rankFromGlory } from '@/features/ranks/tiers';
 import { queryKeys } from '@/lib/query-client';
@@ -129,8 +130,7 @@ export default function ArenaScreen() {
 
   const week = weekInfo(new Date());
   const entries = ranking.data?.entries ?? [];
-  const podium = entries.slice(0, 3);
-  const rest = entries.slice(3);
+  const { podium, rest } = splitPodium(entries);
   // Trocar de Legião ou de semana remonta o pódio: a cerimônia de subida acompanha o novo ranking.
   const podiumKey = `${legion?.id ?? ''}:${weekOffset}`;
 
@@ -213,6 +213,19 @@ export default function ArenaScreen() {
             </View>
           ) : (
             <>
+              {entries.length > 1 && podium.length === 0 ? (
+                <Reveal>
+                  <Notice
+                    message={
+                      weekOffset === 0
+                        ? 'O Coliseu recomeçou e todo mundo está no zero. Um treino já coloca você no pódio.'
+                        : 'Ninguém pontuou nesta semana.'
+                    }
+                  />
+                </Reveal>
+              ) : null}
+
+              {podium.length > 0 ? (
               <View key={podiumKey} style={styles.podium} accessibilityRole="list" accessibilityLabel="Pódio da semana">
                 {PODIUM_SLOTS.map((slot) => {
                   const entry = podium[slot.index];
@@ -251,6 +264,7 @@ export default function ArenaScreen() {
                   );
                 })}
               </View>
+              ) : null}
 
               <View>
                 {rest.map((entry, index) => (
