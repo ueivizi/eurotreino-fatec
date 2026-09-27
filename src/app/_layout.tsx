@@ -137,6 +137,8 @@ function RootNavigator() {
         <Stack.Screen name="sessao" />
         <Stack.Screen name="gloria" />
         <Stack.Screen name="comecar" />
+        {/* Modal de tela cheia: abre por cima do sheet do Registrar nas duas plataformas. */}
+        <Stack.Screen name="rota" options={{ presentation: 'fullScreenModal' }} />
       </Stack.Protected>
       {/* Abrem em qualquer estado: link de convite (guarda o código até a pessoa entrar), retorno do
           login social e documentos legais (acessíveis antes de criar a conta). */}

@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { randomUUID } from 'expo-crypto';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -20,6 +20,8 @@ import { enqueueCelebrations } from '@/features/celebrations/celebration-store';
 import { celebrationsForWorkout, type ArenaSnapshot } from '@/features/celebrations/detect';
 import { WorkoutResult } from '@/features/celebrations/workout-result';
 import { fetchMyLegions } from '@/features/legions/legions-api';
+import { takePendingDistance } from '@/features/map/pending-distance';
+import { ROUTE_MAP_AVAILABLE } from '@/features/map/route-map';
 import { SCORING } from '@/features/ranks/scoring';
 import { QueueFullError } from '@/features/workouts/offline-queue';
 import { useOfflineQueue } from '@/features/workouts/offline-queue-provider';
@@ -419,6 +421,16 @@ export default function RegisterWorkoutScreen() {
     },
   });
 
+  // Distância medida no mapa (tela de rota): entra quando o Registrar volta a ter foco.
+  useFocusEffect(
+    useCallback(() => {
+      const meters = takePendingDistance();
+      if (meters === null) return;
+      const rounded = Math.round(meters / DISTANCE.step) * DISTANCE.step;
+      setDistanceM(Math.min(DISTANCE.max, Math.max(DISTANCE.step, rounded)));
+    }, []),
+  );
+
   function change(apply: () => void) {
     apply();
     // Dados diferentes são outro registro; o identificador antigo ficaria em conflito no servidor.
@@ -536,6 +548,7 @@ export default function RegisterWorkoutScreen() {
 
           {/* Distância não existe na força: ninguém percorre quilômetro levantando peso. */}
           {module === 'forca' ? null : (
+          <>
           <DetailRow
             label="Distância"
             hint="Não muda a Glória; entra no seu histórico e nos recordes"
@@ -548,6 +561,15 @@ export default function RegisterWorkoutScreen() {
             disabled={disabled}
             onChange={(value) => change(() => setDistanceM(value))}
           />
+          {ROUTE_MAP_AVAILABLE ? (
+            <Button
+              label="Medir no mapa"
+              variant="ghost"
+              disabled={disabled}
+              onPress={() => router.push({ pathname: '/rota', params: { de: 'registrar' } })}
+            />
+          ) : null}
+          </>
           )}
 
           {/* "Outro" não diz o que foi o treino; o campo livre diz, e fica só com a pessoa. */}
