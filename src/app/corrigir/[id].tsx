@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ScreenHeader } from '@/components/screen-header';
@@ -14,6 +14,7 @@ import { NumberField } from '@/components/ui/number-field';
 import { SegmentedControl } from '@/components/ui/segmented-control';
 import { AppText } from '@/components/ui/text';
 import { TextField } from '@/components/ui/text-field';
+import { FormScrollView } from '@/components/ui/form-scroll';
 import { useProfile } from '@/features/auth/session';
 import { workoutWarnings } from '@/features/workouts/coherence';
 import { editWorkout, fetchHistoryWorkouts, type HistoryWorkout } from '@/features/workouts/history-api';
@@ -312,7 +313,7 @@ export default function EditWorkoutScreen() {
   const workout = workouts.data?.find((item) => item.id === params.id) ?? null;
 
   return (
-    <ScrollView
+    <FormScrollView
       style={{ flex: 1, backgroundColor: colors.background }}
       keyboardShouldPersistTaps="handled"
       contentContainerStyle={[styles.content, { paddingTop: insets.top + space.md, paddingBottom: insets.bottom + space.xxxl }]}>
@@ -331,7 +332,7 @@ export default function EditWorkoutScreen() {
         // A chave zera o rascunho se o treino trocar: cada correção começa do que está gravado.
         <EditForm key={workout.id} workout={workout} month={month} />
       )}
-    </ScrollView>
+    </FormScrollView>
   );
 }
 

@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ScreenHeader } from '@/components/screen-header';
@@ -10,6 +10,7 @@ import { Notice } from '@/components/ui/notice';
 import { PasswordField } from '@/components/ui/password-field';
 import { AppText } from '@/components/ui/text';
 import { TextField } from '@/components/ui/text-field';
+import { FormScrollView } from '@/components/ui/form-scroll';
 import { AUTH_MESSAGES } from '@/features/auth/auth-errors';
 import {
   EMAIL_MAX_LENGTH,
@@ -132,115 +133,113 @@ export default function SignUpScreen() {
   }
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: colors.background }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView
-        keyboardShouldPersistTaps="handled"
-        contentContainerStyle={[styles.content, { paddingTop: insets.top + space.md, paddingBottom: insets.bottom + space.xxxl }]}>
-        <ScreenHeader title="Criar conta" subtitle="Comece sua jornada do Recruta ao Olimpo" />
+    <FormScrollView
+      style={{ flex: 1, backgroundColor: colors.background }}
+      contentContainerStyle={[styles.content, { paddingTop: insets.top + space.md, paddingBottom: insets.bottom + space.xxxl }]}>
+      <ScreenHeader title="Criar conta" subtitle="Comece sua jornada do Recruta ao Olimpo" />
 
-        {sent ? (
-          <View style={styles.form}>
-            <View style={styles.intro}>
-              <AppText variant="heading">Confirme seu e-mail</AppText>
-              <AppText tone="secondary">
-                {`Se este e-mail ainda não tiver conta, enviamos um código de ${OTP_LENGTH} dígitos para ${sent}.`}
-              </AppText>
-            </View>
-            {info ? <Notice message={info} /> : null}
-            {/* Sem isto a pessoa fica esperando um código que nunca vem: quando o e-mail já tem
-                conta, o Supabase não envia nada (e não avisa, para não revelar quem é cadastrado). */}
-            <Notice message="Não chegou nada? Pode ser que este e-mail já tenha conta — nesse caso não enviamos código. Entre com sua senha ou use “Esqueci minha senha”." />
-            <CodeField
-              label="Código"
-              value={code}
-              onChangeText={(text) => {
-                setCode(text);
-                setCodeError(null);
-              }}
-              autoFocus
-              returnKeyType="done"
-              onSubmitEditing={submitCode}
-              error={codeError}
-            />
-            <Button label={busy ? 'Confirmando…' : 'Confirmar e entrar'} onPress={submitCode} disabled={busy} />
-            {error ? <Notice tone="danger" message={error} /> : null}
-            <View style={styles.secondaryActions}>
-              <Button
-                variant="ghost"
-                label={cooldown > 0 ? `Reenviar código em ${cooldown} s` : 'Reenviar código'}
-                onPress={resend}
-                disabled={busy || cooldown > 0}
-              />
-              <Button variant="ghost" label="Esqueci minha senha" onPress={() => router.replace('/recuperar-senha')} disabled={busy} />
-              <Button variant="ghost" label="Já tenho conta" onPress={() => router.replace('/entrar')} disabled={busy} />
-            </View>
-          </View>
-        ) : (
-          <View style={styles.form}>
-            <TextField
-              label="E-mail"
-              value={email}
-              onChangeText={(text) => {
-                setEmail(text);
-                setEmailError(null);
-              }}
-              placeholder="voce@exemplo.com"
-              keyboardType="email-address"
-              inputMode="email"
-              autoCapitalize="none"
-              autoCorrect={false}
-              autoComplete="email"
-              textContentType="emailAddress"
-              maxLength={EMAIL_MAX_LENGTH}
-              returnKeyType="next"
-              error={emailError}
-            />
-            <PasswordField
-              label="Senha"
-              value={password}
-              onChangeText={(text) => {
-                setPassword(text);
-                setPasswordError(null);
-              }}
-              placeholder="Crie uma senha"
-              autoComplete="new-password"
-              textContentType="newPassword"
-              returnKeyType="next"
-              hint={`Pelo menos ${PASSWORD_MIN_LENGTH} caracteres.`}
-              error={passwordError}
-            />
-            <PasswordField
-              label="Repita a senha"
-              value={repeated}
-              onChangeText={(text) => {
-                setRepeated(text);
-                setRepeatedError(null);
-              }}
-              placeholder="A mesma senha"
-              autoComplete="new-password"
-              textContentType="newPassword"
-              returnKeyType="go"
-              onSubmitEditing={submit}
-              error={repeatedError}
-            />
-            <Button label={busy ? 'Criando…' : 'Criar conta'} onPress={submit} disabled={busy} />
-            {error ? <Notice tone="danger" message={error} /> : null}
-            <AppText variant="caption" tone="muted" style={styles.center}>
-              {'Ao criar a conta, você aceita os '}
-              <AppText variant="caption" tone="gold" accessibilityRole="link" onPress={() => router.push('/termos')}>
-                Termos de Uso
-              </AppText>
-              {' e a '}
-              <AppText variant="caption" tone="gold" accessibilityRole="link" onPress={() => router.push('/privacidade')}>
-                Política de Privacidade
-              </AppText>
-              {', e declara ter 16 anos ou mais.'}
+      {sent ? (
+        <View style={styles.form}>
+          <View style={styles.intro}>
+            <AppText variant="heading">Confirme seu e-mail</AppText>
+            <AppText tone="secondary">
+      {`Se este e-mail ainda não tiver conta, enviamos um código de ${OTP_LENGTH} dígitos para ${sent}.`}
             </AppText>
-            <Button label="Já tenho conta" variant="ghost" onPress={() => router.replace('/entrar')} disabled={busy} />
           </View>
-        )}
-      </ScrollView>
-    </KeyboardAvoidingView>
+          {info ? <Notice message={info} /> : null}
+          {/* Sem isto a pessoa fica esperando um código que nunca vem: quando o e-mail já tem
+      conta, o Supabase não envia nada (e não avisa, para não revelar quem é cadastrado). */}
+          <Notice message="Não chegou nada? Pode ser que este e-mail já tenha conta — nesse caso não enviamos código. Entre com sua senha ou use “Esqueci minha senha”." />
+          <CodeField
+            label="Código"
+            value={code}
+            onChangeText={(text) => {
+      setCode(text);
+      setCodeError(null);
+            }}
+            autoFocus
+            returnKeyType="done"
+            onSubmitEditing={submitCode}
+            error={codeError}
+          />
+          <Button label={busy ? 'Confirmando…' : 'Confirmar e entrar'} onPress={submitCode} disabled={busy} />
+          {error ? <Notice tone="danger" message={error} /> : null}
+          <View style={styles.secondaryActions}>
+            <Button
+      variant="ghost"
+      label={cooldown > 0 ? `Reenviar código em ${cooldown} s` : 'Reenviar código'}
+      onPress={resend}
+      disabled={busy || cooldown > 0}
+            />
+            <Button variant="ghost" label="Esqueci minha senha" onPress={() => router.replace('/recuperar-senha')} disabled={busy} />
+            <Button variant="ghost" label="Já tenho conta" onPress={() => router.replace('/entrar')} disabled={busy} />
+          </View>
+        </View>
+      ) : (
+        <View style={styles.form}>
+          <TextField
+            label="E-mail"
+            value={email}
+            onChangeText={(text) => {
+      setEmail(text);
+      setEmailError(null);
+            }}
+            placeholder="voce@exemplo.com"
+            keyboardType="email-address"
+            inputMode="email"
+            autoCapitalize="none"
+            autoCorrect={false}
+            autoComplete="email"
+            textContentType="emailAddress"
+            maxLength={EMAIL_MAX_LENGTH}
+            returnKeyType="next"
+            error={emailError}
+          />
+          <PasswordField
+            label="Senha"
+            value={password}
+            onChangeText={(text) => {
+      setPassword(text);
+      setPasswordError(null);
+            }}
+            placeholder="Crie uma senha"
+            autoComplete="new-password"
+            textContentType="newPassword"
+            returnKeyType="next"
+            hint={`Pelo menos ${PASSWORD_MIN_LENGTH} caracteres.`}
+            error={passwordError}
+          />
+          <PasswordField
+            label="Repita a senha"
+            value={repeated}
+            onChangeText={(text) => {
+      setRepeated(text);
+      setRepeatedError(null);
+            }}
+            placeholder="A mesma senha"
+            autoComplete="new-password"
+            textContentType="newPassword"
+            returnKeyType="go"
+            onSubmitEditing={submit}
+            error={repeatedError}
+          />
+          <Button label={busy ? 'Criando…' : 'Criar conta'} onPress={submit} disabled={busy} />
+          {error ? <Notice tone="danger" message={error} /> : null}
+          <AppText variant="caption" tone="muted" style={styles.center}>
+            {'Ao criar a conta, você aceita os '}
+            <AppText variant="caption" tone="gold" accessibilityRole="link" onPress={() => router.push('/termos')}>
+      Termos de Uso
+            </AppText>
+            {' e a '}
+            <AppText variant="caption" tone="gold" accessibilityRole="link" onPress={() => router.push('/privacidade')}>
+      Política de Privacidade
+            </AppText>
+            {', e declara ter 16 anos ou mais.'}
+          </AppText>
+          <Button label="Já tenho conta" variant="ghost" onPress={() => router.replace('/entrar')} disabled={busy} />
+        </View>
+      )}
+    </FormScrollView>
   );
 }
 

@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { randomUUID } from 'expo-crypto';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button, tapFeedback } from '@/components/ui/button';
@@ -13,6 +13,7 @@ import { Notice } from '@/components/ui/notice';
 import { NumberField } from '@/components/ui/number-field';
 import { AppText } from '@/components/ui/text';
 import { TextField } from '@/components/ui/text-field';
+import { FormScrollView } from '@/components/ui/form-scroll';
 import { fetchWeeklyRanking } from '@/features/arena/arena-api';
 import { useProfile } from '@/features/auth/session';
 import type { WeeklyRanking } from '@/features/arena/arena-parsers';
@@ -471,7 +472,7 @@ export default function RegisterWorkoutScreen() {
 
   return (
     <View style={[styles.flex, { backgroundColor: colors.surfaceRaised }]}>
-    <ScrollView style={styles.flex} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+    <FormScrollView style={styles.flex} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <View style={styles.header}>
         <View style={styles.headerText}>
           <AppText variant="heading">{save.isSuccess ? 'Treino registrado' : 'Registrar treino'}</AppText>
@@ -699,7 +700,7 @@ export default function RegisterWorkoutScreen() {
 
         </>
       )}
-    </ScrollView>
+    </FormScrollView>
 
     {/*
       * O Concluí fica fora da rolagem: são três toques (Registrar → tipo → Concluí) seja qual for

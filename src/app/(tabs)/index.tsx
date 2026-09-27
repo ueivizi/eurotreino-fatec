@@ -5,13 +5,13 @@ import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Halo } from '@/components/motion/halo';
+import { ProfileButton } from '@/components/profile-button';
 import { PressableScale } from '@/components/motion/pressable-scale';
 import { Reveal } from '@/components/motion/reveal';
 import { RollingNumber } from '@/components/motion/rolling-number';
 import { Shimmer } from '@/components/motion/shimmer';
 import { Skeleton } from '@/components/motion/skeleton';
 import { TabFade } from '@/components/motion/tab-fade';
-import { EmblemAvatar } from '@/components/rank/emblem-avatar';
 import { RankMedallion } from '@/components/rank/rank-medallion';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -33,7 +33,6 @@ import { useOfflineQueue } from '@/features/workouts/offline-queue-provider';
 import { intensityLabel, workoutTypeLabel } from '@/features/workouts/workout-types';
 import { fetchMyProgress } from '@/features/workouts/workouts-api';
 import { ChoicesInvite } from '@/features/profile/choices-invite';
-import { useMyPhoto } from '@/features/profile/photo';
 import { queryKeys } from '@/lib/query-client';
 import { errorMessage } from '@/lib/rpc-errors';
 import { formatRemaining, toRoman, weekInfo } from '@/lib/week';
@@ -71,7 +70,6 @@ export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const profile = useProfile();
-  const myPhoto = useMyPhoto(profile?.id, profile?.avatarUpdatedAt);
   const queue = useOfflineQueue();
 
   const progress = useQuery({ queryKey: queryKeys.progress, queryFn: fetchMyProgress });
@@ -152,13 +150,7 @@ export default function HomeScreen() {
           </AppText>
           <AppText variant="title" numberOfLines={1}>{`Ave, ${profile.displayName.trim().split(/\s+/)[0] ?? profile.displayName}`}</AppText>
         </View>
-        <PressableScale
-          accessibilityRole="button"
-          accessibilityLabel="Abrir meu perfil"
-          hitSlop={8}
-          onPress={() => router.navigate('/perfil')}>
-          <EmblemAvatar emblem={profile.emblem} color={profile.emblemColor} size={46} photoUri={myPhoto} />
-        </PressableScale>
+        <ProfileButton size={46} />
       </Reveal>
 
       <ChoicesInvite profile={profile} />

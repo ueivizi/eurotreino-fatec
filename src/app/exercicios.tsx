@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { PressableScale } from '@/components/motion/pressable-scale';
@@ -11,6 +11,7 @@ import { Icon } from '@/components/ui/icon';
 import { Notice } from '@/components/ui/notice';
 import { AppText } from '@/components/ui/text';
 import { TextField } from '@/components/ui/text-field';
+import { FormScrollView } from '@/components/ui/form-scroll';
 import { pickExercise } from '@/features/training/exercise-picker';
 import { createExercise, fetchExerciseCatalog, searchExercises, type Exercise } from '@/features/training/exercises-api';
 import { queryKeys } from '@/lib/query-client';
@@ -58,34 +59,90 @@ export default function ExerciseCatalogScreen() {
   const equipmentLabel = (id: string) => catalog.data?.equipment.find((item) => item.id === id)?.label ?? id;
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: colors.background }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView
-        keyboardShouldPersistTaps="handled"
-        contentContainerStyle={[styles.content, { paddingTop: insets.top + space.md, paddingBottom: insets.bottom + space.xxxl }]}>
-        <ScreenHeader title="Exercícios" subtitle="Escolha um do catálogo ou crie o seu" />
+    <FormScrollView
+      style={{ flex: 1, backgroundColor: colors.background }}
+      contentContainerStyle={[styles.content, { paddingTop: insets.top + space.md, paddingBottom: insets.bottom + space.xxxl }]}>
+      <ScreenHeader title="Exercícios" subtitle="Escolha um do catálogo ou crie o seu" />
 
-        <TextField
-          label="Buscar"
-          value={term}
-          onChangeText={setTerm}
-          placeholder="supino, agachamento, rosca…"
-          autoCapitalize="none"
-          autoCorrect={false}
-          returnKeyType="search"
-        />
+      <TextField
+        label="Buscar"
+        value={term}
+        onChangeText={setTerm}
+        placeholder="supino, agachamento, rosca…"
+        autoCapitalize="none"
+        autoCorrect={false}
+        returnKeyType="search"
+      />
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-          {[{ id: null, label: 'Todos' }, ...groups.map((item) => ({ id: item.id as string | null, label: item.label }))].map(
-            (option) => {
-              const selected = option.id === group;
-              return (
-                <PressableScale
-                  key={option.id ?? 'todos'}
-                  haptic="select"
-                  accessibilityRole="button"
-                  accessibilityLabel={option.label}
-                  accessibilityState={{ selected }}
-                  onPress={() => setGroup(option.id)}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+        {[{ id: null, label: 'Todos' }, ...groups.map((item) => ({ id: item.id as string | null, label: item.label }))].map(
+          (option) => {
+            const selected = option.id === group;
+            return (
+      <PressableScale
+                key={option.id ?? 'todos'}
+                haptic="select"
+                accessibilityRole="button"
+                accessibilityLabel={option.label}
+                accessibilityState={{ selected }}
+                onPress={() => setGroup(option.id)}
+                style={[
+                  styles.chip,
+                  {
+                    borderColor: selected ? colors.gold : colors.hairlineSoft,
+                    backgroundColor: selected ? colors.selectedFill : 'transparent',
+                  },
+                ]}>
+                <AppText variant="label" tone={selected ? 'goldHighlight' : 'secondary'}>{option.label}</AppText>
+      </PressableScale>
+            );
+          },
+        )}
+      </ScrollView>
+
+      {catalog.isPending ? (
+        <ActivityIndicator color={colors.gold} />
+      ) : catalog.isError ? (
+        <View style={styles.block}>
+          <Notice tone="danger" message={errorMessage(catalog.error)} />
+          <Button label="Tentar de novo" variant="secondary" onPress={() => void catalog.refetch()} />
+        </View>
+      ) : (
+        <View>
+          {list.map((exercise) => (
+            <ExerciseRow key={exercise.id} exercise={exercise} equipmentLabel={equipmentLabel(exercise.equipment)} onPress={() => choose(exercise.id)} />
+          ))}
+          {list.length === 0 ? (
+            <Notice message="Nenhum exercício com esse nome. Crie o seu logo abaixo." />
+          ) : null}
+        </View>
+      )}
+
+      {creating ? (
+        <View style={styles.block}>
+          <AppText variant="overline" tone="muted">Novo exercício</AppText>
+          <TextField
+            label="Nome"
+            value={newName}
+            onChangeText={setNewName}
+            placeholder="Ex.: Remada na máquina do meu ginásio"
+            maxLength={60}
+            autoFocus
+          />
+          <AppText variant="label" tone="secondary">Equipamento</AppText>
+          <View style={styles.chips}>
+            {(catalog.data?.equipment ?? []).map((item) => {
+      const selected = item.id === newEquipment;
+      return (
+                <Pressable
+                  key={item.id}
+                  accessibilityRole="radio"
+                  accessibilityLabel={item.label}
+                  accessibilityState={{ checked: selected }}
+                  onPress={() => {
+                    tapFeedback();
+                    setNewEquipment(item.id);
+                  }}
                   style={[
                     styles.chip,
                     {
@@ -93,86 +150,28 @@ export default function ExerciseCatalogScreen() {
                       backgroundColor: selected ? colors.selectedFill : 'transparent',
                     },
                   ]}>
-                  <AppText variant="label" tone={selected ? 'goldHighlight' : 'secondary'}>{option.label}</AppText>
-                </PressableScale>
-              );
-            },
-          )}
-        </ScrollView>
-
-        {catalog.isPending ? (
-          <ActivityIndicator color={colors.gold} />
-        ) : catalog.isError ? (
-          <View style={styles.block}>
-            <Notice tone="danger" message={errorMessage(catalog.error)} />
-            <Button label="Tentar de novo" variant="secondary" onPress={() => void catalog.refetch()} />
+                  <AppText variant="label" tone={selected ? 'goldHighlight' : 'secondary'}>{item.label}</AppText>
+                </Pressable>
+      );
+            })}
           </View>
-        ) : (
-          <View>
-            {list.map((exercise) => (
-              <ExerciseRow key={exercise.id} exercise={exercise} equipmentLabel={equipmentLabel(exercise.equipment)} onPress={() => choose(exercise.id)} />
-            ))}
-            {list.length === 0 ? (
-              <Notice message="Nenhum exercício com esse nome. Crie o seu logo abaixo." />
-            ) : null}
-          </View>
-        )}
-
-        {creating ? (
-          <View style={styles.block}>
-            <AppText variant="overline" tone="muted">Novo exercício</AppText>
-            <TextField
-              label="Nome"
-              value={newName}
-              onChangeText={setNewName}
-              placeholder="Ex.: Remada na máquina do meu ginásio"
-              maxLength={60}
-              autoFocus
-            />
-            <AppText variant="label" tone="secondary">Equipamento</AppText>
-            <View style={styles.chips}>
-              {(catalog.data?.equipment ?? []).map((item) => {
-                const selected = item.id === newEquipment;
-                return (
-                  <Pressable
-                    key={item.id}
-                    accessibilityRole="radio"
-                    accessibilityLabel={item.label}
-                    accessibilityState={{ checked: selected }}
-                    onPress={() => {
-                      tapFeedback();
-                      setNewEquipment(item.id);
-                    }}
-                    style={[
-                      styles.chip,
-                      {
-                        borderColor: selected ? colors.gold : colors.hairlineSoft,
-                        backgroundColor: selected ? colors.selectedFill : 'transparent',
-                      },
-                    ]}>
-                    <AppText variant="label" tone={selected ? 'goldHighlight' : 'secondary'}>{item.label}</AppText>
-                  </Pressable>
-                );
-              })}
-            </View>
-            <AppText variant="caption" tone="muted">
-              {group
-                ? `Vai entrar em ${groups.find((item) => item.id === group)?.label ?? group}.`
-                : 'Escolha um grupo muscular acima antes de criar; sem escolha, entra em Corpo inteiro.'}
-            </AppText>
-            <Button
-              label={create.isPending ? 'Criando…' : 'Criar e escolher'}
-              onPress={() => create.mutate()}
-              disabled={create.isPending || newName.trim().length < 2}
-            />
-            {create.isError ? <Notice tone="danger" message={errorMessage(create.error)} /> : null}
-            <Button label="Cancelar" variant="ghost" onPress={() => setCreating(false)} disabled={create.isPending} />
-          </View>
-        ) : (
-          <Button label="Criar exercício" icon="mais" variant="secondary" onPress={() => setCreating(true)} />
-        )}
-      </ScrollView>
-    </KeyboardAvoidingView>
+          <AppText variant="caption" tone="muted">
+            {group
+      ? `Vai entrar em ${groups.find((item) => item.id === group)?.label ?? group}.`
+      : 'Escolha um grupo muscular acima antes de criar; sem escolha, entra em Corpo inteiro.'}
+          </AppText>
+          <Button
+            label={create.isPending ? 'Criando…' : 'Criar e escolher'}
+            onPress={() => create.mutate()}
+            disabled={create.isPending || newName.trim().length < 2}
+          />
+          {create.isError ? <Notice tone="danger" message={errorMessage(create.error)} /> : null}
+          <Button label="Cancelar" variant="ghost" onPress={() => setCreating(false)} disabled={create.isPending} />
+        </View>
+      ) : (
+        <Button label="Criar exercício" icon="mais" variant="secondary" onPress={() => setCreating(true)} />
+      )}
+    </FormScrollView>
   );
 }
 

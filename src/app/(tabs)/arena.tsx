@@ -14,6 +14,7 @@ import { useReducedMotionPreference } from '@/components/motion/reduced-motion';
 import { RollingNumber } from '@/components/motion/rolling-number';
 import { Skeleton } from '@/components/motion/skeleton';
 import { TabFade } from '@/components/motion/tab-fade';
+import { ProfileButton } from '@/components/profile-button';
 import { EmblemAvatar, type Laurel } from '@/components/rank/emblem-avatar';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
@@ -225,13 +226,16 @@ export default function ArenaScreen() {
         />
       }>
       <View style={styles.header}>
-        <AppText variant="title">Coliseu</AppText>
-        {weekOffset === 0 ? (
-          <View style={styles.inline}>
-            <Icon name="ampulheta" size={16} color={colors.gold} />
-            <AppText variant="label" tone="secondary">{`termina em ${formatRemaining(week.remainingMs)}`}</AppText>
-          </View>
-        ) : null}
+        <View style={styles.headerText}>
+          <AppText variant="title">Coliseu</AppText>
+          {weekOffset === 0 ? (
+            <View style={styles.inline}>
+              <Icon name="ampulheta" size={16} color={colors.gold} />
+              <AppText variant="label" tone="secondary">{`termina em ${formatRemaining(week.remainingMs)}`}</AppText>
+            </View>
+          ) : null}
+        </View>
+        <ProfileButton />
       </View>
 
       {legions.isPending ? (
@@ -424,6 +428,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: space.md,
+  },
+  headerText: {
+    flexShrink: 1,
+    gap: space.xxs,
   },
   inline: {
     flexDirection: 'row',

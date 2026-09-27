@@ -3,6 +3,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useMutation } from '@tanstack/react-query';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ScreenHeader } from '@/components/screen-header';
@@ -164,7 +165,8 @@ export default function RouteScreen() {
   }
 
   return (
-    <View style={[styles.screen, { backgroundColor: colors.background }]}>
+    // O nome da rota fica no painel de baixo: com o teclado aberto, o painel sobe e o mapa encolhe.
+    <KeyboardAvoidingView behavior="padding" style={[styles.screen, { backgroundColor: colors.background }]}>
       <View style={[styles.header, { paddingTop: insets.top + space.md }]}>
         <ScreenHeader
           title="Desenhar rota"
@@ -274,7 +276,7 @@ export default function RouteScreen() {
           {`O traçado fica só neste aparelho, até ${MAX_ROUTES} rotas. O mapa vem do OpenFreeMap, que recebe a área que está na tela, nunca o seu trajeto. Ciclovias de São Paulo: CET/Prefeitura (dados abertos).`}
         </AppText>
       </ScrollView>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 

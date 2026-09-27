@@ -2,6 +2,7 @@ import { Cinzel_600SemiBold, Cinzel_700Bold } from '@expo-google-fonts/cinzel';
 import { CormorantGaramond_500Medium_Italic } from '@expo-google-fonts/cormorant-garamond';
 import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold } from '@expo-google-fonts/inter';
 import { QueryClientProvider } from '@tanstack/react-query';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { useFonts } from 'expo-font';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -182,6 +183,9 @@ export default function RootLayout() {
   if (!fontsLoaded && !fontError) return null;
 
   return (
+    // O teclado do Android não encolhe mais a tela (ela vai de ponta a ponta): quem acompanha o
+    // teclado e rola até o campo é o KeyboardProvider, usado pelos formulários.
+    <KeyboardProvider>
     <AppThemeProvider>
       <ThemedApp>
         {supabaseConfig.ok ? (
@@ -199,5 +203,6 @@ export default function RootLayout() {
         )}
       </ThemedApp>
     </AppThemeProvider>
+    </KeyboardProvider>
   );
 }

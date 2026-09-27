@@ -7,6 +7,7 @@ import { Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { PressableScale } from '@/components/motion/pressable-scale';
+import { ProfileButton } from '@/components/profile-button';
 import { Reveal } from '@/components/motion/reveal';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
@@ -367,14 +368,17 @@ export function ExploreMap() {
               <Icon name="bike" size={18} color={cycleways ? cycleColors.ciclovia : colors.textMuted} />
               <AppText variant="label" tone={cycleways ? 'primary' : 'muted'}>Ciclovias</AppText>
             </PressableScale>
-            <PressableScale
-              accessibilityRole="button"
-              accessibilityLabel={following ? 'Seguindo sua posição' : 'Mostrar onde estou'}
-              haptic="tap"
-              onPress={locate}
-              style={[styles.roundButton, { backgroundColor: colors.surfaceRaised, borderColor: following ? colors.gold : colors.hairline }]}>
-              <Icon name="mira" size={22} color={following ? colors.goldHighlight : colors.textSecondary} />
-            </PressableScale>
+            <View style={styles.topActions} pointerEvents="box-none">
+              <PressableScale
+                accessibilityRole="button"
+                accessibilityLabel={following ? 'Seguindo sua posição' : 'Mostrar onde estou'}
+                haptic="tap"
+                onPress={locate}
+                style={[styles.roundButton, { backgroundColor: colors.surfaceRaised, borderColor: following ? colors.gold : colors.hairline }]}>
+                <Icon name="mira" size={22} color={following ? colors.goldHighlight : colors.textSecondary} />
+              </PressableScale>
+              <ProfileButton size={touchTarget} />
+            </View>
           </View>
           {cycleways ? (
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.legend}>
@@ -742,6 +746,11 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderRadius: radius.full,
     paddingHorizontal: space.lg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.sm,
+  },
+  topActions: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.sm,

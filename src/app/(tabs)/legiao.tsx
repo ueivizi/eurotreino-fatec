@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Notice } from '@/components/ui/notice';
 import { AppText } from '@/components/ui/text';
+import { ProfileButton } from '@/components/profile-button';
 import { LegionPanel, refetchLegionPanel } from '@/features/legions/legion-panel';
 import { fetchMyLegions } from '@/features/legions/legions-api';
 import { SeasonSummary } from '@/features/legions/season-summary';
@@ -67,7 +68,10 @@ export default function LegionScreen() {
           tintColor={colors.gold}
         />
       }>
-      <AppText variant="title">Legião</AppText>
+      <View style={styles.header}>
+        <AppText variant="title">Legião</AppText>
+        <ProfileButton />
+      </View>
 
       {legions.isPending ? (
         <ActivityIndicator color={colors.gold} style={styles.loading} />
@@ -128,6 +132,12 @@ export default function LegionScreen() {
 }
 
 const styles = StyleSheet.create({
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: space.md,
+  },
   content: {
     paddingHorizontal: space.xl,
     paddingBottom: space.xxxl * 3,

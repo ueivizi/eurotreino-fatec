@@ -1,7 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { EmblemPicker } from '@/components/emblem-picker';
@@ -9,6 +9,7 @@ import { ScreenHeader } from '@/components/screen-header';
 import { Button } from '@/components/ui/button';
 import { Notice } from '@/components/ui/notice';
 import { TextField } from '@/components/ui/text-field';
+import { FormScrollView } from '@/components/ui/form-scroll';
 import { useSession } from '@/features/auth/session';
 import { DISPLAY_NAME_MAX_LENGTH, isValidDisplayName, normalizeDisplayName } from '@/features/profile/display-name';
 import { DEFAULT_EMBLEM_COLOR, type EmblemColor, type EmblemName } from '@/features/profile/emblems';
@@ -69,37 +70,35 @@ export default function EditProfileScreen() {
   }
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: colors.background }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView
-        keyboardShouldPersistTaps="handled"
-        contentContainerStyle={[styles.content, { paddingTop: insets.top + space.md, paddingBottom: insets.bottom + space.xxxl }]}>
-        <ScreenHeader title="Editar perfil" subtitle="Só as suas Legiões veem" />
+    <FormScrollView
+      style={{ flex: 1, backgroundColor: colors.background }}
+      contentContainerStyle={[styles.content, { paddingTop: insets.top + space.md, paddingBottom: insets.bottom + space.xxxl }]}>
+      <ScreenHeader title="Editar perfil" subtitle="Só as suas Legiões veem" />
 
-        <TextField
-          label="Nome de exibição"
-          value={name}
-          onChangeText={(text) => {
-            setName(text);
-            setError(null);
-          }}
-          onBlur={() => setTouched(true)}
-          autoCapitalize="words"
-          autoComplete="nickname"
-          maxLength={DISPLAY_NAME_MAX_LENGTH + 8}
-          returnKeyType="done"
-          hint={NAME_RULE}
-          error={touched && !nameValid ? NAME_RULE : null}
-        />
+      <TextField
+        label="Nome de exibição"
+        value={name}
+        onChangeText={(text) => {
+          setName(text);
+          setError(null);
+        }}
+        onBlur={() => setTouched(true)}
+        autoCapitalize="words"
+        autoComplete="nickname"
+        maxLength={DISPLAY_NAME_MAX_LENGTH + 8}
+        returnKeyType="done"
+        hint={NAME_RULE}
+        error={touched && !nameValid ? NAME_RULE : null}
+      />
 
-        <EmblemPicker label="Emblema" value={emblem} onChange={setEmblem} color={emblemColor} onChangeColor={setEmblemColor} />
+      <EmblemPicker label="Emblema" value={emblem} onChange={setEmblem} color={emblemColor} onChangeColor={setEmblemColor} />
 
-        <View style={styles.actions}>
-          <Button label={busy ? 'Salvando…' : 'Salvar'} onPress={() => void submit()} disabled={busy || !changed} />
-          {error ? <Notice tone="danger" message={error} /> : null}
-          <Button label="Cancelar" variant="ghost" onPress={() => (router.canGoBack() ? router.back() : router.replace('/perfil'))} disabled={busy} />
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      <View style={styles.actions}>
+        <Button label={busy ? 'Salvando…' : 'Salvar'} onPress={() => void submit()} disabled={busy || !changed} />
+        {error ? <Notice tone="danger" message={error} /> : null}
+        <Button label="Cancelar" variant="ghost" onPress={() => (router.canGoBack() ? router.back() : router.replace('/perfil'))} disabled={busy} />
+      </View>
+    </FormScrollView>
   );
 }
 

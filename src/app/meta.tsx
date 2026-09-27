@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Defs, LinearGradient, Stop } from 'react-native-svg';
 
@@ -12,6 +12,7 @@ import { Icon } from '@/components/ui/icon';
 import { Notice } from '@/components/ui/notice';
 import { NumberField } from '@/components/ui/number-field';
 import { AppText } from '@/components/ui/text';
+import { FormScrollView } from '@/components/ui/form-scroll';
 import { GOAL_MAX, fetchWeeklyGoal, setWeeklyGoal, type WeeklyGoal } from '@/features/goals/goal-api';
 import { queryKeys } from '@/lib/query-client';
 import { errorMessage } from '@/lib/rpc-errors';
@@ -126,7 +127,7 @@ export default function WeeklyGoalScreen() {
   });
 
   return (
-    <ScrollView
+    <FormScrollView
       style={{ flex: 1, backgroundColor: colors.background }}
       keyboardShouldPersistTaps="handled"
       contentContainerStyle={[styles.content, { paddingTop: insets.top + space.md, paddingBottom: insets.bottom + space.xxxl }]}>
@@ -207,7 +208,7 @@ export default function WeeklyGoalScreen() {
           </View>
         </>
       )}
-    </ScrollView>
+    </FormScrollView>
   );
 }
 

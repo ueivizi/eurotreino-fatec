@@ -200,8 +200,9 @@ export function parseOrsRoute(payload: unknown): RouteResult | null {
 
   let cycleway = 0;
   let calm = 0;
-  const extras = properties.extras as { waytypes?: { summary?: unknown } } | undefined;
-  const waytypes = extras?.waytypes?.summary;
+  // No GeoJSON o resumo vem em `extras.waytype`; no JSON comum, em `extras.waytypes`.
+  const extras = properties.extras as { waytype?: { summary?: unknown }; waytypes?: { summary?: unknown } } | undefined;
+  const waytypes = (extras?.waytype ?? extras?.waytypes)?.summary;
   if (Array.isArray(waytypes)) {
     for (const entry of waytypes) {
       if (typeof entry !== 'object' || entry === null) continue;

@@ -95,7 +95,7 @@ function orsPayload(coordinates: unknown, properties: Record<string, unknown> = 
           summary: { distance: 5234.7, duration: 1800 },
           ascent: 41.2,
           descent: 40.8,
-          extras: { waytypes: { values: [], summary: [{ value: 6, distance: 3000, amount: 57.3 }, { value: 3, distance: 2234, amount: 42.7 }] } },
+          extras: { waytype: { values: [], summary: [{ value: 6, distance: 3000, amount: 57.3 }, { value: 3, distance: 2234, amount: 42.7 }] } },
           ...properties,
         },
       },
@@ -117,6 +117,14 @@ describe('parseOrsRoute', () => {
       cicloviaPct: 57,
       calmaPct: 57,
     });
+  });
+
+  it('lê o resumo das vias também no formato JSON comum (waytypes)', () => {
+    const payload = orsPayload([[-46.6, -23.5], [-46.7, -23.4]], {
+      extras: { waytypes: { summary: [{ value: 7, amount: 85.5 }, { value: 2, amount: 14.5 }] } },
+    });
+    assert.equal(parseOrsRoute(payload)?.calmaPct, 86);
+    assert.equal(parseOrsRoute(payload)?.cicloviaPct, 0);
   });
 
   it('recusa resposta fora do formato', () => {

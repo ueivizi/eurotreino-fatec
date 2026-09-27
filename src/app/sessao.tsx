@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { randomUUID } from 'expo-crypto';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 
@@ -17,6 +17,7 @@ import { Notice } from '@/components/ui/notice';
 import { NumberField } from '@/components/ui/number-field';
 import { SegmentedControl } from '@/components/ui/segmented-control';
 import { AppText } from '@/components/ui/text';
+import { FormScrollView } from '@/components/ui/form-scroll';
 import { useProfile } from '@/features/auth/session';
 import { healthConnect } from '@/features/devices/health-connect';
 import { matchingWorkout } from '@/features/devices/imported-workout';
@@ -309,7 +310,7 @@ export default function LiveSessionScreen() {
   // Resultado: a sessão acabou e virou treino.
   if (outcome) {
     return (
-      <ScrollView
+      <FormScrollView
         style={{ flex: 1, backgroundColor: colors.background }}
         contentContainerStyle={[styles.content, { paddingTop: insets.top + space.xxl, paddingBottom: insets.bottom + space.xxxl }]}>
         <View style={styles.hero}>
@@ -352,14 +353,14 @@ export default function LiveSessionScreen() {
 
         <Button label="Ver minha Honra" variant="secondary" onPress={() => router.replace('/honra')} />
         <Button label="Fechar" onPress={() => router.replace('/')} />
-      </ScrollView>
+      </FormScrollView>
     );
   }
 
   // Sem sessão: escolher por onde começar.
   if (!current) {
     return (
-      <ScrollView
+      <FormScrollView
         style={{ flex: 1, backgroundColor: colors.background }}
         contentContainerStyle={[styles.content, { paddingTop: insets.top + space.md, paddingBottom: insets.bottom + space.xxxl }]}>
         <ScreenHeader title="Treinar agora" subtitle="Acompanhe o treino enquanto ele acontece" />
@@ -430,7 +431,7 @@ export default function LiveSessionScreen() {
             <Notice message="O cronômetro fica no aparelho: pode trancar a tela ou fechar o app que a sessão continua de pé." />
           </>
         )}
-      </ScrollView>
+      </FormScrollView>
     );
   }
 
@@ -445,7 +446,7 @@ export default function LiveSessionScreen() {
   };
 
   return (
-    <ScrollView
+    <FormScrollView
       style={{ flex: 1, backgroundColor: colors.background }}
       contentContainerStyle={[styles.content, { paddingTop: insets.top + space.md, paddingBottom: insets.bottom + space.xxxl }]}>
       <View style={styles.clock}>
@@ -823,7 +824,7 @@ export default function LiveSessionScreen() {
           />
         </>
       )}
-    </ScrollView>
+    </FormScrollView>
   );
 }
 
