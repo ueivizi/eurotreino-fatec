@@ -1,55 +1,84 @@
 # EuroTreino
 
-Aplicativo de treino gamificado com ranking privado entre amigos. Cada treino registrado vira **Glória**, você sobe de rank do Recruta ao Olimpiano, e a disputa semanal acontece só dentro da sua **Legião** — nunca com desconhecidos.
+Aplicativo de treino gamificado com ranking privado entre amigos. Cada treino registrado vira **Glória**,
+você sobe de rank do Recruta ao Olimpiano, e a disputa semanal acontece só dentro da sua **Legião**,
+nunca com desconhecidos.
 
-> Em desenvolvimento (Onda 1). Entrada por código no e-mail, perfil, Início, registro de treino, Legiões e Arena já usam o Supabase.
+Projeto da disciplina de Laboratório de Desenvolvimento Mobile do curso de Tecnologia em Desenvolvimento
+de Software Multiplataforma da Fatec Osasco – Prefeito Hirant Sanazar (2026, 6º semestre), sob orientação
+do Prof. Elias Carneiro de Oliveira.
 
-## Stack
+## Versão descrita nos documentos
 
-- **App:** React Native + Expo SDK 57 (TypeScript, Expo Router) — Android, iOS e Web
-- **Backend:** Supabase — PostgreSQL, Auth, Row Level Security e Edge Functions
+Os documentos de entrega (Objetivos 4 a 6 e P2) descrevem o aplicativo no commit
+[`6867897`](https://github.com/ueivizi/eurotreino-fatec/tree/6867897), de 17/09/2026. Os trechos de código citados na seção 5.3 indicam o arquivo
+e as linhas desse commit.
+
+Os commits seguintes, até 27/09/2026, implementam o que ficou como trabalho futuro e os ajustes pedidos na
+validação com usuários: histórico de treinos (Anais) com edição, meta semanal, campo de código com um
+quadrado por dígito, imagem de compartilhamento, Mural da Legião, mapa e rotas, temporadas competitivas,
+foto de perfil com consentimento e o treino na tela bloqueada do Android. Nessa fase, a Arena passou a se
+chamar Coliseu na interface; o código e o banco continuam usando `arena`.
+
+## Tecnologias
+
+- **Aplicativo:** React Native e Expo SDK 57, em TypeScript estrito, com Expo Router. Um código só para
+  Android, iOS e Web.
+- **Servidor:** Supabase, com PostgreSQL, Auth, segurança por linha (RLS) e Edge Functions.
+- **Testes:** Jest no aplicativo, PGlite (PostgreSQL em WebAssembly) no banco e `node:test` nas funções.
+- **Qualidade:** ESLint, GitHub Actions e gitleaks a cada envio.
 
 ## Estrutura
 
 ```
-src/app/         rotas (Expo Router): abas Início, Arena, Legião e Perfil + registro de treino
-src/components/  componentes de interface (tema Ônix & Ouro, medalhões de rank, barra de abas)
-src/features/    regras de domínio, chamadas ao banco e validação das respostas, com testes
-src/lib/         cliente Supabase, sessão segura, cache de consultas e utilitários
-src/theme/       tokens de cor, tipografia e espaçamento
-supabase/        migrações SQL (tabelas, RLS e funções) e testes do banco
+src/app/              telas (rotas do Expo Router)
+src/components/       componentes de interface, tema Ônix & Ouro e Mármore
+src/features/         regras de cada área, chamadas ao banco e validação das respostas, com testes
+src/lib/              cliente Supabase, sessão segura, cache de consultas e utilitários
+src/theme/            cores, tipografia e espaçamento
+modules/              módulo nativo do Android (cartão do treino na tela bloqueada)
+supabase/migrations/  esquema do banco: tabelas, RLS e funções, em migrações SQL versionadas
+supabase/functions/   Edge Functions (exclusão da conta e rotas)
+supabase/tests/       testes do banco
 ```
 
 ## Banco de dados
 
-O banco é criado só por migrações versionadas em `supabase/migrations`. As regras de negócio (pontuação, convites, Arena) ficam em funções do Postgres; o app lê pelo RLS e grava apenas chamando essas funções.
+O banco é criado só por migrações em `supabase/migrations`. As regras de negócio (pontuação, convites,
+Coliseu) ficam em funções do PostgreSQL; o aplicativo lê pelas políticas de RLS e grava apenas chamando
+essas funções.
 
 ```bash
-npm run test:db          # aplica as migrações num Postgres em memória e roda os testes
+npm run test:db          # aplica as migrações num PostgreSQL em memória e roda os testes do banco
 npx supabase login       # uma vez por máquina
 npx supabase db push     # aplica as migrações no projeto Supabase ligado
-npm run test:db:linked   # roda os mesmos testes no projeto ligado, desfazendo tudo no fim
 ```
 
 Nenhum dos comandos precisa de Docker.
 
 ## Como rodar
 
-Pré-requisitos: Node.js 20 ou superior e o app **Expo Go** no celular (Android ou iPhone).
+Pré-requisitos: Node.js 22 e um projeto Supabase com as migrações aplicadas.
 
 ```bash
 npm install
-cp .env.example .env   # preencha com a URL e a chave publicável do projeto Supabase
+cp .env.example .env     # preencha com a URL e a chave publicável do projeto Supabase
 npm start
 ```
 
-- **Celular:** abra o Expo Go e escaneie o QR code exibido no terminal (celular e computador na mesma rede).
 - **Web:** com o servidor rodando, pressione `w` no terminal ou use `npm run web`.
+- **Celular:** Health Connect, mapas e o cartão da tela bloqueada usam código nativo e exigem uma
+  development build (`eas build --profile development --platform android`); o Expo Go não basta.
 
-## Qualidade
+## Verificação
 
 ```bash
 npm run lint
 npm run typecheck
 npm test
+npm run test:functions
+npm run test:db
 ```
+
+A integração contínua (`.github/workflows/ci.yml`) roda esses mesmos comandos e a busca de segredos com o
+gitleaks a cada envio ao repositório.
